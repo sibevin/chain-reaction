@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_vector_shapes::prelude::*;
 use chain_reaction::{app, page, reactor};
 
 fn main() {
@@ -9,7 +10,10 @@ fn main() {
         .add_systems(Startup, app::init::startup)
         .add_plugins((
             app::init::InitPlugin,
+            Shape2dPlugin::default(),
             app::settings::SettingsPlugin,
+            reactor::tmm::ParticleTmmPlugin,
+            reactor::state::demo::StatePlugin,
             page::menu::PagePlugin,
             page::game::PagePlugin,
             page::settings::PagePlugin,

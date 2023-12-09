@@ -533,7 +533,6 @@ fn build_move_testing_panel(parent: &mut ChildBuilder) {
                     border: UiRect::all(app::ui::px_p(0.5)),
                     ..default()
                 },
-                background_color: app::ui::BG_COLOR.into(),
                 border_color: app::ui::SECONDARY_COLOR.into(),
                 ..default()
             },

@@ -19,7 +19,6 @@ pub fn build_page_layout() -> NodeBundle {
             padding: UiRect::all(app::ui::px_p(PAGE_PADDING)),
             ..default()
         },
-        background_color: app::ui::COVER_COLOR.into(),
         ..default()
     }
 }
@@ -164,17 +163,4 @@ pub fn build_sep_title(
                 });
         })
         .id()
-}
-
-pub fn build_page_bg(parent: &mut ChildBuilder) {
-    parent.spawn((NodeBundle {
-        style: Style {
-            position_type: PositionType::Absolute,
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            ..default()
-        },
-        background_color: app::ui::COVER_COLOR.into(),
-        ..default()
-    },));
 }

@@ -1,8 +1,42 @@
 use crate::{app, reactor};
 use bevy::prelude::*;
+use rand::{thread_rng, Rng};
 
 const FIELD_TEXT_SIZE: f32 = reactor::FIELD_NAV_H * 0.5;
 const FIELD_PADDING: f32 = (reactor::FIELD_NAV_H - FIELD_TEXT_SIZE) / 2.0;
+
+const FIELD_COLOR: Color = Color::rgb(0.2, 0.2, 0.2);
+const FIELD_TEXT_COLOR: Color = Color::rgb(0.5, 0.5, 0.5);
+
+pub fn get_field_rect() -> Rect {
+    Rect::new(
+        -reactor::FIELD_W / 2.0,
+        (-reactor::FIELD_H + reactor::FIELD_NAV_H) / 2.0,
+        reactor::FIELD_W / 2.0,
+        (reactor::FIELD_H + reactor::FIELD_NAV_H) / 2.0,
+    )
+}
+
+pub fn gen_random_pos_in_field(padding: f32) -> Vec2 {
+    let mut rng = thread_rng();
+    let rect = get_field_rect();
+    Vec2::new(
+        rng.gen_range(rect.min.x + padding..rect.max.x - padding),
+        rng.gen_range(rect.min.y + padding..rect.max.y - padding),
+    )
+}
+
+pub fn format_field_text(field: &str, value: u32) -> String {
+    if field == "time" {
+        format!("{:0>5}.{:0>2}", value / 100, value % 100)
+    } else if field == "alpha_count" {
+        format!("{:0>5}", value)
+    } else if field == "score" {
+        format!("{:0>8}", value)
+    } else {
+        format!("{}", value)
+    }
+}
 
 pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServer>) -> Entity {
     commands
@@ -28,7 +62,7 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                         border: UiRect::all(app::ui::px_p(0.5)),
                         ..default()
                     },
-                    border_color: reactor::FIELD_COLOR.into(),
+                    border_color: FIELD_COLOR.into(),
                     ..default()
                 },))
                 .with_children(|parent| {
@@ -48,7 +82,7 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                                 border: UiRect::top(app::ui::px_p(0.5)),
                                 ..default()
                             },
-                            border_color: reactor::FIELD_COLOR.into(),
+                            border_color: FIELD_COLOR.into(),
                             ..default()
                         },))
                         .with_children(|parent| {
@@ -60,7 +94,7 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                                     margin: UiRect::left(Val::Px(FIELD_PADDING * 1.4)),
                                     ..default()
                                 },
-                                border_color: reactor::FIELD_COLOR.into(),
+                                border_color: FIELD_COLOR.into(),
                                 ..default()
                             },));
                             parent
@@ -99,12 +133,12 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                                             });
                                             parent.spawn((
                                                 TextBundle::from_section(
-                                                    reactor::timer::format_timer_text(0),
+                                                    format_field_text("time", 0),
                                                     TextStyle {
                                                         font: asset_server
                                                             .load(app::ui::FONT_DIGIT),
                                                         font_size: FIELD_TEXT_SIZE,
-                                                        color: reactor::FIELD_COLOR,
+                                                        color: FIELD_TEXT_COLOR,
                                                         ..default()
                                                     },
                                                 ),
@@ -135,12 +169,12 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                                             });
                                             parent.spawn((
                                                 TextBundle::from_section(
-                                                    "00000",
+                                                    format_field_text("alpha_count", 0),
                                                     TextStyle {
                                                         font: asset_server
                                                             .load(app::ui::FONT_DIGIT),
                                                         font_size: FIELD_TEXT_SIZE,
-                                                        color: reactor::FIELD_COLOR,
+                                                        color: FIELD_TEXT_COLOR,
                                                         ..default()
                                                     },
                                                 ),
@@ -173,12 +207,12 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                                             });
                                             parent.spawn((
                                                 TextBundle::from_section(
-                                                    "00000000000",
+                                                    format_field_text("score", 0),
                                                     TextStyle {
                                                         font: asset_server
                                                             .load(app::ui::FONT_DIGIT),
                                                         font_size: FIELD_TEXT_SIZE,
-                                                        color: reactor::FIELD_COLOR,
+                                                        color: FIELD_TEXT_COLOR,
                                                         ..default()
                                                     },
                                                 ),

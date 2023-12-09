@@ -31,6 +31,6 @@ fn reset_timer(
 ) {
     for (mut text, mut field_timer) in field_timer_query.iter_mut() {
         field_timer.0 = 0;
-        text.sections[0].value = reactor::timer::format_timer_text(field_timer.0);
+        text.sections[0].value = reactor::field::format_field_text("time", field_timer.0);
     }
 }

@@ -31,7 +31,19 @@ impl Plugin for InitPlugin {
     }
 }
 
-pub fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn startup(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    asset_server: Res<AssetServer>,
+    mut particle_tmm: ResMut<reactor::tmm::ParticleTMM>,
+) {
     commands.spawn(Camera2dBundle::default());
     reactor::field::build_reactor_field(&mut commands, &asset_server);
+    reactor::tmm::init_particle_tmm(
+        &mut particle_tmm,
+        &asset_server,
+        &mut meshes,
+        &mut materials,
+    )
 }

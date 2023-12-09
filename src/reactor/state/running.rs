@@ -25,7 +25,26 @@ enum ButtonAction {
     Pause,
 }
 
-fn state_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn state_setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut field_alpha_count_query: Query<
+        (&mut Text, &mut reactor::FieldAlphaCount),
+        (With<reactor::FieldAlphaCount>, Without<reactor::FieldScore>),
+    >,
+    mut field_score_query: Query<
+        (&mut Text, &mut reactor::FieldScore),
+        (With<reactor::FieldScore>, Without<reactor::FieldAlphaCount>),
+    >,
+) {
+    for (mut text, mut field_alpha_count) in field_alpha_count_query.iter_mut() {
+        field_alpha_count.0 = 0;
+        text.sections[0].value = reactor::field::format_field_text("alpha_count", 0);
+    }
+    for (mut text, mut field_score) in field_score_query.iter_mut() {
+        field_score.0 = 0;
+        text.sections[0].value = reactor::field::format_field_text("score", 0);
+    }
     commands
         .spawn((
             NodeBundle {
@@ -113,7 +132,7 @@ fn tick_timer(
         if timer.tick(time.delta()).just_finished() {
             for (mut text, mut field_timer) in field_timer_query.iter_mut() {
                 field_timer.0 = field_timer.0 + 1;
-                text.sections[0].value = reactor::timer::format_timer_text(field_timer.0);
+                text.sections[0].value = reactor::field::format_field_text("time", field_timer.0);
             }
         }
     }
