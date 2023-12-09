@@ -5,6 +5,7 @@ pub mod field;
 pub mod hit;
 pub mod particle;
 pub mod state;
+pub mod timer;
 pub mod tmm;
 
 #[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
@@ -15,15 +16,6 @@ pub enum ReactorState {
     Paused,
     Ended,
 }
-
-#[derive(Component)]
-pub struct FieldTimer(pub u32);
-
-#[derive(Component)]
-pub struct FieldAlphaCount(pub u32);
-
-#[derive(Component)]
-pub struct FieldScore(pub u32);
 
 #[derive(Component, Deref, DerefMut)]
 pub struct ReactorTimer(pub Timer);

@@ -7,7 +7,22 @@ fn main() {
         .insert_resource(ClearColor(app::ui::BG_COLOR))
         .add_state::<app::GameState>()
         .add_state::<reactor::ReactorState>()
-        .add_systems(Startup, app::init::startup)
+        .add_systems(
+            Startup,
+            (
+                app::init::startup,
+                reactor::timer::init_timer,
+                reactor::field::score::init_field,
+            ),
+        )
+        .add_systems(
+            Update,
+            (
+                reactor::field::timer::update_field,
+                reactor::field::alpha_count::update_field,
+                reactor::field::score::update_field,
+            ),
+        )
         .add_plugins((
             app::init::InitPlugin,
             Shape2dPlugin::default(),

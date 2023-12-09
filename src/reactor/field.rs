@@ -2,11 +2,24 @@ use crate::{app, reactor};
 use bevy::prelude::*;
 use rand::{thread_rng, Rng};
 
+pub mod alpha_count;
+pub mod score;
+pub mod timer;
+
 const FIELD_TEXT_SIZE: f32 = reactor::FIELD_NAV_H * 0.5;
 const FIELD_PADDING: f32 = (reactor::FIELD_NAV_H - FIELD_TEXT_SIZE) / 2.0;
 
 const FIELD_COLOR: Color = Color::rgb(0.2, 0.2, 0.2);
 const FIELD_TEXT_COLOR: Color = Color::rgb(0.5, 0.5, 0.5);
+
+#[derive(Component)]
+pub struct FieldTimer(pub u32);
+
+#[derive(Component)]
+pub struct FieldAlphaCount(pub u32);
+
+#[derive(Component)]
+pub struct FieldScore(pub u32);
 
 pub fn get_field_rect() -> Rect {
     Rect::new(
@@ -142,7 +155,7 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                                                         ..default()
                                                     },
                                                 ),
-                                                reactor::FieldTimer(0),
+                                                FieldTimer(0),
                                             ));
                                         });
                                     parent
@@ -178,7 +191,7 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                                                         ..default()
                                                     },
                                                 ),
-                                                reactor::FieldAlphaCount(0),
+                                                FieldAlphaCount(0),
                                             ));
                                         });
                                     parent
@@ -216,7 +229,7 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                                                         ..default()
                                                     },
                                                 ),
-                                                reactor::FieldScore(0),
+                                                FieldScore(0),
                                             ));
                                         });
                                 });

@@ -45,5 +45,5 @@ pub fn startup(
         &asset_server,
         &mut meshes,
         &mut materials,
-    )
+    );
 }

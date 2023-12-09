@@ -137,6 +137,9 @@ impl Particle {
         );
         self.level = new_level as u8;
     }
+    pub fn level_ratio(&self) -> f32 {
+        self.level as f32 / self.ability.max_level() as f32
+    }
     pub fn countdown_ratio(&self) -> f32 {
         self.ability.current_countdown() as f32 / self.ability.max_countdown(self.level) as f32
     }

@@ -5,17 +5,21 @@ pub struct StatePlugin;
 
 impl Plugin for StatePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(reactor::ReactorState::Demo), state_setup)
-            .add_systems(
-                Update,
-                state_action.run_if(in_state(reactor::ReactorState::Demo)),
-            )
-            .add_systems(OnExit(reactor::ReactorState::Demo), state_exit);
+        app.add_systems(
+            OnEnter(reactor::ReactorState::Demo),
+            (
+                state_setup,
+                reactor::field::timer::reset_field,
+                reactor::field::score::reset_field,
+            ),
+        )
+        .add_systems(
+            Update,
+            state_action.run_if(in_state(reactor::ReactorState::Demo)),
+        )
+        .add_systems(OnExit(reactor::ReactorState::Demo), state_exit);
     }
 }
-
-#[derive(Component, Deref, DerefMut)]
-struct DemoTimer(pub Timer);
 
 #[derive(Component)]
 struct DemoParticle;
@@ -27,24 +31,21 @@ fn state_setup(mut commands: Commands, particle_tmm: Res<reactor::tmm::ParticleT
     // for _ in 1..100 {
     //     alpha::build_particle_sprite(&mut commands, &particle_tmm, DemoParticle, None, None, None);
     // }
-    for _ in 1..5 {
-        control::build_particle_sprite(
-            &mut commands,
-            &particle_tmm,
-            DemoParticle,
-            None,
-            None,
-            None,
-        );
-    }
-    for _ in 1..5 {
-        hyper::build_particle_sprite(&mut commands, &particle_tmm, DemoParticle, None, None, None);
-    }
+    // for _ in 1..5 {
+    //     control::build_particle_sprite(
+    //         &mut commands,
+    //         &particle_tmm,
+    //         DemoParticle,
+    //         None,
+    //         None,
+    //         None,
+    //     );
+    // }
+    hyper::build_particle_sprite(&mut commands, &particle_tmm, DemoParticle, None, None, None);
     trigger::build_particle_sprite(&mut commands, &particle_tmm, DemoParticle, None, None, None);
     for _ in 1..5 {
         uou::build_particle_sprite(&mut commands, &particle_tmm, DemoParticle, None, None, None);
     }
-    commands.spawn(DemoTimer(Timer::from_seconds(0.01, TimerMode::Repeating)));
     commands.spawn((
         NodeBundle {
             style: Style {
@@ -63,13 +64,8 @@ fn state_exit(
     mut commands: Commands,
     cover_query: Query<Entity, With<DemoCover>>,
     particle_query: Query<Entity, With<DemoParticle>>,
-
-    timer_query: Query<Entity, With<DemoTimer>>,
 ) {
     for entity in &particle_query {
-        commands.entity(entity).despawn_recursive();
-    }
-    for entity in &timer_query {
         commands.entity(entity).despawn_recursive();
     }
     for entity in &cover_query {
@@ -79,12 +75,8 @@ fn state_exit(
 
 fn state_action(
     mut commands: Commands,
-    mut particle_query: Query<(Entity, &mut Transform, &mut Particle), With<DemoParticle>>,
-    mut timer_query: Query<&mut DemoTimer>,
-    mut field_alpha_count_query: Query<
-        (&mut Text, &mut reactor::FieldAlphaCount),
-        With<reactor::FieldAlphaCount>,
-    >,
+    mut particle_query: Query<(Entity, &mut Transform, &mut Particle), With<Particle>>,
+    mut timer_query: Query<&mut reactor::ReactorTimer>,
     time: Res<Time>,
     particle_tmm: Res<reactor::tmm::ParticleTMM>,
 ) {
@@ -126,11 +118,6 @@ fn state_action(
                     }
                     _ => (),
                 }
-            }
-            for (mut text, mut field_alpha_count) in field_alpha_count_query.iter_mut() {
-                field_alpha_count.0 = total_alpha_count;
-                text.sections[0].value =
-                    reactor::field::format_field_text("alpha_count", total_alpha_count);
             }
         }
     }

@@ -85,7 +85,9 @@ pub fn build_particle_sprite(
         None => field::gen_random_pos_in_field(RADIUS * 2.0),
     };
     let particle = Particle::create(ParticleType::Hyper, pos, v, level);
-    commands
+    let level_ratio = particle.level_ratio();
+    let side_ratio = particle.countdown_ratio();
+    let root_entity = commands
         .spawn((
             SpriteBundle {
                 transform: Transform::from_xyz(pos.x, pos.y, 0.0),
@@ -94,63 +96,74 @@ pub fn build_particle_sprite(
             bundle,
             particle,
         ))
-        .with_children(|parent| {
-            parent.spawn(ShapeBundle::ngon(
+        .id();
+    update_particle_sprite(commands, root_entity, level_ratio, side_ratio);
+}
+
+pub fn update_particle_sprite(
+    commands: &mut Commands,
+    root_entity: Entity,
+    level_ratio: f32,
+    side_ratio: f32,
+) {
+    commands.entity(root_entity).despawn_descendants();
+    commands.entity(root_entity).with_children(|parent| {
+        parent.spawn(ShapeBundle::ngon(
+            &ShapeConfig {
+                transform: Transform::from_xyz(0.0, 0.0, 1.0),
+                color: COLOR,
+                ..ShapeConfig::default_2d()
+            },
+            6.0,
+            RADIUS,
+        ));
+        parent.spawn(ShapeBundle::ngon(
+            &ShapeConfig {
+                transform: Transform::from_xyz(0.0, 0.0, 2.0),
+                color: app::ui::BG_COLOR,
+                ..ShapeConfig::default_2d()
+            },
+            MAX_LEVEL as f32,
+            RADIUS * 0.7,
+        ));
+        let start_angle = -PI / MAX_LEVEL as f32;
+        parent.spawn(ShapeBundle::arc(
+            &ShapeConfig {
+                transform: Transform::from_xyz(0.0, 0.0, 3.0),
+                hollow: false,
+                cap: Cap::None,
+                color: COLOR,
+                ..ShapeConfig::default_2d()
+            },
+            RADIUS * 0.8,
+            start_angle,
+            start_angle + TAU * level_ratio,
+        ));
+        for i in 1..MAX_LEVEL {
+            let angle = PI * 2.0 * i as f32 / MAX_LEVEL as f32;
+            parent.spawn(ShapeBundle::line(
                 &ShapeConfig {
-                    transform: Transform::from_xyz(0.0, 0.0, 1.0),
+                    transform: Transform::from_xyz(0.0, 0.0, 4.0),
                     color: COLOR,
-                    ..ShapeConfig::default_2d()
-                },
-                6.0,
-                RADIUS,
-            ));
-            parent.spawn(ShapeBundle::ngon(
-                &ShapeConfig {
-                    transform: Transform::from_xyz(0.0, 0.0, 2.0),
-                    color: app::ui::BG_COLOR,
-                    ..ShapeConfig::default_2d()
-                },
-                MAX_LEVEL as f32,
-                RADIUS * 0.7,
-            ));
-            let start_angle = -PI / MAX_LEVEL as f32;
-            parent.spawn(ShapeBundle::arc(
-                &ShapeConfig {
-                    transform: Transform::from_xyz(0.0, 0.0, 3.0),
-                    hollow: false,
                     cap: Cap::None,
-                    color: COLOR,
+                    thickness: SIDE_THICKNESS * 3.0,
                     ..ShapeConfig::default_2d()
                 },
-                RADIUS * 0.8,
-                start_angle,
-                start_angle + TAU * (2. / MAX_LEVEL as f32),
+                Vec3::new(0.0, 0.0, 0.0),
+                Vec3::new(angle.cos(), angle.sin(), 0.0) * RADIUS * 0.8,
             ));
-            for i in 1..MAX_LEVEL {
-                let angle = PI * 2.0 * i as f32 / MAX_LEVEL as f32;
-                parent.spawn(ShapeBundle::line(
-                    &ShapeConfig {
-                        transform: Transform::from_xyz(0.0, 0.0, 4.0),
-                        color: COLOR,
-                        cap: Cap::None,
-                        thickness: SIDE_THICKNESS * 3.0,
-                        ..ShapeConfig::default_2d()
-                    },
-                    Vec3::new(0.0, 0.0, 0.0),
-                    Vec3::new(angle.cos(), angle.sin(), 0.0) * RADIUS * 0.8,
-                ));
-            }
-            parent.spawn(ShapeBundle::arc(
-                &ShapeConfig {
-                    transform: Transform::from_xyz(0.0, 0.0, 5.0),
-                    color: COLOR,
-                    hollow: true,
-                    thickness: SIDE_THICKNESS,
-                    ..ShapeConfig::default_2d()
-                },
-                RADIUS * 1.5,
-                0.0,
-                TAU * (2. / 3.0),
-            ));
-        });
+        }
+        parent.spawn(ShapeBundle::arc(
+            &ShapeConfig {
+                transform: Transform::from_xyz(0.0, 0.0, 5.0),
+                color: COLOR,
+                hollow: true,
+                thickness: SIDE_THICKNESS,
+                ..ShapeConfig::default_2d()
+            },
+            RADIUS * 1.5,
+            0.0,
+            TAU * side_ratio,
+        ));
+    });
 }

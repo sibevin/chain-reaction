@@ -5,12 +5,19 @@ pub struct StatePlugin;
 
 impl Plugin for StatePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(reactor::ReactorState::Running), state_setup)
-            .add_systems(
-                Update,
-                (state_action, tick_timer).run_if(in_state(reactor::ReactorState::Running)),
-            )
-            .add_systems(OnExit(reactor::ReactorState::Running), state_exit);
+        app.add_systems(
+            OnEnter(reactor::ReactorState::Running),
+            (
+                state_setup,
+                reactor::field::timer::reset_field,
+                reactor::field::score::reset_field,
+            ),
+        )
+        .add_systems(
+            Update,
+            state_action.run_if(in_state(reactor::ReactorState::Running)),
+        )
+        .add_systems(OnExit(reactor::ReactorState::Running), state_exit);
     }
 }
 
@@ -25,26 +32,7 @@ enum ButtonAction {
     Pause,
 }
 
-fn state_setup(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut field_alpha_count_query: Query<
-        (&mut Text, &mut reactor::FieldAlphaCount),
-        (With<reactor::FieldAlphaCount>, Without<reactor::FieldScore>),
-    >,
-    mut field_score_query: Query<
-        (&mut Text, &mut reactor::FieldScore),
-        (With<reactor::FieldScore>, Without<reactor::FieldAlphaCount>),
-    >,
-) {
-    for (mut text, mut field_alpha_count) in field_alpha_count_query.iter_mut() {
-        field_alpha_count.0 = 0;
-        text.sections[0].value = reactor::field::format_field_text("alpha_count", 0);
-    }
-    for (mut text, mut field_score) in field_score_query.iter_mut() {
-        field_score.0 = 0;
-        text.sections[0].value = reactor::field::format_field_text("score", 0);
-    }
+fn state_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn((
             NodeBundle {
@@ -118,21 +106,6 @@ fn state_action(
         if *interaction == Interaction::Pressed {
             match action {
                 ButtonAction::Pause => reactor_state.set(reactor::ReactorState::Paused),
-            }
-        }
-    }
-}
-
-fn tick_timer(
-    time: Res<Time>,
-    mut timer_query: Query<&mut reactor::ReactorTimer>,
-    mut field_timer_query: Query<(&mut Text, &mut reactor::FieldTimer), With<reactor::FieldTimer>>,
-) {
-    for mut timer in &mut timer_query {
-        if timer.tick(time.delta()).just_finished() {
-            for (mut text, mut field_timer) in field_timer_query.iter_mut() {
-                field_timer.0 = field_timer.0 + 1;
-                text.sections[0].value = reactor::field::format_field_text("time", field_timer.0);
             }
         }
     }
