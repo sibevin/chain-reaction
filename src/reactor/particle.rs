@@ -130,6 +130,9 @@ impl Particle {
         self.v = Particle::next_v(ori_pos, self.v, self.radius());
         self.pos
     }
+    pub fn jump(&mut self, pos: Vec2) {
+        self.pos = pos;
+    }
     pub fn update_level(&mut self, delta: i32) {
         let new_level = (self.level as i32 + delta).clamp(
             self.ability.min_level() as i32,

@@ -1,4 +1,7 @@
-use crate::{app, reactor, reactor::particle::*};
+use crate::{
+    app,
+    reactor::{self, field, particle::*},
+};
 use bevy::prelude::*;
 
 pub struct StatePlugin;
@@ -78,24 +81,50 @@ fn state_action(
     mut particle_query: Query<(Entity, &mut Transform, &mut Particle), With<Particle>>,
     mut timer_query: Query<&mut reactor::ReactorTimer>,
     time: Res<Time>,
+    alpha_count_query: Query<&field::FieldAlphaCount, With<field::FieldAlphaCount>>,
     particle_tmm: Res<reactor::tmm::ParticleTMM>,
 ) {
     for mut timer in &mut timer_query {
         if timer.tick(time.delta()).just_finished() {
-            let mut total_alpha_count = 0;
-            for (_, _, particle) in particle_query.iter() {
-                if particle.particle_type() == ParticleType::Alpha {
-                    total_alpha_count = total_alpha_count + 1;
-                }
-            }
+            let alpha_count = alpha_count_query.single().0;
             for (entity, mut transform, mut particle) in particle_query.iter_mut() {
                 let new_pos = (*particle).travel();
                 transform.translation.x = new_pos.x;
                 transform.translation.y = new_pos.y;
                 match particle.particle_type() {
+                    ParticleType::Hyper => {
+                        if particle.tick_countdown() == 0 {
+                            if particle.level() == 1 {
+                                particle.update_level(6);
+                            } else {
+                                particle.update_level(-1);
+                            }
+                            particle.reset_countdown();
+                            if alpha_count > 10 {
+                                let new_pos = field::gen_random_pos_in_field(particle.radius());
+                                (*particle).jump(new_pos);
+                                transform.translation.x = new_pos.x;
+                                transform.translation.y = new_pos.y;
+                                control::build_particle_sprite(
+                                    &mut commands,
+                                    &particle_tmm,
+                                    DemoParticle,
+                                    Some(particle.pos()),
+                                    None,
+                                    Some(particle.level()),
+                                );
+                            }
+                        }
+                        hyper::update_particle_sprite(
+                            &mut commands,
+                            entity,
+                            particle.level_ratio(),
+                            particle.countdown_ratio(),
+                        );
+                    }
                     ParticleType::Trigger => {
                         transform.rotate_z(-time.delta_seconds() * 2.0);
-                        trigger::update_particle_level(particle.as_mut(), total_alpha_count);
+                        trigger::update_particle_level(particle.as_mut(), alpha_count);
                         if particle.tick_countdown() == 0 {
                             particle.reset_countdown();
                             let (_, _, angle) = transform.rotation.to_euler(EulerRot::XYZ);
