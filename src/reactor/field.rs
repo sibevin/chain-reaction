@@ -21,21 +21,21 @@ pub struct FieldAlphaCount(pub u32);
 #[derive(Component)]
 pub struct FieldScore(pub u32);
 
-pub fn get_field_rect() -> Rect {
+pub fn get_field_rect(padding: f32) -> Rect {
     Rect::new(
-        -reactor::FIELD_W / 2.0,
-        (-reactor::FIELD_H + reactor::FIELD_NAV_H) / 2.0,
-        reactor::FIELD_W / 2.0,
-        (reactor::FIELD_H + reactor::FIELD_NAV_H) / 2.0,
+        -reactor::FIELD_W / 2.0 + padding,
+        (-reactor::FIELD_H + reactor::FIELD_NAV_H) / 2.0 + padding,
+        reactor::FIELD_W / 2.0 - padding,
+        (reactor::FIELD_H + reactor::FIELD_NAV_H) / 2.0 - padding,
     )
 }
 
 pub fn gen_random_pos_in_field(padding: f32) -> Vec2 {
     let mut rng = thread_rng();
-    let rect = get_field_rect();
+    let rect = get_field_rect(padding);
     Vec2::new(
-        rng.gen_range(rect.min.x + padding..rect.max.x - padding),
-        rng.gen_range(rect.min.y + padding..rect.max.y - padding),
+        rng.gen_range(rect.min.x..rect.max.x),
+        rng.gen_range(rect.min.y..rect.max.y),
     )
 }
 

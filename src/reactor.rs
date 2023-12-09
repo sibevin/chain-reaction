@@ -19,6 +19,12 @@ pub enum ReactorState {
 #[derive(Component, Deref, DerefMut)]
 pub struct ReactorTimer(pub Timer);
 
+#[derive(Component)]
+pub struct ControlParticle;
+
+#[derive(Component)]
+pub struct RunningParticle;
+
 pub const U_SIZE: f32 = app::ui::SPACE_SIZE * 3.0;
 pub const U_COLOR: Color = Color::rgb(1.0, 0.84, 0.2);
 

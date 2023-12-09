@@ -156,7 +156,7 @@ impl Particle {
         self.ability.tick_countdown()
     }
     fn next_pos(pos: Vec2, v: Vec2, r: f32) -> Vec2 {
-        let field_rect = reactor::field::get_field_rect();
+        let field_rect = reactor::field::get_field_rect(0.0);
         let mut new_pos = pos + v;
         if new_pos.x + r > field_rect.max.x && v.x > 0.0 {
             new_pos.x = field_rect.max.x * 2.0 - new_pos.x - r * 2.0;
@@ -171,7 +171,7 @@ impl Particle {
         new_pos
     }
     fn next_v(pos: Vec2, v: Vec2, r: f32) -> Vec2 {
-        let field_rect = reactor::field::get_field_rect();
+        let field_rect = reactor::field::get_field_rect(0.0);
         let mut new_v = v;
         let new_pos = pos + v;
         if new_pos.x + r > field_rect.max.x && v.x > 0.0 {

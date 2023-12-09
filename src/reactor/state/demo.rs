@@ -18,9 +18,22 @@ impl Plugin for StatePlugin {
         )
         .add_systems(
             Update,
-            state_action.run_if(in_state(reactor::ReactorState::Demo)),
+            (
+                state_action,
+                reactor::field::timer::update_field,
+                reactor::field::alpha_count::update_field,
+                reactor::field::score::update_field,
+            )
+                .run_if(in_state(reactor::ReactorState::Demo)),
         )
-        .add_systems(OnExit(reactor::ReactorState::Demo), state_exit);
+        .add_systems(
+            OnExit(reactor::ReactorState::Demo),
+            (
+                state_exit,
+                reactor::field::timer::reset_field,
+                reactor::field::score::reset_field,
+            ),
+        );
     }
 }
 

@@ -3,7 +3,7 @@ use bevy_vector_shapes::prelude::*;
 
 const MIN_LEVEL: u8 = 1;
 const MAX_LEVEL: u8 = 5;
-const RADIUS: f32 = 8.0;
+pub const RADIUS: f32 = 8.0;
 const COLOR: Color = Color::rgb(1.0, 0.84, 0.2);
 
 pub struct Ability;

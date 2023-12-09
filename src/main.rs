@@ -15,14 +15,6 @@ fn main() {
                 reactor::field::score::init_field,
             ),
         )
-        .add_systems(
-            Update,
-            (
-                reactor::field::timer::update_field,
-                reactor::field::alpha_count::update_field,
-                reactor::field::score::update_field,
-            ),
-        )
         .add_plugins((
             app::init::InitPlugin,
             Shape2dPlugin::default(),
