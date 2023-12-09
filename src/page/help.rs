@@ -16,10 +16,10 @@ impl Plugin for PagePlugin {
 struct OnPage;
 
 #[derive(Component)]
-struct HelpPanel;
+pub struct HelpPanel(u8);
 
 #[derive(Component)]
-struct HelpDot(u8);
+pub struct HelpDot(u8);
 
 #[derive(Component)]
 enum ButtonAction {
@@ -102,8 +102,8 @@ fn page_setup(
                                     ..default()
                                 })
                                 .with_children(|parent| {
-                                    build_help_panel(parent);
                                     build_help_dots(parent);
+                                    build_help_panel(parent, &asset_server);
                                 });
                             app::ui::build_icon_btn(
                                 parent,
@@ -149,54 +149,78 @@ fn page_setup(
 
 fn page_action(
     interaction_query: Query<(&Interaction, &ButtonAction), (Changed<Interaction>, With<Button>)>,
+    mut help_panel_query: Query<(&mut HelpPanel, &mut UiImage), With<HelpPanel>>,
+    mut help_dot_query: Query<(&HelpDot, &mut BackgroundColor), With<HelpDot>>,
     mut game_state: ResMut<NextState<app::GameState>>,
+    asset_server: Res<AssetServer>,
 ) {
     for (interaction, action) in &interaction_query {
         if *interaction == Interaction::Pressed {
             match action {
                 ButtonAction::BackToMainMenu => game_state.set(app::GameState::Menu),
-                ButtonAction::PrevHelp => (),
-                ButtonAction::NextHelp => (),
+                ButtonAction::PrevHelp => {
+                    let (mut help_panel, mut image) = help_panel_query.single_mut();
+                    let prev_help = (help_panel.0 + HELP_COUNT - 1) % HELP_COUNT;
+                    help_panel.0 = prev_help;
+                    let icon_path = format!("images/help/{:0>2}.png", prev_help);
+                    let icon = asset_server.load(icon_path);
+                    image.texture = icon;
+                    for (help_dot, mut bg_color) in help_dot_query.iter_mut() {
+                        if help_dot.0 == prev_help {
+                            *bg_color = app::ui::MUTE_COLOR.into();
+                        } else {
+                            *bg_color = app::ui::BG_COLOR.into();
+                        }
+                    }
+                }
+                ButtonAction::NextHelp => {
+                    let (mut help_panel, mut image) = help_panel_query.single_mut();
+                    let next_help = (help_panel.0 + 1) % HELP_COUNT;
+                    help_panel.0 = next_help;
+                    let icon_path = format!("images/help/{:0>2}.png", next_help);
+                    let icon = asset_server.load(icon_path);
+                    image.texture = icon;
+                    for (help_dot, mut bg_color) in help_dot_query.iter_mut() {
+                        if help_dot.0 == next_help {
+                            *bg_color = app::ui::MUTE_COLOR.into();
+                        } else {
+                            *bg_color = app::ui::BG_COLOR.into();
+                        }
+                    }
+                }
                 ButtonAction::Start => game_state.set(app::GameState::Game),
             }
         }
     }
 }
 
-const HELP_PANEL_SIZE: f32 = 150.0;
-const MTP_BALL_SIZE: f32 = 5.0;
-const MTP_BALL_POS: f32 = (HELP_PANEL_SIZE - MTP_BALL_SIZE) / 2.0;
-const U_COLOR: Color = Color::rgb(1.0, 0.84, 0.2);
+const HELP_PANEL_SIZE: f32 = 156.0;
+const HELP_COUNT: u8 = 12;
 
-fn build_help_panel(parent: &mut ChildBuilder) {
+fn build_help_panel(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
     parent
-        .spawn((
-            NodeBundle {
-                style: Style {
-                    width: app::ui::px_p(HELP_PANEL_SIZE),
-                    height: app::ui::px_p(HELP_PANEL_SIZE),
-                    border: UiRect::all(app::ui::px_p(0.5)),
-                    ..default()
-                },
-                background_color: app::ui::BG_COLOR.into(),
-                border_color: app::ui::MUTE_COLOR.into(),
+        .spawn((NodeBundle {
+            style: Style {
+                width: app::ui::px_p(HELP_PANEL_SIZE),
+                height: app::ui::px_p(HELP_PANEL_SIZE),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                border: UiRect::all(app::ui::px_p(0.5)),
                 ..default()
             },
-            HelpPanel,
-        ))
+            background_color: app::ui::BG_COLOR.into(),
+            border_color: app::ui::MUTE_COLOR.into(),
+            ..default()
+        },))
         .with_children(|parent| {
-            parent.spawn((NodeBundle {
-                style: Style {
-                    position_type: PositionType::Absolute,
-                    width: app::ui::px_p(MTP_BALL_SIZE),
-                    height: app::ui::px_p(MTP_BALL_SIZE),
-                    top: app::ui::px_p(MTP_BALL_POS),
-                    left: app::ui::px_p(MTP_BALL_POS),
+            let icon = asset_server.load("images/help/00.png");
+            parent.spawn((
+                ImageBundle {
+                    image: UiImage::new(icon),
                     ..default()
                 },
-                background_color: U_COLOR.into(),
-                ..default()
-            },));
+                HelpPanel(0),
+            ));
         });
 }
 
@@ -206,112 +230,39 @@ fn build_help_dots(parent: &mut ChildBuilder) {
     parent
         .spawn((NodeBundle {
             style: Style {
+                width: Val::Percent(100.0),
                 align_items: AlignItems::Center,
-                justify_content: JustifyContent::Start,
+                justify_content: JustifyContent::Center,
                 ..default()
             },
             ..default()
         },))
         .with_children(|parent| {
-            parent.spawn((
-                NodeBundle {
-                    style: Style {
-                        width: app::ui::px_p(HELP_DOT_SIZE),
-                        height: app::ui::px_p(HELP_DOT_SIZE),
-                        margin: UiRect::new(
-                            app::ui::px_p(0.0),
-                            app::ui::px_p(4.0),
-                            app::ui::px_p(4.0),
-                            app::ui::px_p(0.0),
-                        ),
-                        border: UiRect::all(app::ui::px_p(0.5)),
+            for i in 0..=HELP_COUNT {
+                let mut bg_color = app::ui::BG_COLOR.into();
+                if i == 0 {
+                    bg_color = app::ui::MUTE_COLOR.into();
+                }
+                parent.spawn((
+                    NodeBundle {
+                        style: Style {
+                            width: app::ui::px_p(HELP_DOT_SIZE),
+                            height: app::ui::px_p(HELP_DOT_SIZE),
+                            margin: UiRect::new(
+                                app::ui::px_p(2.0),
+                                app::ui::px_p(2.0),
+                                app::ui::px_p(0.0),
+                                app::ui::px_p(4.0),
+                            ),
+                            border: UiRect::all(app::ui::px_p(0.5)),
+                            ..default()
+                        },
+                        background_color: bg_color,
+                        border_color: app::ui::MUTE_COLOR.into(),
                         ..default()
                     },
-                    background_color: app::ui::BG_COLOR.into(),
-                    border_color: app::ui::MUTE_COLOR.into(),
-                    ..default()
-                },
-                HelpDot(0),
-            ));
-            parent.spawn((
-                NodeBundle {
-                    style: Style {
-                        width: app::ui::px_p(HELP_DOT_SIZE),
-                        height: app::ui::px_p(HELP_DOT_SIZE),
-                        margin: UiRect::new(
-                            app::ui::px_p(0.0),
-                            app::ui::px_p(4.0),
-                            app::ui::px_p(4.0),
-                            app::ui::px_p(0.0),
-                        ),
-                        border: UiRect::all(app::ui::px_p(0.5)),
-                        ..default()
-                    },
-                    background_color: app::ui::MUTE_COLOR.into(),
-                    border_color: app::ui::MUTE_COLOR.into(),
-                    ..default()
-                },
-                HelpDot(0),
-            ));
-            parent.spawn((
-                NodeBundle {
-                    style: Style {
-                        width: app::ui::px_p(HELP_DOT_SIZE),
-                        height: app::ui::px_p(HELP_DOT_SIZE),
-                        margin: UiRect::new(
-                            app::ui::px_p(0.0),
-                            app::ui::px_p(4.0),
-                            app::ui::px_p(4.0),
-                            app::ui::px_p(0.0),
-                        ),
-                        border: UiRect::all(app::ui::px_p(0.5)),
-                        ..default()
-                    },
-                    background_color: app::ui::BG_COLOR.into(),
-                    border_color: app::ui::MUTE_COLOR.into(),
-                    ..default()
-                },
-                HelpDot(0),
-            ));
-            parent.spawn((
-                NodeBundle {
-                    style: Style {
-                        width: app::ui::px_p(HELP_DOT_SIZE),
-                        height: app::ui::px_p(HELP_DOT_SIZE),
-                        margin: UiRect::new(
-                            app::ui::px_p(0.0),
-                            app::ui::px_p(4.0),
-                            app::ui::px_p(4.0),
-                            app::ui::px_p(0.0),
-                        ),
-                        border: UiRect::all(app::ui::px_p(0.5)),
-                        ..default()
-                    },
-                    background_color: app::ui::BG_COLOR.into(),
-                    border_color: app::ui::MUTE_COLOR.into(),
-                    ..default()
-                },
-                HelpDot(0),
-            ));
-            parent.spawn((
-                NodeBundle {
-                    style: Style {
-                        width: app::ui::px_p(HELP_DOT_SIZE),
-                        height: app::ui::px_p(HELP_DOT_SIZE),
-                        margin: UiRect::new(
-                            app::ui::px_p(0.0),
-                            app::ui::px_p(4.0),
-                            app::ui::px_p(4.0),
-                            app::ui::px_p(0.0),
-                        ),
-                        border: UiRect::all(app::ui::px_p(0.5)),
-                        ..default()
-                    },
-                    background_color: app::ui::BG_COLOR.into(),
-                    border_color: app::ui::MUTE_COLOR.into(),
-                    ..default()
-                },
-                HelpDot(0),
-            ));
+                    HelpDot(i),
+                ));
+            }
         });
 }

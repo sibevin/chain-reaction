@@ -92,7 +92,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "itch.io",
                                         Some("house-line-light"),
                                         Some("https://sibevin.itch.io/chain-reaction"),
-                                        false,
+                                        "default",
                                     );
                                     build_about_link(
                                         parent,
@@ -100,7 +100,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "github.com",
                                         Some("github-logo-light"),
                                         Some("https://github.com/sibevin/chain-reaction"),
-                                        false,
+                                        "default",
                                     );
                                     page::build_sep_title(
                                         parent,
@@ -114,7 +114,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "Kait Wang",
                                         None,
                                         None,
-                                        false,
+                                        "default",
                                     );
                                     page::build_sep_title(
                                         parent,
@@ -128,7 +128,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "Kait Wang",
                                         None,
                                         None,
-                                        false,
+                                        "default",
                                     );
                                     page::build_sep_title(
                                         parent,
@@ -142,7 +142,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "Miya",
                                         None,
                                         None,
-                                        false,
+                                        "default",
                                     );
                                 });
                             parent
@@ -167,7 +167,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "Phosphor Icons",
                                         Some("globe-light"),
                                         Some("https://phosphoricons.com/"),
-                                        false,
+                                        "default",
                                     );
                                     page::build_sep_title(
                                         parent,
@@ -181,7 +181,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "SYN NOVA",
                                         Some("globe-light"),
                                         Some("https://www.fontsquirrel.com/fonts/syn-nova"),
-                                        false,
+                                        "default",
                                     );
                                     build_about_link(
                                         parent,
@@ -189,7 +189,15 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "Silkscreen",
                                         Some("globe-light"),
                                         Some("https://kottke.org/plus/type/silkscreen/index.html"),
-                                        true,
+                                        "digit",
+                                    );
+                                    build_about_link(
+                                        parent,
+                                        &asset_server,
+                                        "VAG-HandWritten",
+                                        Some("globe-light"),
+                                        Some("https://www.fontsquirrel.com/fonts/VAG-HandWritten"),
+                                        "hw",
                                     );
                                     page::build_sep_title(
                                         parent,
@@ -205,7 +213,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         Some(
                                             "https://pixabay.com/music/dance-carnival-10957/",
                                         ),
-                                        false,
+                                        "default",
                                     );
                                     build_about_link(
                                         parent,
@@ -215,7 +223,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         Some(
                                             "https://pixabay.com/sound-effects/heavy-cineamtic-hit-166888/",
                                         ),
-                                        false,
+                                        "default",
                                     );
                                     build_about_link(
                                         parent,
@@ -225,7 +233,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         Some(
                                             "https://pixabay.com/sound-effects/pick-92276/",
                                         ),
-                                        false,
+                                        "default",
                                     );
                                     build_about_link(
                                         parent,
@@ -235,7 +243,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         Some(
                                             "https://pixabay.com/sound-effects/item-pick-up-38258/"
                                         ),
-                                        false,
+                                        "default",
                                     );
                                     build_about_link(
                                         parent,
@@ -245,7 +253,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         Some(
                                             "https://pixabay.com/sound-effects/glass-shatter-3-100155/"
                                         ),
-                                        false,
+                                        "default",
                                     );
                                 });
                         });
@@ -287,7 +295,7 @@ fn build_about_link(
     text: &str,
     icon: Option<&str>,
     link: Option<&str>,
-    digit_font: bool,
+    font: &str,
 ) -> Entity {
     let url = if let Some(link) = link {
         Some(String::from(link))
@@ -336,10 +344,12 @@ fn build_about_link(
                             ..default()
                         });
                     }
-                    let font = if digit_font {
+                    let font = if font == "default" {
+                        app::ui::FONT
+                    } else if font == "digit" {
                         app::ui::FONT_DIGIT
                     } else {
-                        app::ui::FONT
+                        app::ui::FONT_HW
                     };
                     parent.spawn(
                         TextBundle::from_section(

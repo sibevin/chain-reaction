@@ -19,6 +19,7 @@ pub const BTN_PRESSED_BG: Color = Color::rgb(0.45, 0.45, 0.45);
 
 pub const FONT: &str = "fonts/SYNNova-Regular.otf";
 pub const FONT_DIGIT: &str = "fonts/slkscr.ttf";
+pub const FONT_HW: &str = "fonts/VAG-HandWritten.otf";
 
 pub fn px_p(size: f32) -> Val {
     return Val::Px(SPACE_SIZE * size);
