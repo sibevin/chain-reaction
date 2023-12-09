@@ -197,6 +197,56 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "Audio",
                                         "microphone-fill",
                                     );
+                                    build_about_link(
+                                        parent,
+                                        &asset_server,
+                                        "Carnival - By SoundCarousel",
+                                        Some("globe-light"),
+                                        Some(
+                                            "https://pixabay.com/music/dance-carnival-10957/",
+                                        ),
+                                        false,
+                                    );
+                                    build_about_link(
+                                        parent,
+                                        &asset_server,
+                                        "Heavy Cineamtic Hit - By LordSonny",
+                                        Some("globe-light"),
+                                        Some(
+                                            "https://pixabay.com/sound-effects/heavy-cineamtic-hit-166888/",
+                                        ),
+                                        false,
+                                    );
+                                    build_about_link(
+                                        parent,
+                                        &asset_server,
+                                        "Pick - From Pixabay",
+                                        Some("globe-light"),
+                                        Some(
+                                            "https://pixabay.com/sound-effects/pick-92276/",
+                                        ),
+                                        false,
+                                    );
+                                    build_about_link(
+                                        parent,
+                                        &asset_server,
+                                        "Item Pick Up - From Pixabay",
+                                        Some("globe-light"),
+                                        Some(
+                                            "https://pixabay.com/sound-effects/item-pick-up-38258/"
+                                        ),
+                                        false,
+                                    );
+                                    build_about_link(
+                                        parent,
+                                        &asset_server,
+                                        "Glass Shatter 3 - From Pixabay",
+                                        Some("globe-light"),
+                                        Some(
+                                            "https://pixabay.com/sound-effects/glass-shatter-3-100155/"
+                                        ),
+                                        false,
+                                    );
                                 });
                         });
                     app::ui::build_icon_btn(
@@ -265,7 +315,7 @@ fn build_about_link(
                     style: Style {
                         align_items: AlignItems::Center,
                         justify_content: JustifyContent::Center,
-                        padding: UiRect::all(app::ui::px_p(1.0)),
+                        padding: UiRect::all(app::ui::px_p(0.5)),
                         ..default()
                     },
                     background_color: app::ui::BG_COLOR.into(),

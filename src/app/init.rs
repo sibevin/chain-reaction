@@ -31,7 +31,12 @@ impl Plugin for InitPlugin {
     }
 }
 
-pub fn startup(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn startup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut audio_se_asset: ResMut<app::audio::AudioSeAsset>,
+) {
     commands.spawn(Camera2dBundle::default());
     reactor::field::build_reactor_field(&mut commands, &asset_server);
+    app::audio::init_audio_se_asset(&mut audio_se_asset, &asset_server)
 }

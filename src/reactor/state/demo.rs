@@ -44,9 +44,6 @@ struct DemoParticle;
 struct DemoCover;
 
 fn state_setup(mut commands: Commands) {
-    // for _ in 1..100 {
-    //     alpha::build_particle_sprite(&mut commands, &particle_tmm, DemoParticle, None, None, None);
-    // }
     hyper::build_particle_sprite(&mut commands, DemoParticle, None, None, None);
     trigger::build_particle_sprite(&mut commands, DemoParticle, None, None, None);
     commands.spawn((
@@ -56,7 +53,7 @@ fn state_setup(mut commands: Commands) {
                 height: Val::Percent(100.0),
                 ..default()
             },
-            // background_color: app::ui::COVER_COLOR.into(),
+            background_color: app::ui::COVER_COLOR.into(),
             ..default()
         },
         DemoCover,

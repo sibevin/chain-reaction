@@ -11,6 +11,7 @@ fn main() {
             Startup,
             (
                 app::init::startup,
+                app::audio::init_audio,
                 reactor::timer::init_timer,
                 reactor::field::score::init_field,
             ),
@@ -19,6 +20,7 @@ fn main() {
             app::init::InitPlugin,
             Shape2dPlugin::default(),
             app::settings::SettingsPlugin,
+            app::audio::AudioSeAssetPlugin,
             reactor::state::demo::StatePlugin,
             page::menu::PagePlugin,
             page::game::PagePlugin,

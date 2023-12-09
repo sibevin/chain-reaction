@@ -44,6 +44,7 @@ enum ButtonAction {
     BackToMainMenu,
     Toggle(String),
     SetValue(String),
+    PlaySe,
 }
 
 fn page_setup(
@@ -148,12 +149,29 @@ fn page_setup(
                                                 ButtonAction::Toggle(String::from("se")),
                                                 settings.is_enabled("se"),
                                             );
-                                            build_range_bar(
-                                                parent,
-                                                &asset_server,
-                                                ButtonAction::SetValue(String::from("se")),
-                                                settings.get_value("se"),
-                                            );
+                                            parent
+                                                .spawn(NodeBundle {
+                                                    style: Style {
+                                                        align_items: AlignItems::Center,
+                                                        ..default()
+                                                    },
+                                                    ..default()
+                                                })
+                                                .with_children(|parent| {
+                                                    app::ui::build_icon_btn(
+                                                        parent,
+                                                        &asset_server,
+                                                        ButtonAction::PlaySe,
+                                                        Style::default(),
+                                                        "play-light",
+                                                    );
+                                                    build_range_bar(
+                                                        parent,
+                                                        &asset_server,
+                                                        ButtonAction::SetValue(String::from("se")),
+                                                        settings.get_value("se"),
+                                                    );
+                                                });
                                             page::build_sep_title(
                                                 parent,
                                                 &asset_server,
@@ -231,6 +249,9 @@ fn page_action(
     mut settings: ResMut<app::settings::Settings>,
     asset_server: Res<AssetServer>,
     mut mouse_motion_events: EventReader<input::mouse::MouseMotion>,
+    mut commands: Commands,
+    audio_bgm_query: Query<&AudioSink, With<app::audio::AudioBgm>>,
+    audio_se_asset: Res<app::audio::AudioSeAsset>,
 ) {
     for (interaction, action, children) in &interaction_query {
         match *interaction {
@@ -265,7 +286,23 @@ fn page_action(
                         } else {
                             window.mode = WindowMode::Windowed
                         }
+                    } else if target == "bgm" {
+                        if let Ok(sink) = audio_bgm_query.get_single() {
+                            if is_enabled {
+                                sink.play();
+                            } else {
+                                sink.pause();
+                            }
+                        }
                     }
+                }
+                ButtonAction::PlaySe => {
+                    app::audio::play_se(
+                        app::audio::AudioSe::Boom,
+                        &mut commands,
+                        &audio_se_asset,
+                        settings.as_ref(),
+                    );
                 }
                 _ => (),
             },
@@ -281,7 +318,11 @@ fn page_action(
                             settings.get_value(target) as i8 + (event.delta.x * 0.5) as i8;
                         settings.set_value(target, updated_value);
                         let value = settings.get_value(target);
-
+                        if target == "bgm" {
+                            if let Ok(sink) = audio_bgm_query.get_single() {
+                                sink.set_volume(app::audio::to_volume(value));
+                            }
+                        }
                         let mut is_found = false;
                         let range_bar_w = calculate_range_bar_width(value);
                         for (bar_entity, mut bar_style) in range_value_bar_query.iter_mut() {

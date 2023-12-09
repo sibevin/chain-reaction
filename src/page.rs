@@ -9,7 +9,7 @@ pub mod settings;
 
 const PAGE_PADDING: f32 = 4.0;
 const PAGE_TITLE_RATIO: f32 = 1.2;
-const SEP_W: f32 = 450.0;
+const SEP_W: f32 = 500.0;
 
 pub fn build_page_layout() -> NodeBundle {
     NodeBundle {
@@ -105,7 +105,7 @@ pub fn build_sep_title(
                 width: Val::Px(SEP_W),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
-                margin: UiRect::vertical(app::ui::px_p(3.0)),
+                margin: UiRect::vertical(app::ui::px_p(2.0)),
                 ..default()
             },
             ..default()
