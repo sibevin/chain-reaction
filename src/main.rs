@@ -27,7 +27,6 @@ fn main() {
             app::init::InitPlugin,
             Shape2dPlugin::default(),
             app::settings::SettingsPlugin,
-            reactor::tmm::ParticleTmmPlugin,
             reactor::state::demo::StatePlugin,
             page::menu::PagePlugin,
             page::game::PagePlugin,

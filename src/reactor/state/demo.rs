@@ -30,25 +30,12 @@ struct DemoParticle;
 #[derive(Component)]
 struct DemoCover;
 
-fn state_setup(mut commands: Commands, particle_tmm: Res<reactor::tmm::ParticleTMM>) {
+fn state_setup(mut commands: Commands) {
     // for _ in 1..100 {
     //     alpha::build_particle_sprite(&mut commands, &particle_tmm, DemoParticle, None, None, None);
     // }
-    // for _ in 1..5 {
-    //     control::build_particle_sprite(
-    //         &mut commands,
-    //         &particle_tmm,
-    //         DemoParticle,
-    //         None,
-    //         None,
-    //         None,
-    //     );
-    // }
-    hyper::build_particle_sprite(&mut commands, &particle_tmm, DemoParticle, None, None, None);
-    trigger::build_particle_sprite(&mut commands, &particle_tmm, DemoParticle, None, None, None);
-    for _ in 1..5 {
-        uou::build_particle_sprite(&mut commands, &particle_tmm, DemoParticle, None, None, None);
-    }
+    hyper::build_particle_sprite(&mut commands, DemoParticle, None, None, None);
+    trigger::build_particle_sprite(&mut commands, DemoParticle, None, None, None);
     commands.spawn((
         NodeBundle {
             style: Style {
@@ -56,7 +43,7 @@ fn state_setup(mut commands: Commands, particle_tmm: Res<reactor::tmm::ParticleT
                 height: Val::Percent(100.0),
                 ..default()
             },
-            background_color: app::ui::COVER_COLOR.into(),
+            // background_color: app::ui::COVER_COLOR.into(),
             ..default()
         },
         DemoCover,
@@ -82,7 +69,6 @@ fn state_action(
     mut timer_query: Query<&mut reactor::ReactorTimer>,
     time: Res<Time>,
     alpha_count_query: Query<&field::FieldAlphaCount, With<field::FieldAlphaCount>>,
-    particle_tmm: Res<reactor::tmm::ParticleTMM>,
 ) {
     for mut timer in &mut timer_query {
         if timer.tick(time.delta()).just_finished() {
@@ -94,12 +80,6 @@ fn state_action(
                 match particle.particle_type() {
                     ParticleType::Hyper => {
                         if particle.tick_countdown() == 0 {
-                            if particle.level() == 1 {
-                                particle.update_level(6);
-                            } else {
-                                particle.update_level(-1);
-                            }
-                            particle.reset_countdown();
                             if alpha_count > 10 {
                                 let new_pos = field::gen_random_pos_in_field(particle.radius());
                                 (*particle).jump(new_pos);
@@ -107,13 +87,18 @@ fn state_action(
                                 transform.translation.y = new_pos.y;
                                 control::build_particle_sprite(
                                     &mut commands,
-                                    &particle_tmm,
                                     DemoParticle,
                                     Some(particle.pos()),
                                     None,
                                     Some(particle.level()),
                                 );
                             }
+                            if particle.level() == 1 {
+                                particle.update_level(5);
+                            } else {
+                                particle.update_level(-1);
+                            }
+                            particle.reset_countdown();
                         }
                         hyper::update_particle_sprite(
                             &mut commands,
@@ -132,7 +117,6 @@ fn state_action(
                             let direction = Vec2::new(angle.cos(), angle.sin());
                             alpha::build_particle_sprite(
                                 &mut commands,
-                                &particle_tmm,
                                 DemoParticle,
                                 Some(particle.pos() + direction * particle.radius()),
                                 Some(Particle::gen_random_v(Some(direction))),

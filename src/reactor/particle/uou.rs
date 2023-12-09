@@ -1,5 +1,5 @@
-use crate::reactor::{field, particle::*, tmm::*};
-use bevy::sprite::MaterialMesh2dBundle;
+use crate::reactor::{field, particle::*};
+use bevy_vector_shapes::prelude::*;
 
 const MIN_LEVEL: u8 = 1;
 const MAX_LEVEL: u8 = 5;
@@ -32,24 +32,8 @@ impl ParticleAbility for Ability {
     }
 }
 
-pub fn build_particle_tmm(
-    asset_server: &Res<AssetServer>,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
-) -> TMM {
-    let texture = asset_server.load("images/icons/copy-fill.png");
-    let mesh = meshes.add((shape::Circle::new(RADIUS)).into());
-    let material = materials.add(COLOR.into());
-    TMM {
-        texture,
-        mesh,
-        material,
-    }
-}
-
 pub fn build_particle_sprite(
     commands: &mut Commands,
-    particle_tmm: &Res<ParticleTMM>,
     bundle: impl Bundle,
     pos: Option<Vec2>,
     v: Option<Vec2>,
@@ -60,7 +44,6 @@ pub fn build_particle_sprite(
         None => field::gen_random_pos_in_field(RADIUS * 2.0),
     };
     let particle = Particle::create(ParticleType::Uou, pos, v, level);
-    let tmm = particle_tmm.get(ParticleType::Uou).as_ref().unwrap();
     commands
         .spawn((
             SpriteBundle {
@@ -71,11 +54,14 @@ pub fn build_particle_sprite(
             particle,
         ))
         .with_children(|parent| {
-            parent.spawn(MaterialMesh2dBundle {
-                mesh: tmm.mesh.clone().into(),
-                material: tmm.material.clone(),
-                global_transform: GlobalTransform::from_xyz(0.0, 0.0, 0.0),
-                ..Default::default()
-            });
+            parent.spawn(ShapeBundle::circle(
+                &ShapeConfig {
+                    transform: Transform::from_xyz(0.0, 0.0, 3.0),
+                    color: COLOR,
+                    hollow: false,
+                    ..ShapeConfig::default_2d()
+                },
+                RADIUS,
+            ));
         });
 }

@@ -1,4 +1,4 @@
-use crate::reactor::{field, particle::*, tmm::*};
+use crate::reactor::{field, particle::*};
 use bevy_vector_shapes::prelude::*;
 use std::f32::consts::TAU;
 
@@ -39,7 +39,7 @@ impl ParticleAbility for Ability {
         self.countdown
     }
     fn max_countdown(&self, level: u8) -> u32 {
-        2 ^ (level as u32) * 50
+        (2 as u32).pow(level as u32) * 50
     }
     fn reset_countdown(&mut self, level: u8) {
         self.countdown = self.max_countdown(level);
@@ -54,24 +54,8 @@ impl ParticleAbility for Ability {
     }
 }
 
-pub fn build_particle_tmm(
-    asset_server: &Res<AssetServer>,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
-) -> TMM {
-    let texture = asset_server.load("images/icons/copy-fill.png");
-    let mesh = meshes.add((shape::Box::new(RADIUS * 1.6, RADIUS * 1.6, 0.0)).into());
-    let material = materials.add(COLOR.into());
-    TMM {
-        texture,
-        mesh,
-        material,
-    }
-}
-
 pub fn build_particle_sprite(
     commands: &mut Commands,
-    _particle_tmm: &Res<ParticleTMM>,
     bundle: impl Bundle,
     pos: Option<Vec2>,
     v: Option<Vec2>,
@@ -124,7 +108,8 @@ pub fn update_particle_sprite(commands: &mut Commands, root_entity: Entity, side
             &ShapeConfig {
                 transform: Transform::from_xyz(0.0, RADIUS * 1.5, 3.0),
                 color: COLOR,
-                hollow: false,
+                hollow: true,
+                thickness: SIDE_THICKNESS,
                 ..ShapeConfig::default_2d()
             },
             alpha::RADIUS,
@@ -136,13 +121,13 @@ const LEVEL_INIT_BIAS_COUNT: u32 = 10;
 
 pub fn update_particle_level(particle: &mut Particle, total_alpha_count: u32) {
     let mut level = 0;
-    if total_alpha_count < LEVEL_INIT_BIAS_COUNT + 2 ^ (MIN_LEVEL + 1) as u32 {
+    if total_alpha_count < LEVEL_INIT_BIAS_COUNT + (2 as u32).pow((MIN_LEVEL + 1) as u32) {
         level = MIN_LEVEL;
     }
     if level == 0 {
         for i in MIN_LEVEL..=MAX_LEVEL {
-            if total_alpha_count >= LEVEL_INIT_BIAS_COUNT + 2 ^ (i + 1) as u32
-                && total_alpha_count < LEVEL_INIT_BIAS_COUNT + 2 ^ (i + 2) as u32
+            if total_alpha_count >= LEVEL_INIT_BIAS_COUNT + (2 as u32).pow((i + 1) as u32)
+                && total_alpha_count < LEVEL_INIT_BIAS_COUNT + (2 as u32).pow((i + 2) as u32)
             {
                 level = i;
                 break;

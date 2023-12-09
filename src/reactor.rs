@@ -6,7 +6,6 @@ pub mod hit;
 pub mod particle;
 pub mod state;
 pub mod timer;
-pub mod tmm;
 
 #[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
 pub enum ReactorState {

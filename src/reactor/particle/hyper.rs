@@ -1,6 +1,6 @@
 use crate::{
     app,
-    reactor::{field, particle::*, tmm::*},
+    reactor::{field, particle::*},
 };
 use bevy_vector_shapes::prelude::*;
 use std::f32::consts::{PI, TAU};
@@ -42,7 +42,8 @@ impl ParticleAbility for Ability {
         self.countdown
     }
     fn max_countdown(&self, level: u8) -> u32 {
-        2 ^ (MAX_LEVEL - level + 1) as u32 * 100
+        let countdown_pow = (MAX_LEVEL - level + 1) as u32;
+        (2 as u32).pow(countdown_pow) * 10
     }
     fn reset_countdown(&mut self, level: u8) {
         self.countdown = self.max_countdown(level);
@@ -57,24 +58,8 @@ impl ParticleAbility for Ability {
     }
 }
 
-pub fn build_particle_tmm(
-    asset_server: &Res<AssetServer>,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
-) -> TMM {
-    let texture = asset_server.load("images/icons/copy-fill.png");
-    let mesh = meshes.add((shape::Box::new(RADIUS * 1.6, RADIUS * 1.6, 0.0)).into());
-    let material = materials.add(COLOR.into());
-    TMM {
-        texture,
-        mesh,
-        material,
-    }
-}
-
 pub fn build_particle_sprite(
     commands: &mut Commands,
-    _particle_tmm: &Res<ParticleTMM>,
     bundle: impl Bundle,
     pos: Option<Vec2>,
     v: Option<Vec2>,
@@ -139,7 +124,7 @@ pub fn update_particle_sprite(
             start_angle,
             start_angle + TAU * level_ratio,
         ));
-        for i in 1..MAX_LEVEL {
+        for i in 1..=MAX_LEVEL {
             let angle = PI * 2.0 * i as f32 / MAX_LEVEL as f32;
             parent.spawn(ShapeBundle::line(
                 &ShapeConfig {
