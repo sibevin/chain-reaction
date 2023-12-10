@@ -195,7 +195,7 @@ fn page_action(
 }
 
 const HELP_PANEL_SIZE: f32 = 156.0;
-const HELP_COUNT: u8 = 12;
+const HELP_COUNT: u8 = 14;
 
 fn build_help_panel(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
     parent
@@ -238,7 +238,7 @@ fn build_help_dots(parent: &mut ChildBuilder) {
             ..default()
         },))
         .with_children(|parent| {
-            for i in 0..=HELP_COUNT {
+            for i in 0..HELP_COUNT {
                 let mut bg_color = app::ui::BG_COLOR.into();
                 if i == 0 {
                     bg_color = app::ui::MUTE_COLOR.into();

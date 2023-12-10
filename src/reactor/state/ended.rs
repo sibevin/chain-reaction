@@ -1,20 +1,20 @@
 use crate::{app, reactor};
-use bevy::{app::AppExit, prelude::*};
+use bevy::prelude::*;
 
 pub struct StatePlugin;
 
 impl Plugin for StatePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            OnEnter(reactor::ReactorState::Paused),
+            OnEnter(reactor::ReactorState::Ended),
             (state_setup, app::audio::reduce_bgm_volume),
         )
         .add_systems(
             Update,
-            state_action.run_if(in_state(reactor::ReactorState::Paused)),
+            state_action.run_if(in_state(reactor::ReactorState::Ended)),
         )
         .add_systems(
-            OnExit(reactor::ReactorState::Paused),
+            OnExit(reactor::ReactorState::Ended),
             (app::audio::roll_bgm_volume_back, state_exit),
         );
     }
@@ -25,9 +25,7 @@ struct StateRootUi;
 
 #[derive(Component)]
 enum ButtonAction {
-    Resume,
-    Abort,
-    Quit,
+    BackToMenu,
 }
 
 fn state_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -45,57 +43,57 @@ fn state_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     justify_content: JustifyContent::Center,
                     ..default()
                 },
-                background_color: app::ui::COVER_COLOR.into(),
                 ..default()
             },
             StateRootUi,
         ))
         .with_children(|parent| {
-            parent.spawn(
-                TextBundle::from_section(
-                    "Paused",
-                    TextStyle {
-                        font: asset_server.load(app::ui::FONT),
-                        font_size: app::ui::FONT_SIZE * 2.0,
-                        color: app::ui::FG_COLOR,
-                        ..default()
-                    },
-                )
-                .with_style(Style {
-                    margin: UiRect::bottom(app::ui::px_p(10.0)),
-                    ..default()
-                }),
-            );
             parent
-                .spawn(NodeBundle {
+                .spawn((NodeBundle {
                     style: Style {
+                        position_type: PositionType::Absolute,
+                        width: Val::Percent(100.0),
+                        height: Val::Percent(100.0),
                         flex_direction: FlexDirection::Column,
                         align_items: AlignItems::Center,
+                        justify_content: JustifyContent::Center,
                         ..default()
                     },
                     ..default()
-                })
+                },))
                 .with_children(|parent| {
-                    app::ui::build_menu_entry(
+                    parent.spawn(TextBundle::from_section(
+                        "Game Over",
+                        TextStyle {
+                            font: asset_server.load(app::ui::FONT),
+                            font_size: app::ui::FONT_SIZE * 3.0,
+                            color: Color::rgba(1.0, 0.0, 0.0, 0.8),
+                            ..default()
+                        },
+                    ));
+                });
+            parent
+                .spawn((NodeBundle {
+                    style: Style {
+                        position_type: PositionType::Absolute,
+                        width: Val::Px(app::WINDOW_W),
+                        height: Val::Px(app::WINDOW_H),
+                        ..default()
+                    },
+                    ..default()
+                },))
+                .with_children(|parent| {
+                    app::ui::build_icon_btn(
                         parent,
                         &asset_server,
-                        ButtonAction::Resume,
-                        "Resume",
-                        "play-light",
-                    );
-                    app::ui::build_menu_entry(
-                        parent,
-                        &asset_server,
-                        ButtonAction::Abort,
-                        "Abort",
+                        ButtonAction::BackToMenu,
+                        Style {
+                            position_type: PositionType::Absolute,
+                            left: Val::Px(18.0),
+                            bottom: Val::Px(18.0),
+                            ..default()
+                        },
                         "arrow-left-light",
-                    );
-                    app::ui::build_menu_entry(
-                        parent,
-                        &asset_server,
-                        ButtonAction::Quit,
-                        "Quit",
-                        "sign-out-light",
                     );
                 });
         });
@@ -108,15 +106,11 @@ fn state_exit(to_despawn: Query<Entity, With<StateRootUi>>, commands: Commands) 
 fn state_action(
     interaction_query: Query<(&Interaction, &ButtonAction), (Changed<Interaction>, With<Button>)>,
     mut game_state: ResMut<NextState<app::GameState>>,
-    mut reactor_state: ResMut<NextState<reactor::ReactorState>>,
-    mut app_exit_events: EventWriter<AppExit>,
 ) {
     for (interaction, action) in &interaction_query {
         if *interaction == Interaction::Pressed {
             match action {
-                ButtonAction::Resume => reactor_state.set(reactor::ReactorState::Running),
-                ButtonAction::Abort => game_state.set(app::GameState::Menu),
-                ButtonAction::Quit => app_exit_events.send(AppExit),
+                ButtonAction::BackToMenu => game_state.set(app::GameState::Menu),
             }
         }
     }

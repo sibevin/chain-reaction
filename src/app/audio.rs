@@ -72,12 +72,31 @@ pub fn init_audio(mut commands: Commands, asset_server: Res<AssetServer>) {
             settings: PlaybackSettings {
                 mode: bevy::audio::PlaybackMode::Loop,
                 volume: Volume::Absolute(VolumeLevel::new(to_volume(50))),
+                paused: false,
                 ..default()
             },
             ..default()
         },
         AudioBgm,
     ));
+}
+
+pub fn reduce_bgm_volume(
+    settings: Res<settings::Settings>,
+    audio_bgm_query: Query<&AudioSink, With<AudioBgm>>,
+) {
+    if let Ok(sink) = audio_bgm_query.get_single() {
+        sink.set_volume(to_volume(settings.get_value("bgm")) / 4.0);
+    }
+}
+
+pub fn roll_bgm_volume_back(
+    settings: Res<settings::Settings>,
+    audio_bgm_query: Query<&AudioSink, With<AudioBgm>>,
+) {
+    if let Ok(sink) = audio_bgm_query.get_single() {
+        sink.set_volume(to_volume(settings.get_value("bgm")));
+    }
 }
 
 pub fn to_volume(settings_value: u8) -> f32 {

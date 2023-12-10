@@ -1,8 +1,9 @@
 use crate::{
     app,
-    reactor::{self, field, particle::*},
+    reactor::{self, field, hit::*, particle::*},
 };
 use bevy::prelude::*;
+use std::f32::consts::PI;
 
 pub struct StatePlugin;
 
@@ -23,6 +24,7 @@ impl Plugin for StatePlugin {
                 reactor::field::timer::update_field,
                 reactor::field::alpha_count::update_field,
                 reactor::field::score::update_field,
+                handle_particle_reaction,
             )
                 .run_if(in_state(reactor::ReactorState::Demo)),
         )
@@ -44,8 +46,8 @@ struct DemoParticle;
 struct DemoCover;
 
 fn state_setup(mut commands: Commands) {
-    hyper::build_particle_sprite(&mut commands, DemoParticle, None, None, None);
     trigger::build_particle_sprite(&mut commands, DemoParticle, None, None, None);
+    hyper::build_particle_sprite(&mut commands, DemoParticle, None, None, None);
     commands.spawn((
         NodeBundle {
             style: Style {
@@ -88,9 +90,12 @@ fn state_action(
                 transform.translation.x = new_pos.x;
                 transform.translation.y = new_pos.y;
                 match particle.particle_type() {
+                    ParticleType::Alpha => {
+                        particle.tick_countdown();
+                    }
                     ParticleType::Hyper => {
                         if particle.tick_countdown() == 0 {
-                            if alpha_count > 10 {
+                            if alpha_count > 50 {
                                 let new_pos = field::gen_random_pos_in_field(particle.radius());
                                 (*particle).jump(new_pos);
                                 transform.translation.x = new_pos.x;
@@ -141,6 +146,82 @@ fn state_action(
                     }
                     _ => (),
                 }
+            }
+        }
+    }
+}
+
+fn handle_particle_reaction(
+    mut commands: Commands,
+    mut particle_query: Query<(Entity, &mut Particle), With<Particle>>,
+    mut timer_query: Query<&mut reactor::ReactorTimer>,
+    time: Res<Time>,
+) {
+    for mut timer in &mut timer_query {
+        if timer.tick(time.delta()).just_finished() {
+            let hit_map = detect_hit(&mut particle_query);
+            let mut killed_entities: Vec<Entity> = vec![];
+            for (e, mut p) in particle_query.iter_mut() {
+                if let Some(action) = hit_map.get(&e) {
+                    match p.particle_type() {
+                        ParticleType::Alpha => match action {
+                            HitAction::Kill => {
+                                killed_entities.push(e);
+                            }
+                            HitAction::Release(count) => {
+                                p.reset_countdown();
+                                if *count > 1 {
+                                    for i in 1..=*count {
+                                        let angle =
+                                            PI * 2.0 * ((i - 1) as f32 + 0.25) / *count as f32;
+                                        let direction = Vec2::new(angle.cos(), angle.sin());
+                                        alpha::build_particle_sprite(
+                                            &mut commands,
+                                            DemoParticle,
+                                            Some(p.pos() + direction * p.radius() * 3.0),
+                                            Some(Particle::gen_random_v(Some(direction))),
+                                            Some(1),
+                                        );
+                                    }
+                                } else {
+                                    alpha::build_particle_sprite(
+                                        &mut commands,
+                                        DemoParticle,
+                                        Some(p.pos()),
+                                        None,
+                                        None,
+                                    );
+                                }
+                                killed_entities.push(e);
+                            }
+                            HitAction::MoveOnly => {
+                                p.reset_countdown();
+                                p.set_v(Particle::gen_random_v(None))
+                            }
+                            _ => (),
+                        },
+                        ParticleType::Control => match action {
+                            HitAction::AlphaHit(count) => {
+                                for _ in 1..=*count {
+                                    if p.tick_countdown() == 0 {
+                                        killed_entities.push(e);
+                                    }
+                                    control::update_particle_sprite(
+                                        &mut commands,
+                                        e,
+                                        p.level_ratio(),
+                                        p.countdown_ratio(),
+                                    );
+                                }
+                            }
+                            _ => (),
+                        },
+                        _ => (),
+                    }
+                }
+            }
+            for entity in killed_entities {
+                commands.entity(entity).despawn_recursive();
             }
         }
     }

@@ -3,7 +3,7 @@ use bevy_vector_shapes::prelude::*;
 use std::f32::consts::TAU;
 
 const MIN_LEVEL: u8 = 1;
-const MAX_LEVEL: u8 = 8;
+const MAX_LEVEL: u8 = 5;
 const RADIUS: f32 = 12.0;
 const COLOR: Color = Color::rgb(1.0, 0.39, 0.29);
 

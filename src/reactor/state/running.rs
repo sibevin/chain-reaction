@@ -1,8 +1,9 @@
 use crate::{
     app,
-    reactor::{self, field, particle::*},
+    reactor::{self, field, hit::*, particle::*},
 };
 use bevy::{input, prelude::*};
+use std::f32::consts::PI;
 
 pub struct StatePlugin;
 
@@ -18,6 +19,7 @@ impl Plugin for StatePlugin {
                     reactor::field::timer::update_field,
                     reactor::field::alpha_count::update_field,
                     reactor::field::score::update_field,
+                    handle_particle_reaction,
                 )
                     .run_if(in_state(reactor::ReactorState::Running)),
             )
@@ -64,10 +66,8 @@ fn state_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         flex_direction: FlexDirection::Column,
                         align_items: AlignItems::Center,
                         justify_content: JustifyContent::Center,
-                        border: UiRect::all(Val::Px(2.0)),
                         ..default()
                     },
-                    border_color: Color::RED.into(),
                     ..default()
                 },
                 Interaction::default(),
@@ -120,6 +120,9 @@ fn move_particle(
                     transform.translation.y = new_pos.y;
                 }
                 match particle.particle_type() {
+                    ParticleType::Alpha => {
+                        particle.tick_countdown();
+                    }
                     ParticleType::Hyper => {
                         if particle.level() > 1 {
                             if particle.tick_countdown() == 0 {
@@ -209,4 +212,173 @@ fn calculate_u_new_pos(current: Vec2, delta: Vec2, sensitivity: u8) -> Vec2 {
     let new_x = (current.x + delta.x * delta_ratio).clamp(field_rect.min.x, field_rect.max.x);
     let new_y = (current.y - delta.y * delta_ratio).clamp(field_rect.min.y, field_rect.max.y);
     return Vec2::new(new_x, new_y);
+}
+
+const HYPER_HIT_BASE_SCORE: u32 = 100;
+const CONTROL_HIT_SCORE: u32 = 100;
+
+fn handle_particle_reaction(
+    mut commands: Commands,
+    mut particle_query: Query<(Entity, &mut Particle), With<Particle>>,
+    mut timer_query: Query<&mut reactor::ReactorTimer>,
+    time: Res<Time>,
+    mut reactor_state: ResMut<NextState<reactor::ReactorState>>,
+    settings: ResMut<app::settings::Settings>,
+    audio_se_asset: Res<app::audio::AudioSeAsset>,
+    mut field_score_query: Query<
+        (&mut Text, &mut field::FieldScore),
+        (With<field::FieldScore>, Without<field::FieldTimer>),
+    >,
+) {
+    for mut timer in &mut timer_query {
+        if timer.tick(time.delta()).just_finished() {
+            let (mut text, mut field_score) = field_score_query.single_mut();
+            let hit_map = detect_hit(&mut particle_query);
+            let mut killed_entities: Vec<Entity> = vec![];
+            for (e, mut p) in particle_query.iter_mut() {
+                if let Some(action) = hit_map.get(&e) {
+                    match p.particle_type() {
+                        ParticleType::Alpha => match action {
+                            HitAction::Kill => {
+                                killed_entities.push(e);
+                                app::audio::play_se(
+                                    app::audio::AudioSe::Pop,
+                                    &mut commands,
+                                    &audio_se_asset,
+                                    settings.as_ref(),
+                                );
+                            }
+                            HitAction::Release(count) => {
+                                p.reset_countdown();
+                                if *count > 1 {
+                                    for i in 1..=*count {
+                                        let angle =
+                                            PI * 2.0 * ((i - 1) as f32 + 0.25) / *count as f32;
+                                        let direction = Vec2::new(angle.cos(), angle.sin());
+                                        alpha::build_particle_sprite(
+                                            &mut commands,
+                                            reactor::RunningParticle,
+                                            Some(p.pos() + direction * p.radius() * 3.0),
+                                            Some(Particle::gen_random_v(Some(direction))),
+                                            Some(1),
+                                        );
+                                    }
+                                } else {
+                                    let direction = Particle::gen_random_v(None).normalize();
+                                    alpha::build_particle_sprite(
+                                        &mut commands,
+                                        reactor::RunningParticle,
+                                        Some(p.pos() + direction * p.radius() * 3.0),
+                                        None,
+                                        None,
+                                    );
+                                }
+                                app::audio::play_se(
+                                    app::audio::AudioSe::Hit,
+                                    &mut commands,
+                                    &audio_se_asset,
+                                    settings.as_ref(),
+                                );
+                                killed_entities.push(e);
+                            }
+                            HitAction::MoveOnly => {
+                                p.reset_countdown();
+                                p.set_v(Particle::gen_random_v(None))
+                            }
+                            _ => (),
+                        },
+                        ParticleType::Control => match action {
+                            HitAction::AlphaHit(count) => {
+                                for _ in 1..=*count {
+                                    if p.tick_countdown() == 0 {
+                                        killed_entities.push(e);
+                                    }
+                                    control::update_particle_sprite(
+                                        &mut commands,
+                                        e,
+                                        p.level_ratio(),
+                                        p.countdown_ratio(),
+                                    );
+                                }
+                            }
+                            HitAction::Kill => {
+                                app::audio::play_se(
+                                    app::audio::AudioSe::Pop,
+                                    &mut commands,
+                                    &audio_se_asset,
+                                    settings.as_ref(),
+                                );
+                                killed_entities.push(e);
+                            }
+                            HitAction::UouHit => {
+                                let radius = p.radius();
+                                control::build_particle_sprite(
+                                    &mut commands,
+                                    reactor::RunningParticle,
+                                    Some(field::gen_random_pos_in_field(radius)),
+                                    None,
+                                    Some(p.level() + 1),
+                                );
+                                p.update_level(1);
+                                p.jump(field::gen_random_pos_in_field(radius));
+                                p.reset_countdown();
+                                app::audio::play_se(
+                                    app::audio::AudioSe::PowerUp,
+                                    &mut commands,
+                                    &audio_se_asset,
+                                    settings.as_ref(),
+                                );
+                                field_score.0 = field_score.0 + CONTROL_HIT_SCORE;
+                                text.sections[0].value =
+                                    field::format_field_text("score", field_score.0);
+                            }
+                            _ => (),
+                        },
+                        ParticleType::Hyper => match action {
+                            HitAction::UouHit => {
+                                control::build_particle_sprite(
+                                    &mut commands,
+                                    reactor::RunningParticle,
+                                    None,
+                                    None,
+                                    Some(p.level()),
+                                );
+                                p.update_level(1);
+                                let radius = p.radius();
+                                p.jump(field::gen_random_pos_in_field(radius));
+                                p.reset_countdown();
+                                app::audio::play_se(
+                                    app::audio::AudioSe::PowerUp,
+                                    &mut commands,
+                                    &audio_se_asset,
+                                    settings.as_ref(),
+                                );
+                                field_score.0 =
+                                    field_score.0 + HYPER_HIT_BASE_SCORE * p.level() as u32;
+                                text.sections[0].value =
+                                    field::format_field_text("score", field_score.0);
+                            }
+                            _ => (),
+                        },
+                        ParticleType::Uou => match action {
+                            HitAction::Kill => {
+                                reactor_state.set(reactor::ReactorState::Ended);
+                                app::audio::play_se(
+                                    app::audio::AudioSe::Boom,
+                                    &mut commands,
+                                    &audio_se_asset,
+                                    settings.as_ref(),
+                                );
+                            }
+                            _ => (),
+                        },
+                        _ => (),
+                    }
+                }
+            }
+            for entity in killed_entities {
+                commands.entity(entity).despawn_recursive();
+            }
+        }
+    }
 }

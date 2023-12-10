@@ -109,11 +109,8 @@ impl Particle {
     pub fn v(&self) -> Vec2 {
         self.v
     }
-    pub fn pos_v(&self) -> PosV {
-        PosV {
-            pos: self.pos,
-            v: self.v,
-        }
+    pub fn set_v(&mut self, v: Vec2) {
+        self.v = v
     }
     pub fn level(&self) -> u8 {
         self.level
