@@ -68,7 +68,9 @@ pub fn init_audio_se_asset(
 pub fn init_audio(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         AudioBundle {
-            source: asset_server.load("audio/bgm/carnival-10957.ogg"),
+            source: asset_server.load(
+                "audio/bgm/synthetic-deception-loopable-epic-cyberpunk-crime-music-157454.ogg",
+            ),
             settings: PlaybackSettings {
                 mode: bevy::audio::PlaybackMode::Loop,
                 volume: Volume::Absolute(VolumeLevel::new(to_volume(50))),

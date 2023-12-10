@@ -208,10 +208,10 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                     build_about_link(
                                         parent,
                                         &asset_server,
-                                        "Carnival - By SoundCarousel",
+                                        "Synthetic Deception - By GloeleFazzeri",
                                         Some("globe-light"),
                                         Some(
-                                            "https://pixabay.com/music/dance-carnival-10957/",
+                                            "https://pixabay.com/music/suspense-synthetic-deception-loopable-epic-cyberpunk-crime-music-157454/"
                                         ),
                                         "default",
                                     );
