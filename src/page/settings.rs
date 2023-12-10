@@ -9,7 +9,12 @@ impl Plugin for PagePlugin {
         app.add_systems(OnEnter(app::GameState::Settings), page_setup)
             .add_systems(
                 Update,
-                (page_action, move_test_panel_action).run_if(in_state(app::GameState::Settings)),
+                (
+                    page_action,
+                    move_test_panel_action,
+                    control_test_ball_by_keyboard,
+                )
+                    .run_if(in_state(app::GameState::Settings)),
             )
             .add_systems(
                 OnExit(app::GameState::Settings),
@@ -605,4 +610,53 @@ fn calculate_test_ball_pos(current: (f32, f32), delta: Vec2, sensitivity: u8) ->
     let new_x = (current.0 + delta.x * delta_ratio).clamp(0., max_value);
     let new_y = (current.1 + delta.y * delta_ratio).clamp(0., max_value);
     return (new_x, new_y);
+}
+
+const KEYBOARD_DELTA_BIAS: f32 = 1.5;
+
+fn control_test_ball_by_keyboard(
+    keyboard_input: Res<Input<KeyCode>>,
+    panel_query: Query<(&Interaction, &Children), (With<Interaction>, With<MoveTestPanel>)>,
+    mut ball_query: Query<&mut Style, With<MoveTestBall>>,
+    settings: Res<app::settings::Settings>,
+) {
+    let mut delta: Vec2 = Vec2::default();
+    if keyboard_input.pressed(KeyCode::W)
+        || keyboard_input.pressed(KeyCode::Up)
+        || keyboard_input.pressed(KeyCode::K)
+    {
+        delta.y = -KEYBOARD_DELTA_BIAS;
+    }
+    if keyboard_input.pressed(KeyCode::S)
+        || keyboard_input.pressed(KeyCode::Down)
+        || keyboard_input.pressed(KeyCode::J)
+    {
+        delta.y = KEYBOARD_DELTA_BIAS;
+    }
+    if keyboard_input.pressed(KeyCode::A)
+        || keyboard_input.pressed(KeyCode::Left)
+        || keyboard_input.pressed(KeyCode::H)
+    {
+        delta.x = -KEYBOARD_DELTA_BIAS;
+    }
+    if keyboard_input.pressed(KeyCode::D)
+        || keyboard_input.pressed(KeyCode::Right)
+        || keyboard_input.pressed(KeyCode::L)
+    {
+        delta.x = KEYBOARD_DELTA_BIAS;
+    }
+    let (_, children) = panel_query.single();
+    let mut ball_style = ball_query.get_mut(children[0]).unwrap();
+    let ori_x: f32 = match ball_style.left {
+        Val::Px(value) => value,
+        _ => 0.,
+    };
+    let ori_y: f32 = match ball_style.top {
+        Val::Px(value) => value,
+        _ => 0.,
+    };
+
+    let new_pos = calculate_test_ball_pos((ori_x, ori_y), delta, settings.get_value("sensitivity"));
+    ball_style.left = Val::Px(new_pos.0);
+    ball_style.top = Val::Px(new_pos.1);
 }

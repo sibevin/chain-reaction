@@ -14,7 +14,9 @@ impl Plugin for StatePlugin {
                 Update,
                 (
                     handle_pause_btn,
-                    control_u_particle,
+                    control_u_by_mouse,
+                    control_u_by_keyboard,
+                    pause_by_keyboard,
                     move_particle,
                     reactor::field::timer::update_field,
                     reactor::field::alpha_count::update_field,
@@ -166,7 +168,7 @@ fn move_particle(
     }
 }
 
-fn control_u_particle(
+fn control_u_by_mouse(
     mut panel_query: Query<&Interaction, (With<Interaction>, With<GameControlPanel>)>,
     mut u_particle_query: Query<(&mut Particle, &mut Transform), With<reactor::ControlParticle>>,
     mut mouse_motion_events: EventReader<input::mouse::MouseMotion>,
@@ -380,5 +382,56 @@ fn handle_particle_reaction(
                 commands.entity(entity).despawn_recursive();
             }
         }
+    }
+}
+
+const KEYBOARD_DELTA_BIAS: f32 = 1.5;
+
+fn control_u_by_keyboard(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut u_particle_query: Query<(&mut Particle, &mut Transform), With<reactor::ControlParticle>>,
+    settings: Res<app::settings::Settings>,
+) {
+    let (mut u_particle, mut u_transform) = u_particle_query.get_single_mut().unwrap();
+    let mut delta: Vec2 = Vec2::default();
+    if keyboard_input.pressed(KeyCode::W)
+        || keyboard_input.pressed(KeyCode::Up)
+        || keyboard_input.pressed(KeyCode::K)
+    {
+        delta.y = -KEYBOARD_DELTA_BIAS;
+    }
+    if keyboard_input.pressed(KeyCode::S)
+        || keyboard_input.pressed(KeyCode::Down)
+        || keyboard_input.pressed(KeyCode::J)
+    {
+        delta.y = KEYBOARD_DELTA_BIAS;
+    }
+    if keyboard_input.pressed(KeyCode::A)
+        || keyboard_input.pressed(KeyCode::Left)
+        || keyboard_input.pressed(KeyCode::H)
+    {
+        delta.x = -KEYBOARD_DELTA_BIAS;
+    }
+    if keyboard_input.pressed(KeyCode::D)
+        || keyboard_input.pressed(KeyCode::Right)
+        || keyboard_input.pressed(KeyCode::L)
+    {
+        delta.x = KEYBOARD_DELTA_BIAS;
+    }
+    let new_pos = calculate_u_new_pos(u_particle.pos(), delta, settings.get_value("sensitivity"));
+    u_particle.jump(new_pos);
+    u_transform.translation.x = new_pos.x;
+    u_transform.translation.y = new_pos.y;
+}
+
+fn pause_by_keyboard(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut reactor_state: ResMut<NextState<reactor::ReactorState>>,
+) {
+    if keyboard_input.pressed(KeyCode::Space)
+        || keyboard_input.pressed(KeyCode::Return)
+        || keyboard_input.pressed(KeyCode::Escape)
+    {
+        reactor_state.set(reactor::ReactorState::Paused)
     }
 }
