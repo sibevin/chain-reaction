@@ -11,7 +11,7 @@ pub mod uou;
 
 const MOVING_TAILING_COUNT: usize = 3;
 const MIN_V_LENGTH: f32 = 1.0;
-const MAX_V_LENGTH: f32 = 4.0;
+const MAX_V_LENGTH: f32 = 3.0;
 const SIDE_THICKNESS: f32 = 0.3;
 
 #[derive(Component, Debug, PartialEq)]
