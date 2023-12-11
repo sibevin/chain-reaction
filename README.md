@@ -4,6 +4,10 @@ An action game to dodge chain recation particles.
 
 - For Bevy Jam #4 - https://itch.io/jam/bevy-jam-4
 
+![Main Menu](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_01.png)
+![Gameplay](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_03.png)
+![Help](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_02.png)
+
 ## Links
 
 - itch.io: https://sibevin.itch.io/chain-reaction
