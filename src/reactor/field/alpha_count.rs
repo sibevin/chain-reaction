@@ -20,7 +20,7 @@ pub fn update_field(
             let mut total_alpha_count = 0;
             for particle in particle_query.iter() {
                 if particle.particle_type() == ParticleType::Alpha {
-                    total_alpha_count = total_alpha_count + 1;
+                    total_alpha_count += 1;
                 }
             }
             for (mut text, mut field_alpha_count) in field_alpha_count_query.iter_mut() {

@@ -24,7 +24,7 @@ pub fn update_field(
         if timer.tick(time.delta()).just_finished() {
             for (mut text, mut field_score) in field_score_query.iter_mut() {
                 let alpha_count = field_alpha_count_query.single().0;
-                field_score.0 = field_score.0 + alpha_count;
+                field_score.0 += alpha_count;
                 text.sections[0].value = format_field_text("score", field_score.0);
             }
         }

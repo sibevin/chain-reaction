@@ -43,7 +43,7 @@ impl ParticleAbility for Ability {
     }
     fn max_countdown(&self, level: u8) -> u32 {
         let countdown_pow = (MAX_LEVEL - level + 1) as u32;
-        (2 as u32).pow(countdown_pow) * 10
+        2_u32.pow(countdown_pow) * 10
     }
     fn reset_countdown(&mut self, level: u8) {
         self.countdown = self.max_countdown(level);
@@ -52,7 +52,7 @@ impl ParticleAbility for Ability {
         if self.countdown - 1 <= 0 {
             self.countdown = 0;
         } else {
-            self.countdown = self.countdown - 1;
+            self.countdown -= 1;
         }
         self.countdown
     }

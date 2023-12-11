@@ -561,7 +561,7 @@ fn build_range_bar(
 
 fn calculate_range_bar_width(value: u8) -> (f32, f32) {
     let value_bar_w = value as f32 / 100.0 * RANGE_BAR_W;
-    return (value_bar_w, RANGE_BAR_W - value_bar_w);
+    (value_bar_w, RANGE_BAR_W - value_bar_w)
 }
 
 const MTP_PANEL_SIZE: f32 = 100.0;
@@ -609,7 +609,7 @@ fn calculate_test_ball_pos(current: (f32, f32), delta: Vec2, sensitivity: u8) ->
     let max_value = (MTP_PANEL_SIZE - MTP_BALL_SIZE) * app::ui::SPACE_SIZE - 4.0;
     let new_x = (current.0 + delta.x * delta_ratio).clamp(0., max_value);
     let new_y = (current.1 + delta.y * delta_ratio).clamp(0., max_value);
-    return (new_x, new_y);
+    (new_x, new_y)
 }
 
 const KEYBOARD_DELTA_BIAS: f32 = 1.5;

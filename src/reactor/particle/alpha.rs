@@ -23,7 +23,7 @@ impl Ability {
     fn pick_random_alpha_level() -> u8 {
         let mut rng = thread_rng();
         let pick = rng.gen_range(0.0..100.0);
-        if pick >= 0.0 && pick <= 50.0 {
+        if (0.0..=50.0).contains(&pick) {
             1
         } else if pick > 50.0 && pick <= 75.0 {
             2
@@ -64,7 +64,7 @@ impl ParticleAbility for Ability {
     }
     fn tick_countdown(&mut self) -> u32 {
         if self.countdown > 0 {
-            self.countdown = self.countdown - 1;
+            self.countdown -= 1;
         }
         self.countdown
     }

@@ -24,11 +24,11 @@ pub fn update_field(
     for mut timer in &mut timer_query {
         if timer.tick(time.delta()).just_finished() {
             let (mut text, mut field_timer) = field_timer_query.single_mut();
-            field_timer.0 = field_timer.0 + 1;
+            field_timer.0 += 1;
             text.sections[0].value = format_field_text("time", field_timer.0);
             let (mut text, mut field_score) = field_score_query.single_mut();
             if field_timer.0 > 0 && field_timer.0 % 100 == 0 {
-                field_score.0 = field_score.0 + SCORE_PER_SECOND;
+                field_score.0 += SCORE_PER_SECOND;
                 text.sections[0].value = format_field_text("score", field_score.0);
             }
         }

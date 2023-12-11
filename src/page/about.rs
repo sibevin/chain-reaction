@@ -297,11 +297,7 @@ fn build_about_link(
     link: Option<&str>,
     font: &str,
 ) -> Entity {
-    let url = if let Some(link) = link {
-        Some(String::from(link))
-    } else {
-        None
-    };
+    let url = link.map(String::from);
     parent
         .spawn((
             ButtonBundle {

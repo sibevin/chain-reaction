@@ -23,8 +23,8 @@ pub fn detect_hit(
         particles.push((Rc::new(RefCell::new(e)), Rc::new(RefCell::new(p))));
     }
     let mut hit_map: HashMap<Entity, HitAction> = HashMap::new();
-    for (i, (e1, p1)) in (&particles).iter().enumerate() {
-        for (j, (e2, p2)) in (&particles).iter().enumerate() {
+    for (i, (e1, p1)) in particles.iter().enumerate() {
+        for (j, (e2, p2)) in particles.iter().enumerate() {
             if j > i && is_hit(p1.borrow().as_ref(), p2.borrow().as_ref()) {
                 record_hit_action(
                     &mut hit_map,
@@ -53,16 +53,16 @@ pub fn record_hit_action(
             ParticleType::Alpha => {
                 if p1.countdown_ratio() == 0.0 && p1.countdown_ratio() == 0.0 {
                     if p1.level() == 1 && p2.level() == 1 {
-                        e1_action = HitAction::Release((2 as u32).pow(p1.level() as u32));
+                        e1_action = HitAction::Release(2_u32.pow(p1.level() as u32));
                         e2_action = HitAction::MoveOnly;
                     } else if p1.level() == 1 && p2.level() != 1 {
-                        e2_action = HitAction::Release((2 as u32).pow(p2.level() as u32));
+                        e2_action = HitAction::Release(2_u32.pow(p2.level() as u32));
                     } else if p1.level() != 1 && p2.level() == 1 {
-                        e1_action = HitAction::Release((2 as u32).pow(p1.level() as u32));
+                        e1_action = HitAction::Release(2_u32.pow(p1.level() as u32));
                     } else {
                         // p1.level and p2.level both > 1
-                        e1_action = HitAction::Release((2 as u32).pow(p1.level() as u32));
-                        e2_action = HitAction::Release((2 as u32).pow(p2.level() as u32));
+                        e1_action = HitAction::Release(2_u32.pow(p1.level() as u32));
+                        e2_action = HitAction::Release(2_u32.pow(p2.level() as u32));
                     }
                 }
             }

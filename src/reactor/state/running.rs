@@ -126,11 +126,9 @@ fn move_particle(
                         particle.tick_countdown();
                     }
                     ParticleType::Hyper => {
-                        if particle.level() > 1 {
-                            if particle.tick_countdown() == 0 {
-                                particle.update_level(-1);
-                                particle.reset_countdown();
-                            }
+                        if particle.level() > 1 && particle.tick_countdown() == 0 {
+                            particle.update_level(-1);
+                            particle.reset_countdown();
                         }
                         hyper::update_particle_sprite(
                             &mut commands,
@@ -213,7 +211,7 @@ fn calculate_u_new_pos(current: Vec2, delta: Vec2, sensitivity: u8) -> Vec2 {
     let field_rect = field::get_field_rect(uou::RADIUS + 3.0);
     let new_x = (current.x + delta.x * delta_ratio).clamp(field_rect.min.x, field_rect.max.x);
     let new_y = (current.y - delta.y * delta_ratio).clamp(field_rect.min.y, field_rect.max.y);
-    return Vec2::new(new_x, new_y);
+    Vec2::new(new_x, new_y)
 }
 
 const HYPER_HIT_BASE_SCORE: u32 = 100;
@@ -330,7 +328,7 @@ fn handle_particle_reaction(
                                     &audio_se_asset,
                                     settings.as_ref(),
                                 );
-                                field_score.0 = field_score.0 + CONTROL_HIT_SCORE;
+                                field_score.0 += CONTROL_HIT_SCORE;
                                 text.sections[0].value =
                                     field::format_field_text("score", field_score.0);
                             }
@@ -355,8 +353,7 @@ fn handle_particle_reaction(
                                     &audio_se_asset,
                                     settings.as_ref(),
                                 );
-                                field_score.0 =
-                                    field_score.0 + HYPER_HIT_BASE_SCORE * p.level() as u32;
+                                field_score.0 += HYPER_HIT_BASE_SCORE * p.level() as u32;
                                 text.sections[0].value =
                                     field::format_field_text("score", field_score.0);
                             }

@@ -22,7 +22,7 @@ pub const FONT_DIGIT: &str = "fonts/slkscr.ttf";
 pub const FONT_HW: &str = "fonts/VAG-HandWritten.otf";
 
 pub fn px_p(size: f32) -> Val {
-    return Val::Px(SPACE_SIZE * size);
+    Val::Px(SPACE_SIZE * size)
 }
 
 pub fn build_icon_btn(

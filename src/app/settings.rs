@@ -69,7 +69,7 @@ impl Settings {
         }
     }
     fn is_value_vaild(value: i8) -> bool {
-        value >= 0 && value <= 100
+        (0..=100).contains(&value)
     }
 }
 

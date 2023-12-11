@@ -42,14 +42,14 @@ impl ParticleAbility for Ability {
         self.countdown
     }
     fn max_countdown(&self, level: u8) -> u32 {
-        (2 as u32).pow(level as u32)
+        2_u32.pow(level as u32)
     }
     fn reset_countdown(&mut self, level: u8) {
         self.countdown = self.max_countdown(level);
     }
     fn tick_countdown(&mut self) -> u32 {
         if self.countdown > 0 {
-            self.countdown = self.countdown - 1;
+            self.countdown -= 1;
         }
         self.countdown
     }
@@ -97,7 +97,7 @@ pub fn update_particle_sprite(
                 ..ShapeConfig::default_2d()
             },
             4.0,
-            RADIUS * (2.0 as f32).sqrt(),
+            RADIUS * 2.0_f32.sqrt(),
         ));
         let transform = Transform {
             translation: Vec3::new(0.0, 0.0, 2.0),
@@ -114,7 +114,7 @@ pub fn update_particle_sprite(
             RADIUS * 0.8,
         ));
         // let start_angle = -PI * 0.5 / MAX_LEVEL as f32;
-        let start_angle = 0.0 as f32;
+        let start_angle = 0.0_f32;
         parent.spawn(ShapeBundle::arc(
             &ShapeConfig {
                 transform: Transform::from_xyz(0.0, 0.0, 3.0),

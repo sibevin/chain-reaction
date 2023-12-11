@@ -39,7 +39,7 @@ impl ParticleAbility for Ability {
         self.countdown
     }
     fn max_countdown(&self, level: u8) -> u32 {
-        (2 as u32).pow(level as u32) * 50
+        2_u32.pow(level as u32) * 50
     }
     fn reset_countdown(&mut self, level: u8) {
         self.countdown = self.max_countdown(level);
@@ -48,7 +48,7 @@ impl ParticleAbility for Ability {
         if self.countdown - 1 <= 0 {
             self.countdown = 0;
         } else {
-            self.countdown = self.countdown - 1;
+            self.countdown -= 1;
         }
         self.countdown
     }
@@ -121,13 +121,13 @@ const LEVEL_INIT_BIAS_COUNT: u32 = 10;
 
 pub fn update_particle_level(particle: &mut Particle, total_alpha_count: u32) {
     let mut level = 0;
-    if total_alpha_count < LEVEL_INIT_BIAS_COUNT + (2 as u32).pow((MIN_LEVEL + 1) as u32) {
+    if total_alpha_count < LEVEL_INIT_BIAS_COUNT + 2_u32.pow((MIN_LEVEL + 1) as u32) {
         level = MIN_LEVEL;
     }
     if level == 0 {
         for i in MIN_LEVEL..=MAX_LEVEL {
-            if total_alpha_count >= LEVEL_INIT_BIAS_COUNT + (2 as u32).pow((i + 1) as u32)
-                && total_alpha_count < LEVEL_INIT_BIAS_COUNT + (2 as u32).pow((i + 2) as u32)
+            if total_alpha_count >= LEVEL_INIT_BIAS_COUNT + 2_u32.pow((i + 1) as u32)
+                && total_alpha_count < LEVEL_INIT_BIAS_COUNT + 2_u32.pow((i + 2) as u32)
             {
                 level = i;
                 break;
