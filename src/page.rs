@@ -24,21 +24,43 @@ pub fn build_page_layout() -> NodeBundle {
 }
 
 pub fn build_game_title(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
-    parent.spawn(
-        TextBundle::from_section(
-            "Chain Reaction",
-            TextStyle {
-                font: asset_server.load(app::ui::FONT),
-                font_size: app::ui::FONT_SIZE * 2.0,
-                color: app::ui::FG_COLOR,
+    parent
+        .spawn(NodeBundle {
+            style: Style {
+                flex_direction: FlexDirection::Row,
+                align_items: AlignItems::Center,
                 ..default()
             },
-        )
-        .with_style(Style {
-            margin: UiRect::left(app::ui::px_p(2.0)),
             ..default()
-        }),
-    );
+        })
+        .with_children(|parent| {
+            let icon = asset_server.load("images/app/logo_120x.png");
+            parent.spawn(ImageBundle {
+                style: Style {
+                    width: Val::Px(80.0),
+                    height: Val::Px(80.0),
+                    margin: UiRect::right(app::ui::px_p(4.0)),
+                    ..default()
+                },
+                image: UiImage::new(icon),
+                ..default()
+            });
+            parent.spawn(
+                TextBundle::from_section(
+                    "Chain Reaction",
+                    TextStyle {
+                        font: asset_server.load(app::ui::FONT),
+                        font_size: app::ui::FONT_SIZE * 2.0,
+                        color: app::ui::FG_COLOR,
+                        ..default()
+                    },
+                )
+                .with_style(Style {
+                    margin: UiRect::left(app::ui::px_p(2.0)),
+                    ..default()
+                }),
+            );
+        });
 }
 
 pub fn build_page_title(
