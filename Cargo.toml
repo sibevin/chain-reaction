@@ -8,6 +8,7 @@ license = "GPL-3.0-or-later"
 
 [dependencies]
 bevy = "0.12.1"
+bevy-ui-navigation = "0.33.1"
 bevy_vector_shapes = "0.6.0"
 rand = "0.8.5"
 webbrowser = "0.8.12"
