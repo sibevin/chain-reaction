@@ -1,4 +1,5 @@
 use bevy::{app::AppExit, prelude::*};
+use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 
 use crate::{app, page};
 
@@ -7,7 +8,12 @@ pub struct PagePlugin;
 impl Plugin for PagePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(app::GameState::Menu), page_setup)
-            .add_systems(Update, page_action.run_if(in_state(app::GameState::Menu)))
+            .add_systems(
+                Update,
+                handle_menu_navigation
+                    .after(NavRequestSystem)
+                    .run_if(in_state(app::GameState::Menu)),
+            )
             .add_systems(OnExit(app::GameState::Menu), app::ui::despawn_ui::<OnPage>);
     }
 }
@@ -89,35 +95,55 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                             app::ui::build_menu_entry(
                                 parent,
                                 &asset_server,
-                                ButtonAction::FirstRun,
+                                (
+                                    ButtonAction::FirstRun,
+                                    app::interaction::IaButton,
+                                    Focusable::new().prioritized(),
+                                ),
                                 "Start",
                                 "play-light",
                             );
                             app::ui::build_menu_entry(
                                 parent,
                                 &asset_server,
-                                ButtonAction::MoveToPage(app::GameState::Help),
+                                (
+                                    ButtonAction::MoveToPage(app::GameState::Help),
+                                    app::interaction::IaButton,
+                                    Focusable::default(),
+                                ),
                                 "Formula",
                                 "question-light",
                             );
                             app::ui::build_menu_entry(
                                 parent,
                                 &asset_server,
-                                ButtonAction::MoveToPage(app::GameState::Settings),
+                                (
+                                    ButtonAction::MoveToPage(app::GameState::Settings),
+                                    app::interaction::IaButton,
+                                    Focusable::default(),
+                                ),
                                 "Variables",
                                 "gear-light",
                             );
                             app::ui::build_menu_entry(
                                 parent,
                                 &asset_server,
-                                ButtonAction::MoveToPage(app::GameState::About),
+                                (
+                                    ButtonAction::MoveToPage(app::GameState::About),
+                                    app::interaction::IaButton,
+                                    Focusable::default(),
+                                ),
                                 "References",
                                 "star-light",
                             );
                             app::ui::build_menu_entry(
                                 parent,
                                 &asset_server,
-                                ButtonAction::Quit,
+                                (
+                                    ButtonAction::Quit,
+                                    app::interaction::IaButton,
+                                    Focusable::default(),
+                                ),
                                 "Quit",
                                 "sign-out-light",
                             );
@@ -126,26 +152,26 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         });
 }
 
-fn page_action(
-    interaction_query: Query<(&Interaction, &ButtonAction), (Changed<Interaction>, With<Button>)>,
+fn handle_menu_navigation(
+    mut actions: Query<&mut ButtonAction>,
+    mut events: EventReader<NavEvent>,
     mut game_state: ResMut<NextState<app::GameState>>,
     mut app_exit_events: EventWriter<AppExit>,
     mut settings: ResMut<app::settings::Settings>,
 ) {
-    for (interaction, action) in &interaction_query {
-        if *interaction == Interaction::Pressed {
-            match action {
-                ButtonAction::FirstRun => {
-                    if settings.is_enabled("first") {
-                        settings.toggle("first");
-                        game_state.set(app::GameState::Help)
-                    } else {
-                        game_state.set(app::GameState::Game)
-                    }
+    events.nav_iter().activated_in_query_foreach_mut(
+        &mut actions,
+        |mut action| match &mut *action {
+            ButtonAction::FirstRun => {
+                if settings.is_enabled("first") {
+                    settings.toggle("first");
+                    game_state.set(app::GameState::Help)
+                } else {
+                    game_state.set(app::GameState::Game)
                 }
-                ButtonAction::MoveToPage(state) => game_state.set(*state),
-                ButtonAction::Quit => app_exit_events.send(AppExit),
             }
-        }
-    }
+            ButtonAction::MoveToPage(state) => game_state.set(*state),
+            ButtonAction::Quit => app_exit_events.send(AppExit),
+        },
+    );
 }

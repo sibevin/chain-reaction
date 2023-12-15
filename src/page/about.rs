@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 use webbrowser;
 
 use crate::{app, page};
@@ -8,7 +9,12 @@ pub struct PagePlugin;
 impl Plugin for PagePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(app::GameState::About), page_setup)
-            .add_systems(Update, page_action.run_if(in_state(app::GameState::About)))
+            .add_systems(
+                Update,
+                handle_ui_navigation
+                    .after(NavRequestSystem)
+                    .run_if(in_state(app::GameState::About)),
+            )
             .add_systems(OnExit(app::GameState::About), app::ui::despawn_ui::<OnPage>);
     }
 }
@@ -19,7 +25,7 @@ struct OnPage;
 #[derive(Component)]
 enum ButtonAction {
     BackToMainMenu,
-    Link(Option<String>),
+    Link(String),
 }
 
 fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -86,21 +92,23 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "Link",
                                         "link-bold",
                                     );
-                                    build_about_link(
+                                    app::ui::build_link(
                                         parent,
                                         &asset_server,
+                                        ButtonAction::Link(String::from("https://sibevin.itch.io/chain-reaction")),
                                         "itch.io",
                                         Some("house-line-light"),
-                                        Some("https://sibevin.itch.io/chain-reaction"),
                                         "default",
+                                        true
                                     );
-                                    build_about_link(
+                                    app::ui::build_link(
                                         parent,
                                         &asset_server,
+                                        ButtonAction::Link(String::from("https://github.com/sibevin/chain-reaction")),
                                         "github.com",
                                         Some("github-logo-light"),
-                                        Some("https://github.com/sibevin/chain-reaction"),
                                         "default",
+                                        true
                                     );
                                     page::build_sep_title(
                                         parent,
@@ -108,13 +116,14 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "Design",
                                         "pencil-line-fill",
                                     );
-                                    build_about_link(
+                                    app::ui::build_link(
                                         parent,
                                         &asset_server,
+                                        (),
                                         "Kait Wang",
                                         None,
-                                        None,
                                         "default",
+                                        false
                                     );
                                     page::build_sep_title(
                                         parent,
@@ -122,13 +131,14 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "Programming",
                                         "code-bold",
                                     );
-                                    build_about_link(
+                                    app::ui::build_link(
                                         parent,
                                         &asset_server,
+                                        (),
                                         "Kait Wang",
                                         None,
-                                        None,
                                         "default",
+                                        false
                                     );
                                     page::build_sep_title(
                                         parent,
@@ -136,13 +146,14 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "Art",
                                         "palette-fill",
                                     );
-                                    build_about_link(
+                                    app::ui::build_link(
                                         parent,
                                         &asset_server,
+                                        (),
                                         "Miya",
                                         None,
-                                        None,
                                         "default",
+                                        false
                                     );
                                 });
                             parent
@@ -161,13 +172,14 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "Icon",
                                         "shapes-fill",
                                     );
-                                    build_about_link(
+                                    app::ui::build_link(
                                         parent,
                                         &asset_server,
+                                        ButtonAction::Link(String::from("https://phosphoricons.com/")),
                                         "Phosphor Icons",
                                         Some("globe-light"),
-                                        Some("https://phosphoricons.com/"),
                                         "default",
+                                        true
                                     );
                                     page::build_sep_title(
                                         parent,
@@ -175,29 +187,32 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "Font",
                                         "text-aa-fill",
                                     );
-                                    build_about_link(
+                                    app::ui::build_link(
                                         parent,
                                         &asset_server,
+                                        ButtonAction::Link(String::from("https://www.fontsquirrel.com/fonts/syn-nova")),
                                         "SYN NOVA",
                                         Some("globe-light"),
-                                        Some("https://www.fontsquirrel.com/fonts/syn-nova"),
                                         "default",
+                                        true
                                     );
-                                    build_about_link(
+                                    app::ui::build_link(
                                         parent,
                                         &asset_server,
+                                        ButtonAction::Link(String::from("https://kottke.org/plus/type/silkscreen/index.html")),
                                         "Silkscreen",
                                         Some("globe-light"),
-                                        Some("https://kottke.org/plus/type/silkscreen/index.html"),
                                         "digit",
+                                        true
                                     );
-                                    build_about_link(
+                                    app::ui::build_link(
                                         parent,
                                         &asset_server,
+                                        ButtonAction::Link(String::from("https://www.fontsquirrel.com/fonts/VAG-HandWritten")),
                                         "VAG-HandWritten",
                                         Some("globe-light"),
-                                        Some("https://www.fontsquirrel.com/fonts/VAG-HandWritten"),
                                         "hw",
+                                        true
                                     );
                                     page::build_sep_title(
                                         parent,
@@ -205,163 +220,92 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "Audio",
                                         "microphone-fill",
                                     );
-                                    build_about_link(
+                                    app::ui::build_link(
                                         parent,
                                         &asset_server,
+                                        ButtonAction::Link(String::from(
+                                            "https://pixabay.com/music/suspense-synthetic-deception-loopable-epic-cyberpunk-crime-music-157454/"
+                                        )),
                                         "Synthetic Deception - By GloeleFazzeri",
                                         Some("globe-light"),
-                                        Some(
-                                            "https://pixabay.com/music/suspense-synthetic-deception-loopable-epic-cyberpunk-crime-music-157454/"
-                                        ),
                                         "default",
+                                        true
                                     );
-                                    build_about_link(
+                                    app::ui::build_link(
                                         parent,
                                         &asset_server,
+                                        ButtonAction::Link(String::from(
+                                            "https://pixabay.com/sound-effects/heavy-cineamtic-hit-166888/",
+                                        )),
                                         "Heavy Cineamtic Hit - By LordSonny",
                                         Some("globe-light"),
-                                        Some(
-                                            "https://pixabay.com/sound-effects/heavy-cineamtic-hit-166888/",
-                                        ),
                                         "default",
+                                        true
                                     );
-                                    build_about_link(
+                                    app::ui::build_link(
                                         parent,
                                         &asset_server,
+                                        ButtonAction::Link(String::from(
+                                            "https://pixabay.com/sound-effects/pick-92276/",
+                                        )),
                                         "Pick - From Pixabay",
                                         Some("globe-light"),
-                                        Some(
-                                            "https://pixabay.com/sound-effects/pick-92276/",
-                                        ),
                                         "default",
+                                        true,
                                     );
-                                    build_about_link(
+                                    app::ui::build_link(
                                         parent,
                                         &asset_server,
+                                        ButtonAction::Link(String::from(
+                                            "https://pixabay.com/sound-effects/item-pick-up-38258/"
+                                        )),
                                         "Item Pick Up - From Pixabay",
                                         Some("globe-light"),
-                                        Some(
-                                            "https://pixabay.com/sound-effects/item-pick-up-38258/"
-                                        ),
                                         "default",
+                                        true,
+
                                     );
-                                    build_about_link(
+                                    app::ui::build_link(
                                         parent,
                                         &asset_server,
+                                        ButtonAction::Link(String::from(
+                                            "https://pixabay.com/sound-effects/glass-shatter-3-100155/"
+                                        )),
                                         "Glass Shatter 3 - From Pixabay",
                                         Some("globe-light"),
-                                        Some(
-                                            "https://pixabay.com/sound-effects/glass-shatter-3-100155/"
-                                        ),
                                         "default",
+                                        true
                                     );
                                 });
                         });
-                    app::ui::build_icon_btn(
-                        parent,
-                        &asset_server,
-                        ButtonAction::BackToMainMenu,
-                        Style {
-                            align_self: AlignSelf::Start,
-                            ..default()
-                        },
-                        "arrow-left-light",
-                    );
                 });
+                app::ui::build_icon_btn(
+                    parent,
+                    &asset_server,
+                    (ButtonAction::BackToMainMenu, app::interaction::IaButton,Focusable::new().prioritized()),
+                    Style {
+                        position_type: PositionType::Absolute,
+                        bottom: app::ui::px_p(page::PAGE_PADDING),
+                        left: app::ui::px_p(page::PAGE_PADDING),
+                        ..default()
+                    },
+                    "arrow-left-light",
+                );
         });
 }
 
-fn page_action(
-    interaction_query: Query<(&Interaction, &ButtonAction), (Changed<Interaction>, With<Button>)>,
+fn handle_ui_navigation(
+    mut actions: Query<&mut ButtonAction>,
+    mut events: EventReader<NavEvent>,
     mut game_state: ResMut<NextState<app::GameState>>,
 ) {
-    for (interaction, action) in &interaction_query {
-        if *interaction == Interaction::Pressed {
-            match action {
-                ButtonAction::BackToMainMenu => game_state.set(app::GameState::Menu),
-                ButtonAction::Link(url) => {
-                    if let Some(url) = url {
-                        let _ = webbrowser::open(url);
-                    }
-                }
+    events.nav_iter().activated_in_query_foreach_mut(
+        &mut actions,
+        |mut action| match &mut *action {
+            ButtonAction::BackToMainMenu => game_state.set(app::GameState::Menu),
+            ButtonAction::Link(url) => {
+                let _ = webbrowser::open(url);
             }
-        }
-    }
-}
-
-fn build_about_link(
-    parent: &mut ChildBuilder,
-    asset_server: &Res<AssetServer>,
-    text: &str,
-    icon: Option<&str>,
-    link: Option<&str>,
-    font: &str,
-) -> Entity {
-    let url = link.map(String::from);
-    parent
-        .spawn((
-            ButtonBundle {
-                style: Style {
-                    width: Val::Percent(100.0),
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
-                    ..default()
-                },
-                background_color: app::ui::BG_COLOR.into(),
-                ..default()
-            },
-            ButtonAction::Link(url),
-            app::ui::LinkButton,
-        ))
-        .with_children(|parent| {
-            parent
-                .spawn((NodeBundle {
-                    style: Style {
-                        align_items: AlignItems::Center,
-                        justify_content: JustifyContent::Center,
-                        padding: UiRect::all(app::ui::px_p(0.5)),
-                        ..default()
-                    },
-                    background_color: app::ui::BG_COLOR.into(),
-                    ..default()
-                },))
-                .with_children(|parent| {
-                    if let Some(icon) = icon {
-                        let icon_path = format!("images/icons/{}.png", icon);
-                        let icon = asset_server.load(icon_path);
-                        parent.spawn(ImageBundle {
-                            style: Style {
-                                width: Val::Px(app::ui::ICON_SIZE),
-                                height: Val::Px(app::ui::ICON_SIZE),
-                                margin: UiRect::right(app::ui::px_p(4.0)),
-                                ..default()
-                            },
-                            image: UiImage::new(icon),
-                            ..default()
-                        });
-                    }
-                    let font = if font == "default" {
-                        app::ui::FONT
-                    } else if font == "digit" {
-                        app::ui::FONT_DIGIT
-                    } else {
-                        app::ui::FONT_HW
-                    };
-                    parent.spawn(
-                        TextBundle::from_section(
-                            text,
-                            TextStyle {
-                                font: asset_server.load(font),
-                                font_size: app::ui::FONT_SIZE,
-                                color: app::ui::FG_COLOR,
-                            },
-                        )
-                        .with_style(Style {
-                            margin: UiRect::right(app::ui::px_p(2.0)),
-                            ..default()
-                        }),
-                    );
-                });
-        })
-        .id()
+        },
+    );
 }

@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 
 use crate::{app, page};
 
@@ -7,7 +8,12 @@ pub struct PagePlugin;
 impl Plugin for PagePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(app::GameState::Help), page_setup)
-            .add_systems(Update, page_action.run_if(in_state(app::GameState::Help)))
+            .add_systems(
+                Update,
+                handle_ui_navigation
+                    .after(NavRequestSystem)
+                    .run_if(in_state(app::GameState::Help)),
+            )
             .add_systems(OnExit(app::GameState::Help), app::ui::despawn_ui::<OnPage>);
     }
 }
@@ -86,7 +92,11 @@ fn page_setup(
                             app::ui::build_icon_btn(
                                 parent,
                                 &asset_server,
-                                ButtonAction::PrevHelp,
+                                (
+                                    ButtonAction::PrevHelp,
+                                    app::interaction::IaButton,
+                                    Focusable::default(),
+                                ),
                                 Style::default(),
                                 "caret-double-left-light",
                             );
@@ -108,7 +118,11 @@ fn page_setup(
                             app::ui::build_icon_btn(
                                 parent,
                                 &asset_server,
-                                ButtonAction::NextHelp,
+                                (
+                                    ButtonAction::NextHelp,
+                                    app::interaction::IaButton,
+                                    Focusable::new().prioritized(),
+                                ),
                                 Style::default(),
                                 "caret-double-right-light",
                             );
@@ -127,14 +141,22 @@ fn page_setup(
                             app::ui::build_icon_btn(
                                 parent,
                                 &asset_server,
-                                ButtonAction::BackToMainMenu,
+                                (
+                                    ButtonAction::BackToMainMenu,
+                                    app::interaction::IaButton,
+                                    Focusable::default(),
+                                ),
                                 Style::default(),
                                 "arrow-left-light",
                             );
                             app::ui::build_btn(
                                 parent,
                                 &asset_server,
-                                ButtonAction::Start,
+                                (
+                                    ButtonAction::Start,
+                                    app::interaction::IaButton,
+                                    Focusable::default(),
+                                ),
                                 Style {
                                     padding: UiRect::all(app::ui::px_p(3.0)),
                                     ..default()
@@ -147,51 +169,51 @@ fn page_setup(
         });
 }
 
-fn page_action(
-    interaction_query: Query<(&Interaction, &ButtonAction), (Changed<Interaction>, With<Button>)>,
+fn handle_ui_navigation(
+    mut actions: Query<&mut ButtonAction>,
+    mut events: EventReader<NavEvent>,
+    mut game_state: ResMut<NextState<app::GameState>>,
     mut help_panel_query: Query<(&mut HelpPanel, &mut UiImage), With<HelpPanel>>,
     mut help_dot_query: Query<(&HelpDot, &mut BackgroundColor), With<HelpDot>>,
-    mut game_state: ResMut<NextState<app::GameState>>,
     asset_server: Res<AssetServer>,
 ) {
-    for (interaction, action) in &interaction_query {
-        if *interaction == Interaction::Pressed {
-            match action {
-                ButtonAction::BackToMainMenu => game_state.set(app::GameState::Menu),
-                ButtonAction::PrevHelp => {
-                    let (mut help_panel, mut image) = help_panel_query.single_mut();
-                    let prev_help = (help_panel.0 + HELP_COUNT - 1) % HELP_COUNT;
-                    help_panel.0 = prev_help;
-                    let icon_path = format!("images/help/{:0>2}.png", prev_help);
-                    let icon = asset_server.load(icon_path);
-                    image.texture = icon;
-                    for (help_dot, mut bg_color) in help_dot_query.iter_mut() {
-                        if help_dot.0 == prev_help {
-                            *bg_color = app::ui::MUTE_COLOR.into();
-                        } else {
-                            *bg_color = app::ui::BG_COLOR.into();
-                        }
+    events.nav_iter().activated_in_query_foreach_mut(
+        &mut actions,
+        |mut action| match &mut *action {
+            ButtonAction::BackToMainMenu => game_state.set(app::GameState::Menu),
+            ButtonAction::PrevHelp => {
+                let (mut help_panel, mut image) = help_panel_query.single_mut();
+                let prev_help = (help_panel.0 + HELP_COUNT - 1) % HELP_COUNT;
+                help_panel.0 = prev_help;
+                let icon_path = format!("images/help/{:0>2}.png", prev_help);
+                let icon = asset_server.load(icon_path);
+                image.texture = icon;
+                for (help_dot, mut bg_color) in help_dot_query.iter_mut() {
+                    if help_dot.0 == prev_help {
+                        *bg_color = app::ui::MUTE_COLOR.into();
+                    } else {
+                        *bg_color = app::ui::BG_COLOR.into();
                     }
                 }
-                ButtonAction::NextHelp => {
-                    let (mut help_panel, mut image) = help_panel_query.single_mut();
-                    let next_help = (help_panel.0 + 1) % HELP_COUNT;
-                    help_panel.0 = next_help;
-                    let icon_path = format!("images/help/{:0>2}.png", next_help);
-                    let icon = asset_server.load(icon_path);
-                    image.texture = icon;
-                    for (help_dot, mut bg_color) in help_dot_query.iter_mut() {
-                        if help_dot.0 == next_help {
-                            *bg_color = app::ui::MUTE_COLOR.into();
-                        } else {
-                            *bg_color = app::ui::BG_COLOR.into();
-                        }
-                    }
-                }
-                ButtonAction::Start => game_state.set(app::GameState::Game),
             }
-        }
-    }
+            ButtonAction::NextHelp => {
+                let (mut help_panel, mut image) = help_panel_query.single_mut();
+                let next_help = (help_panel.0 + 1) % HELP_COUNT;
+                help_panel.0 = next_help;
+                let icon_path = format!("images/help/{:0>2}.png", next_help);
+                let icon = asset_server.load(icon_path);
+                image.texture = icon;
+                for (help_dot, mut bg_color) in help_dot_query.iter_mut() {
+                    if help_dot.0 == next_help {
+                        *bg_color = app::ui::MUTE_COLOR.into();
+                    } else {
+                        *bg_color = app::ui::BG_COLOR.into();
+                    }
+                }
+            }
+            ButtonAction::Start => game_state.set(app::GameState::Game),
+        },
+    );
 }
 
 const HELP_PANEL_SIZE: f32 = 156.0;

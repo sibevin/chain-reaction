@@ -7,7 +7,7 @@ pub mod help;
 pub mod menu;
 pub mod settings;
 
-const PAGE_PADDING: f32 = 4.0;
+pub const PAGE_PADDING: f32 = 4.0;
 const PAGE_TITLE_RATIO: f32 = 1.2;
 const SEP_W: f32 = 500.0;
 
@@ -75,7 +75,7 @@ pub fn build_page_title(
                 height: Val::Auto,
                 justify_content: JustifyContent::SpaceBetween,
                 align_items: AlignItems::Center,
-                margin: UiRect::top(app::ui::px_p(3.0)),
+                margin: UiRect::top(app::ui::px_p(2.0)),
                 padding: UiRect::all(app::ui::px_p(2.0)),
                 border: UiRect::all(app::ui::px_p(0.5)),
                 ..default()

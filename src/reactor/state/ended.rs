@@ -1,5 +1,6 @@
 use crate::{app, reactor};
 use bevy::prelude::*;
+use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 
 pub struct StatePlugin;
 
@@ -11,7 +12,9 @@ impl Plugin for StatePlugin {
         )
         .add_systems(
             Update,
-            state_action.run_if(in_state(reactor::ReactorState::Ended)),
+            handle_ui_navigation
+                .after(NavRequestSystem)
+                .run_if(in_state(reactor::ReactorState::Ended)),
         )
         .add_systems(
             OnExit(reactor::ReactorState::Ended),
@@ -86,7 +89,11 @@ fn state_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     app::ui::build_icon_btn(
                         parent,
                         &asset_server,
-                        ButtonAction::BackToMenu,
+                        (
+                            ButtonAction::BackToMenu,
+                            app::interaction::IaButton,
+                            Focusable::default(),
+                        ),
                         Style {
                             position_type: PositionType::Absolute,
                             left: Val::Px(18.0),
@@ -103,15 +110,15 @@ fn state_exit(to_despawn: Query<Entity, With<StateRootUi>>, commands: Commands) 
     app::ui::despawn_ui::<StateRootUi>(to_despawn, commands);
 }
 
-fn state_action(
-    interaction_query: Query<(&Interaction, &ButtonAction), (Changed<Interaction>, With<Button>)>,
+fn handle_ui_navigation(
+    mut actions: Query<&mut ButtonAction>,
+    mut events: EventReader<NavEvent>,
     mut game_state: ResMut<NextState<app::GameState>>,
 ) {
-    for (interaction, action) in &interaction_query {
-        if *interaction == Interaction::Pressed {
-            match action {
-                ButtonAction::BackToMenu => game_state.set(app::GameState::Menu),
-            }
-        }
-    }
+    events.nav_iter().activated_in_query_foreach_mut(
+        &mut actions,
+        |mut action| match &mut *action {
+            ButtonAction::BackToMenu => game_state.set(app::GameState::Menu),
+        },
+    );
 }

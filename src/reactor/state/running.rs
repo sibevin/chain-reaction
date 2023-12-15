@@ -3,6 +3,7 @@ use crate::{
     reactor::{self, field, hit::*, particle::*},
 };
 use bevy::{input, prelude::*};
+use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 use std::f32::consts::PI;
 
 pub struct StatePlugin;
@@ -13,10 +14,9 @@ impl Plugin for StatePlugin {
             .add_systems(
                 Update,
                 (
-                    handle_pause_btn,
                     control_u_by_mouse,
                     control_u_by_keyboard,
-                    pause_by_keyboard,
+                    handle_pause_btn.after(NavRequestSystem),
                     move_particle,
                     reactor::field::timer::update_field,
                     reactor::field::alpha_count::update_field,
@@ -88,7 +88,11 @@ fn state_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     app::ui::build_icon_btn(
                         parent,
                         &asset_server,
-                        ButtonAction::Pause,
+                        (
+                            ButtonAction::Pause,
+                            app::interaction::IaButton,
+                            Focusable::default(),
+                        ),
                         Style {
                             position_type: PositionType::Absolute,
                             left: Val::Px(18.0),
@@ -175,7 +179,8 @@ fn control_u_by_mouse(
     for interaction in &mut panel_query {
         match *interaction {
             Interaction::Pressed => {
-                for event in mouse_motion_events.read() {
+                let events = mouse_motion_events.read().collect::<Vec<_>>();
+                for event in events.iter().rev().take(3) {
                     let (mut u_particle, mut u_transform) =
                         u_particle_query.get_single_mut().unwrap();
                     let new_pos = calculate_u_new_pos(
@@ -194,16 +199,16 @@ fn control_u_by_mouse(
 }
 
 fn handle_pause_btn(
-    interaction_query: Query<(&Interaction, &ButtonAction), (Changed<Interaction>, With<Button>)>,
+    mut actions: Query<&mut ButtonAction>,
+    mut events: EventReader<NavEvent>,
     mut reactor_state: ResMut<NextState<reactor::ReactorState>>,
 ) {
-    for (interaction, action) in &interaction_query {
-        if *interaction == Interaction::Pressed {
-            match action {
-                ButtonAction::Pause => reactor_state.set(reactor::ReactorState::Paused),
-            }
-        }
-    }
+    events.nav_iter().activated_in_query_foreach_mut(
+        &mut actions,
+        |mut action| match &mut *action {
+            ButtonAction::Pause => reactor_state.set(reactor::ReactorState::Paused),
+        },
+    );
 }
 
 fn calculate_u_new_pos(current: Vec2, delta: Vec2, sensitivity: u8) -> Vec2 {
@@ -419,16 +424,4 @@ fn control_u_by_keyboard(
     u_particle.jump(new_pos);
     u_transform.translation.x = new_pos.x;
     u_transform.translation.y = new_pos.y;
-}
-
-fn pause_by_keyboard(
-    keyboard_input: Res<Input<KeyCode>>,
-    mut reactor_state: ResMut<NextState<reactor::ReactorState>>,
-) {
-    if keyboard_input.pressed(KeyCode::Space)
-        || keyboard_input.pressed(KeyCode::Return)
-        || keyboard_input.pressed(KeyCode::Escape)
-    {
-        reactor_state.set(reactor::ReactorState::Paused)
-    }
 }

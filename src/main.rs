@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_ui_navigation::prelude::*;
 use bevy_vector_shapes::prelude::*;
 use chain_reaction::{app, page, reactor};
 
@@ -19,6 +20,7 @@ fn main() {
         .add_plugins((
             app::init::InitPlugin,
             Shape2dPlugin::default(),
+            DefaultNavigationPlugins,
             app::settings::SettingsPlugin,
             app::audio::AudioSeAssetPlugin,
             reactor::state::demo::StatePlugin,
@@ -27,7 +29,7 @@ fn main() {
             page::settings::PagePlugin,
             page::help::PagePlugin,
             page::about::PagePlugin,
-            app::ui::ButtonInteractionPlugin,
+            app::interaction::InteractionPlugin,
         ))
         .run();
 }

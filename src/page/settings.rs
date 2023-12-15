@@ -1,4 +1,5 @@
 use bevy::{input, prelude::*, window::WindowMode};
+use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 
 use crate::{app, page, reactor};
 
@@ -10,9 +11,14 @@ impl Plugin for PagePlugin {
             .add_systems(
                 Update,
                 (
-                    page_action,
                     move_test_panel_action,
                     control_test_ball_by_keyboard,
+                    (
+                        handle_slider_mouse_interaction,
+                        handle_ui_navigation,
+                        handle_slider_navigation,
+                    )
+                        .after(NavRequestSystem),
                 )
                     .run_if(in_state(app::GameState::Settings)),
             )
@@ -136,7 +142,7 @@ fn page_setup(
                                                 ButtonAction::Toggle(String::from("bgm")),
                                                 settings.is_enabled("bgm"),
                                             );
-                                            build_range_bar(
+                                            build_slider_bar(
                                                 parent,
                                                 &asset_server,
                                                 ButtonAction::SetValue(String::from("bgm")),
@@ -166,11 +172,20 @@ fn page_setup(
                                                     app::ui::build_icon_btn(
                                                         parent,
                                                         &asset_server,
-                                                        ButtonAction::PlaySe,
-                                                        Style::default(),
+                                                        (
+                                                            ButtonAction::PlaySe,
+                                                            app::interaction::IaButton,
+                                                            Focusable::default(),
+                                                        ),
+                                                        Style {
+                                                            margin: UiRect::right(app::ui::px_p(
+                                                                4.0,
+                                                            )),
+                                                            ..default()
+                                                        },
                                                         "play-light",
                                                     );
-                                                    build_range_bar(
+                                                    build_slider_bar(
                                                         parent,
                                                         &asset_server,
                                                         ButtonAction::SetValue(String::from("se")),
@@ -206,7 +221,7 @@ fn page_setup(
                                                 "Sensitivity",
                                                 "gauge-fill",
                                             );
-                                            build_range_bar(
+                                            build_slider_bar(
                                                 parent,
                                                 &asset_server,
                                                 ButtonAction::SetValue(String::from("sensitivity")),
@@ -219,7 +234,11 @@ fn page_setup(
                     app::ui::build_icon_btn(
                         parent,
                         &asset_server,
-                        ButtonAction::BackToMainMenu,
+                        (
+                            ButtonAction::BackToMainMenu,
+                            app::interaction::IaButton,
+                            Focusable::new().prioritized(),
+                        ),
                         Style {
                             align_self: AlignSelf::Start,
                             ..default()
@@ -230,155 +249,42 @@ fn page_setup(
         });
 }
 
-fn page_action(
-    interaction_query: Query<
-        (&Interaction, &ButtonAction, &Children),
-        (
-            Changed<Interaction>,
-            (With<Button>, Without<app::ui::RangeButton>),
-        ),
-    >,
+fn handle_slider_mouse_interaction(
     range_bar_query: Query<
         (&Interaction, &ButtonAction, &Children),
-        (With<Interaction>, With<app::ui::RangeButton>),
+        (With<Interaction>, With<app::interaction::IaSlider>),
     >,
-    mut switch_icon_query: Query<(Entity, &mut UiImage), With<SwitchButtonIcon>>,
     mut range_value_bar_query: Query<
         (Entity, &mut Style),
         (With<RangeValueBar>, Without<RangeBgBar>),
     >,
     mut range_bg_bar_query: Query<(Entity, &mut Style), (With<RangeBgBar>, Without<RangeValueBar>)>,
     mut range_bar_text_query: Query<(Entity, &mut Text), With<RangeBarText>>,
-    mut window_query: Query<&mut Window>,
-    mut game_state: ResMut<NextState<app::GameState>>,
     mut settings: ResMut<app::settings::Settings>,
-    asset_server: Res<AssetServer>,
     mut mouse_motion_events: EventReader<input::mouse::MouseMotion>,
-    mut commands: Commands,
     audio_bgm_query: Query<&AudioSink, With<app::audio::AudioBgm>>,
-    audio_se_asset: Res<app::audio::AudioSeAsset>,
 ) {
-    for (interaction, action, children) in &interaction_query {
-        match *interaction {
-            Interaction::Pressed => match action {
-                ButtonAction::BackToMainMenu => game_state.set(app::GameState::Menu),
-                ButtonAction::Toggle(target) => {
-                    settings.toggle(target);
-                    let is_enabled = settings.is_enabled(target);
-                    let mut is_found = false;
-                    for (icon_entity, mut icon_image) in switch_icon_query.iter_mut() {
-                        for child in children {
-                            if *child == icon_entity {
-                                is_found = true;
-                                icon_image.texture = if is_enabled {
-                                    asset_server.load("images/icons/toggle-left-fill.png")
-                                } else {
-                                    asset_server.load("images/icons/toggle-right-fill.png")
-                                };
-                            }
-                            if is_found {
-                                break;
-                            }
-                        }
-                        if is_found {
-                            break;
-                        }
-                    }
-                    if target == "fullscreen" {
-                        let mut window = window_query.single_mut();
-                        if is_enabled {
-                            window.mode = WindowMode::Fullscreen
-                        } else {
-                            window.mode = WindowMode::Windowed
-                        }
-                    } else if target == "bgm" {
-                        if let Ok(sink) = audio_bgm_query.get_single() {
-                            if is_enabled {
-                                sink.play();
-                            } else {
-                                sink.pause();
-                            }
-                        }
-                    }
-                }
-                ButtonAction::PlaySe => {
-                    app::audio::play_se(
-                        app::audio::AudioSe::Boom,
-                        &mut commands,
-                        &audio_se_asset,
-                        settings.as_ref(),
-                    );
-                }
-                _ => (),
-            },
-            _ => (),
-        }
-    }
     for (interaction, action, children) in &range_bar_query {
-        match *interaction {
-            Interaction::Pressed => match action {
-                ButtonAction::SetValue(target) => {
-                    for event in mouse_motion_events.read() {
-                        let updated_value =
-                            settings.get_value(target) as i8 + (event.delta.x * 0.5) as i8;
-                        settings.set_value(target, updated_value);
-                        let value = settings.get_value(target);
-                        if target == "bgm" {
-                            if let Ok(sink) = audio_bgm_query.get_single() {
-                                sink.set_volume(app::audio::to_volume(value));
-                            }
-                        }
-                        let mut is_found = false;
-                        let range_bar_w = calculate_range_bar_width(value);
-                        for (bar_entity, mut bar_style) in range_value_bar_query.iter_mut() {
-                            for child in children {
-                                if *child == bar_entity {
-                                    is_found = true;
-                                    bar_style.width = app::ui::px_p(range_bar_w.0);
-                                }
-                                if is_found {
-                                    break;
-                                }
-                            }
-                            if is_found {
-                                break;
-                            }
-                        }
-                        is_found = false;
-                        for (bar_entity, mut bar_style) in range_bg_bar_query.iter_mut() {
-                            for child in children {
-                                if *child == bar_entity {
-                                    is_found = true;
-                                    bar_style.width = app::ui::px_p(range_bar_w.1);
-                                }
-                                if is_found {
-                                    break;
-                                }
-                            }
-                            if is_found {
-                                break;
-                            }
-                        }
-                        is_found = false;
-                        for (bar_entity, mut bar_text) in range_bar_text_query.iter_mut() {
-                            for child in children {
-                                if *child == bar_entity {
-                                    is_found = true;
-                                    bar_text.sections[0].value = format!("{}", value);
-                                }
-                                if is_found {
-                                    break;
-                                }
-                            }
-                            if is_found {
-                                break;
-                            }
-                        }
+        if let ButtonAction::SetValue(target) = action {
+            match *interaction {
+                Interaction::Pressed => {
+                    let events = mouse_motion_events.read().collect::<Vec<_>>();
+                    for event in events.iter().rev().take(3) {
+                        update_slider_display(
+                            children,
+                            target,
+                            (event.delta.x * 0.5) as i8,
+                            &mut settings,
+                            &mut range_value_bar_query,
+                            &mut range_bg_bar_query,
+                            &mut range_bar_text_query,
+                            &audio_bgm_query,
+                        );
+                        break;
                     }
                 }
                 _ => (),
-            },
-            _ => (),
+            }
         }
     }
 }
@@ -392,7 +298,8 @@ fn move_test_panel_action(
     for (interaction, children) in &mut panel_query {
         match *interaction {
             Interaction::Pressed => {
-                for event in mouse_motion_events.read() {
+                let events = mouse_motion_events.read().collect::<Vec<_>>();
+                for event in events.iter().rev().take(3) {
                     let mut ball_style = ball_query.get_mut(children[0]).unwrap();
                     let ori_x: f32 = match ball_style.left {
                         Val::Px(value) => value,
@@ -410,6 +317,7 @@ fn move_test_panel_action(
                     );
                     ball_style.left = Val::Px(new_pos.0);
                     ball_style.top = Val::Px(new_pos.1);
+                    break;
                 }
             }
             _ => (),
@@ -429,16 +337,18 @@ fn build_switch_btn(
         .spawn((
             ButtonBundle {
                 style: Style {
-                    width: Val::Percent(100.0),
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
+                    border: UiRect::all(app::ui::px_p(1.0)),
+                    padding: UiRect::all(app::ui::px_p(3.0)),
                     ..default()
                 },
                 background_color: app::ui::BG_COLOR.into(),
                 ..default()
             },
             bundle,
-            app::ui::SwitchButton,
+            app::interaction::IaSwitch,
+            Focusable::default(),
         ))
         .with_children(|parent| {
             parent.spawn(TextBundle::from_section(
@@ -459,12 +369,7 @@ fn build_switch_btn(
                     style: Style {
                         width: Val::Px(app::ui::ICON_SIZE * SWITCH_ICON_RATIO),
                         height: Val::Px(app::ui::ICON_SIZE * SWITCH_ICON_RATIO),
-                        margin: UiRect::new(
-                            app::ui::px_p(6.0),
-                            app::ui::px_p(6.0),
-                            app::ui::px_p(1.5),
-                            app::ui::px_p(0.0),
-                        ),
+                        margin: UiRect::horizontal(app::ui::px_p(6.0)),
                         ..default()
                     },
                     image: UiImage::new(icon),
@@ -487,7 +392,7 @@ fn build_switch_btn(
 const RANGE_BAR_H: f32 = 6.0;
 const RANGE_BAR_W: f32 = 60.0;
 
-fn build_range_bar(
+fn build_slider_bar(
     parent: &mut ChildBuilder,
     asset_server: &Res<AssetServer>,
     bundle: impl Bundle,
@@ -498,17 +403,18 @@ fn build_range_bar(
         .spawn((
             ButtonBundle {
                 style: Style {
-                    width: Val::Percent(100.0),
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
                     padding: UiRect::all(app::ui::px_p(6.0)),
+                    border: UiRect::all(app::ui::px_p(1.0)),
                     ..default()
                 },
                 background_color: app::ui::BG_COLOR.into(),
                 ..default()
             },
             bundle,
-            app::ui::RangeButton,
+            app::interaction::IaSlider,
+            Focusable::default(),
         ))
         .with_children(|parent| {
             parent.spawn((
@@ -659,4 +565,181 @@ fn control_test_ball_by_keyboard(
     let new_pos = calculate_test_ball_pos((ori_x, ori_y), delta, settings.get_value("sensitivity"));
     ball_style.left = Val::Px(new_pos.0);
     ball_style.top = Val::Px(new_pos.1);
+}
+
+const SLIDER_DELTA: i8 = 5;
+
+fn handle_slider_navigation(
+    mut events: EventReader<NavEvent>,
+    mut action_query: Query<(&ButtonAction, &Children), With<app::interaction::IaSlider>>,
+    mut settings: ResMut<app::settings::Settings>,
+    mut range_value_bar_query: Query<
+        (Entity, &mut Style),
+        (With<RangeValueBar>, Without<RangeBgBar>),
+    >,
+    mut range_bg_bar_query: Query<(Entity, &mut Style), (With<RangeBgBar>, Without<RangeValueBar>)>,
+    mut range_bar_text_query: Query<(Entity, &mut Text), With<RangeBarText>>,
+    audio_bgm_query: Query<&AudioSink, With<app::audio::AudioBgm>>,
+) {
+    for event in events.read() {
+        match event {
+            NavEvent::NoChanges { from, request } => match request {
+                NavRequest::Action => {
+                    for (action, children) in action_query.iter_many_mut(vec![*from.first()]) {
+                        match action {
+                            ButtonAction::SetValue(target) => {
+                                update_slider_display(
+                                    children,
+                                    target,
+                                    SLIDER_DELTA,
+                                    &mut settings,
+                                    &mut range_value_bar_query,
+                                    &mut range_bg_bar_query,
+                                    &mut range_bar_text_query,
+                                    &audio_bgm_query,
+                                );
+                            }
+                            _ => (),
+                        }
+                    }
+                }
+                NavRequest::Cancel => {
+                    for (action, children) in action_query.iter_many_mut(vec![*from.first()]) {
+                        match action {
+                            ButtonAction::SetValue(target) => {
+                                update_slider_display(
+                                    children,
+                                    target,
+                                    -SLIDER_DELTA,
+                                    &mut settings,
+                                    &mut range_value_bar_query,
+                                    &mut range_bg_bar_query,
+                                    &mut range_bar_text_query,
+                                    &audio_bgm_query,
+                                );
+                            }
+                            _ => (),
+                        }
+                    }
+                }
+                _ => (),
+            },
+            _ => (),
+        }
+    }
+}
+
+fn update_slider_display(
+    children: &Children,
+    target: &str,
+    delta: i8,
+    settings: &mut ResMut<app::settings::Settings>,
+    range_value_bar_query: &mut Query<
+        (Entity, &mut Style),
+        (With<RangeValueBar>, Without<RangeBgBar>),
+    >,
+    range_bg_bar_query: &mut Query<
+        (Entity, &mut Style),
+        (With<RangeBgBar>, Without<RangeValueBar>),
+    >,
+    range_bar_text_query: &mut Query<(Entity, &mut Text), With<RangeBarText>>,
+    audio_bgm_query: &Query<&AudioSink, With<app::audio::AudioBgm>>,
+) {
+    let updated_value = settings.get_value(target) as i8 + delta;
+    settings.set_value(target, updated_value);
+    let value = settings.get_value(target);
+    if target == "bgm" {
+        if let Ok(sink) = audio_bgm_query.get_single() {
+            sink.set_volume(app::audio::to_volume(value));
+        }
+    }
+    let range_bar_w = calculate_range_bar_width(value);
+    for child in children {
+        for (bar_entity, mut bar_style) in range_value_bar_query.iter_mut() {
+            if *child == bar_entity {
+                bar_style.width = app::ui::px_p(range_bar_w.0);
+                break;
+            }
+        }
+        for (bar_entity, mut bar_style) in range_bg_bar_query.iter_mut() {
+            if *child == bar_entity {
+                bar_style.width = app::ui::px_p(range_bar_w.1);
+                break;
+            }
+        }
+        for (bar_entity, mut bar_text) in range_bar_text_query.iter_mut() {
+            if *child == bar_entity {
+                bar_text.sections[0].value = format!("{}", value);
+                break;
+            }
+        }
+    }
+}
+
+fn handle_ui_navigation(
+    mut action_query: Query<(&mut ButtonAction, &Children), Without<app::interaction::IaSlider>>,
+    mut events: EventReader<NavEvent>,
+    mut commands: Commands,
+    mut game_state: ResMut<NextState<app::GameState>>,
+    mut settings: ResMut<app::settings::Settings>,
+    mut window_query: Query<&mut Window>,
+    mut switch_icon_query: Query<(Entity, &mut UiImage), With<SwitchButtonIcon>>,
+    asset_server: Res<AssetServer>,
+    audio_bgm_query: Query<&AudioSink, With<app::audio::AudioBgm>>,
+    audio_se_asset: Res<app::audio::AudioSeAsset>,
+) {
+    events.nav_iter().activated_in_query_foreach_mut(
+        &mut action_query,
+        |(mut action, children)| match &mut *action {
+            ButtonAction::Toggle(target) => {
+                settings.toggle(target.as_ref());
+                let is_enabled = settings.is_enabled(&target);
+                let mut is_found = false;
+                for (icon_entity, mut icon_image) in switch_icon_query.iter_mut() {
+                    for child in children {
+                        if *child == icon_entity {
+                            is_found = true;
+                            icon_image.texture = if is_enabled {
+                                asset_server.load("images/icons/toggle-left-fill.png")
+                            } else {
+                                asset_server.load("images/icons/toggle-right-fill.png")
+                            };
+                        }
+                        if is_found {
+                            break;
+                        }
+                    }
+                    if is_found {
+                        break;
+                    }
+                }
+                if target == "fullscreen" {
+                    let mut window = window_query.single_mut();
+                    if is_enabled {
+                        window.mode = WindowMode::Fullscreen
+                    } else {
+                        window.mode = WindowMode::Windowed
+                    }
+                } else if target == "bgm" {
+                    if let Ok(sink) = audio_bgm_query.get_single() {
+                        if is_enabled {
+                            sink.play();
+                        } else {
+                            sink.pause();
+                        }
+                    }
+                }
+            }
+            ButtonAction::PlaySe => {
+                app::audio::play_se(
+                    app::audio::AudioSe::Boom,
+                    &mut commands,
+                    &audio_se_asset,
+                    settings.as_ref(),
+                );
+            }
+            ButtonAction::BackToMainMenu => game_state.set(app::GameState::Menu),
+            _ => (),
+        },
+    );
 }

@@ -1,5 +1,6 @@
 use crate::{app, reactor};
 use bevy::{app::AppExit, prelude::*};
+use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 
 pub struct StatePlugin;
 
@@ -11,7 +12,9 @@ impl Plugin for StatePlugin {
         )
         .add_systems(
             Update,
-            state_action.run_if(in_state(reactor::ReactorState::Paused)),
+            handle_ui_navigation
+                .after(NavRequestSystem)
+                .run_if(in_state(reactor::ReactorState::Paused)),
         )
         .add_systems(
             OnExit(reactor::ReactorState::Paused),
@@ -79,21 +82,33 @@ fn state_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     app::ui::build_menu_entry(
                         parent,
                         &asset_server,
-                        ButtonAction::Resume,
+                        (
+                            ButtonAction::Resume,
+                            app::interaction::IaButton,
+                            Focusable::default(),
+                        ),
                         "Resume",
                         "play-light",
                     );
                     app::ui::build_menu_entry(
                         parent,
                         &asset_server,
-                        ButtonAction::Abort,
+                        (
+                            ButtonAction::Abort,
+                            app::interaction::IaButton,
+                            Focusable::default(),
+                        ),
                         "Abort",
                         "arrow-left-light",
                     );
                     app::ui::build_menu_entry(
                         parent,
                         &asset_server,
-                        ButtonAction::Quit,
+                        (
+                            ButtonAction::Quit,
+                            app::interaction::IaButton,
+                            Focusable::default(),
+                        ),
                         "Quit",
                         "sign-out-light",
                     );
@@ -105,19 +120,19 @@ fn state_exit(to_despawn: Query<Entity, With<StateRootUi>>, commands: Commands) 
     app::ui::despawn_ui::<StateRootUi>(to_despawn, commands);
 }
 
-fn state_action(
-    interaction_query: Query<(&Interaction, &ButtonAction), (Changed<Interaction>, With<Button>)>,
+fn handle_ui_navigation(
+    mut actions: Query<&mut ButtonAction>,
+    mut events: EventReader<NavEvent>,
     mut game_state: ResMut<NextState<app::GameState>>,
     mut reactor_state: ResMut<NextState<reactor::ReactorState>>,
     mut app_exit_events: EventWriter<AppExit>,
 ) {
-    for (interaction, action) in &interaction_query {
-        if *interaction == Interaction::Pressed {
-            match action {
-                ButtonAction::Resume => reactor_state.set(reactor::ReactorState::Running),
-                ButtonAction::Abort => game_state.set(app::GameState::Menu),
-                ButtonAction::Quit => app_exit_events.send(AppExit),
-            }
-        }
-    }
+    events.nav_iter().activated_in_query_foreach_mut(
+        &mut actions,
+        |mut action| match &mut *action {
+            ButtonAction::Resume => reactor_state.set(reactor::ReactorState::Running),
+            ButtonAction::Abort => game_state.set(app::GameState::Menu),
+            ButtonAction::Quit => app_exit_events.send(AppExit),
+        },
+    );
 }

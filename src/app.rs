@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 pub mod audio;
 pub mod init;
+pub mod interaction;
 pub mod settings;
 pub mod ui;
 

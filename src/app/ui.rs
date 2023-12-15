@@ -1,4 +1,6 @@
+use crate::app;
 use bevy::prelude::*;
+use bevy_ui_navigation::prelude::*;
 
 pub const MENU_W: f32 = 300.0;
 pub const FONT_SIZE: f32 = 32.0;
@@ -161,42 +163,75 @@ pub fn build_menu_entry(
         .id()
 }
 
-pub struct ButtonInteractionPlugin;
-
-#[derive(Component)]
-pub struct LinkButton;
+pub fn build_link(
+    parent: &mut ChildBuilder,
+    asset_server: &Res<AssetServer>,
+    bundle: impl Bundle,
+    text: &str,
+    icon: Option<&str>,
+    font: &str,
+    enable_interaction: bool,
+) -> Entity {
+    let mut entity = parent.spawn((
+        NodeBundle {
+            style: Style {
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                padding: UiRect::all(px_p(1.0)),
+                border: UiRect::bottom(px_p(1.0)),
+                ..default()
+            },
+            background_color: BG_COLOR.into(),
+            border_color: BG_COLOR.into(),
+            ..default()
+        },
+        bundle,
+    ));
+    entity.with_children(|parent| {
+        if let Some(icon) = icon {
+            let icon_path = format!("images/icons/{}.png", icon);
+            let icon = asset_server.load(icon_path);
+            parent.spawn(ImageBundle {
+                style: Style {
+                    width: Val::Px(ICON_SIZE),
+                    height: Val::Px(ICON_SIZE),
+                    margin: UiRect::right(px_p(4.0)),
+                    ..default()
+                },
+                image: UiImage::new(icon),
+                ..default()
+            });
+        }
+        let font = if font == "default" {
+            FONT
+        } else if font == "digit" {
+            FONT_DIGIT
+        } else {
+            FONT_HW
+        };
+        parent.spawn(
+            TextBundle::from_section(
+                text,
+                TextStyle {
+                    font: asset_server.load(font),
+                    font_size: FONT_SIZE,
+                    color: FG_COLOR,
+                },
+            )
+            .with_style(Style {
+                margin: UiRect::right(px_p(2.0)),
+                ..default()
+            }),
+        );
+    });
+    if enable_interaction {
+        entity.insert((app::interaction::IaLink, Focusable::default()));
+    };
+    entity.id()
+}
 
 #[derive(Component)]
 pub struct SwitchButton;
 
 #[derive(Component)]
 pub struct RangeButton;
-
-impl Plugin for ButtonInteractionPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(Update, button_interaction);
-    }
-}
-
-fn button_interaction(
-    mut interaction_query: Query<
-        (&Interaction, &mut BackgroundColor),
-        (
-            Changed<Interaction>,
-            (
-                With<Button>,
-                Without<LinkButton>,
-                Without<SwitchButton>,
-                Without<RangeButton>,
-            ),
-        ),
-    >,
-) {
-    for (interaction, mut color) in &mut interaction_query {
-        *color = match *interaction {
-            Interaction::Pressed => BTN_PRESSED_BG.into(),
-            Interaction::Hovered => BTN_HOVERED_BG.into(),
-            Interaction::None => BTN_BG.into(),
-        }
-    }
-}
