@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="en">
 
-<body style="margin: 0px;">
+<body style="margin: 0px; width: 100vw; height:100vh">
   <script type="module">
     import './restart-audio-context.js'
-    import init from './bevy_game.js'
+    import init from './chain-reaction.js'
 
     init().catch((error) => {
       if (!error.message.startsWith("Using exceptions for control flow, don't mind me. This isn't actually an error!")) {
