@@ -153,7 +153,7 @@ fn move_particle(
                                 &mut commands,
                                 reactor::RunningParticle,
                                 Some(particle.pos() + direction * particle.radius()),
-                                Some(Particle::gen_random_v(Some(direction))),
+                                Some(direction),
                                 None,
                             );
                         }
@@ -264,12 +264,12 @@ fn handle_particle_reaction(
                                             &mut commands,
                                             reactor::RunningParticle,
                                             Some(p.pos() + direction * p.radius() * 3.0),
-                                            Some(Particle::gen_random_v(Some(direction))),
+                                            Some(direction),
                                             Some(1),
                                         );
                                     }
                                 } else {
-                                    let direction = Particle::gen_random_v(None).normalize();
+                                    let direction = Particle::gen_random_direction();
                                     alpha::build_particle_sprite(
                                         &mut commands,
                                         reactor::RunningParticle,
@@ -288,7 +288,7 @@ fn handle_particle_reaction(
                             }
                             HitAction::MoveOnly => {
                                 p.reset_countdown();
-                                p.set_v(Particle::gen_random_v(None))
+                                p.assign_random_v(None);
                             }
                             _ => (),
                         },

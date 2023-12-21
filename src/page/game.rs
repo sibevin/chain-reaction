@@ -31,7 +31,7 @@ fn page_setup(mut commands: Commands, mut reactor_state: ResMut<NextState<reacto
         &mut commands,
         reactor::RunningParticle,
         Some(hyper_pos),
-        Some(Particle::gen_random_v(Some(hyper_pos))),
+        Some(hyper_pos),
         None,
     );
     let hyper_pos = Vec2::new(-reactor::FIELD_H / 3.0, -reactor::FIELD_H / 3.0);
@@ -39,7 +39,7 @@ fn page_setup(mut commands: Commands, mut reactor_state: ResMut<NextState<reacto
         &mut commands,
         reactor::RunningParticle,
         Some(hyper_pos),
-        Some(Particle::gen_random_v(Some(hyper_pos))),
+        Some(hyper_pos),
         None,
     );
     let trigger_pos = Vec2::new(reactor::FIELD_H / 3.0, reactor::FIELD_H / 3.0);
@@ -47,7 +47,7 @@ fn page_setup(mut commands: Commands, mut reactor_state: ResMut<NextState<reacto
         &mut commands,
         reactor::RunningParticle,
         Some(trigger_pos),
-        Some(Particle::gen_random_v(Some(trigger_pos))),
+        Some(trigger_pos),
         None,
     );
     let trigger_pos = Vec2::new(-reactor::FIELD_H / 3.0, reactor::FIELD_H / 3.0);
@@ -55,7 +55,7 @@ fn page_setup(mut commands: Commands, mut reactor_state: ResMut<NextState<reacto
         &mut commands,
         reactor::RunningParticle,
         Some(trigger_pos),
-        Some(Particle::gen_random_v(Some(trigger_pos))),
+        Some(trigger_pos),
         None,
     );
     reactor_state.set(reactor::ReactorState::Running)

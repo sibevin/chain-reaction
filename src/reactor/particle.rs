@@ -10,8 +10,6 @@ pub mod trigger;
 pub mod uou;
 
 const MOVING_TAILING_COUNT: usize = 3;
-const MIN_V_LENGTH: f32 = 1.0;
-const MAX_V_LENGTH: f32 = 3.0;
 const SIDE_THICKNESS: f32 = 0.3;
 
 #[derive(Component, Debug, PartialEq)]
@@ -42,6 +40,8 @@ pub trait ParticleAbility {
     fn particle_type(&self) -> ParticleType;
     fn min_level(&self) -> u8;
     fn max_level(&self) -> u8;
+    fn min_v(&self) -> f32;
+    fn max_v(&self) -> f32;
     fn radius(&self) -> f32;
     fn color(&self) -> Color;
     fn current_countdown(&self) -> u32 {
@@ -54,37 +54,44 @@ pub trait ParticleAbility {
     fn tick_countdown(&mut self) -> u32 {
         0
     }
+    fn gen_random_v(&self, direction: Option<Vec2>) -> Vec2 {
+        let mut rng = thread_rng();
+        let v = direction
+            .unwrap_or({
+                let angle = rng.gen_range(0.0..2.0 * std::f32::consts::PI);
+                Vec2::new(angle.cos(), angle.sin())
+            })
+            .normalize();
+        v * rng.gen_range(self.min_v()..self.max_v())
+    }
 }
 
 impl Particle {
     pub fn create(
         particle_type: ParticleType,
         pos: Vec2,
-        v: Option<Vec2>,
+        direction: Option<Vec2>,
         level: Option<u8>,
     ) -> Self {
         match particle_type {
-            ParticleType::Alpha => alpha::Ability::gen_particle(pos, v, level),
-            ParticleType::Hyper => hyper::Ability::gen_particle(pos, v, level),
-            ParticleType::Control => control::Ability::gen_particle(pos, v, level),
-            ParticleType::Trigger => trigger::Ability::gen_particle(pos, v, level),
-            ParticleType::Uou => uou::Ability::gen_particle(pos, v, level),
+            ParticleType::Alpha => alpha::Ability::gen_particle(pos, direction, level),
+            ParticleType::Hyper => hyper::Ability::gen_particle(pos, direction, level),
+            ParticleType::Control => control::Ability::gen_particle(pos, direction, level),
+            ParticleType::Trigger => trigger::Ability::gen_particle(pos, direction, level),
+            ParticleType::Uou => uou::Ability::gen_particle(pos, direction, level),
         }
     }
     pub fn new(
         ability: Box<dyn ParticleAbility + Send + Sync>,
         pos: Vec2,
-        v: Option<Vec2>,
+        direction: Option<Vec2>,
         level: Option<u8>,
     ) -> Self {
-        let v = match v {
-            Some(v) => v,
-            None => Particle::gen_random_v(None),
-        };
         let level = match level {
             Some(level) => level,
             None => ability.min_level(),
         };
+        let v = ability.gen_random_v(direction);
         Self {
             ability,
             level,
@@ -152,6 +159,9 @@ impl Particle {
     pub fn tick_countdown(&mut self) -> u32 {
         self.ability.tick_countdown()
     }
+    pub fn assign_random_v(&mut self, direction: Option<Vec2>) {
+        self.v = self.ability.gen_random_v(direction);
+    }
     fn next_pos(pos: Vec2, v: Vec2, r: f32) -> Vec2 {
         let field_rect = reactor::field::get_field_rect(0.0);
         let mut new_pos = pos + v;
@@ -183,15 +193,10 @@ impl Particle {
         }
         new_v
     }
-    pub fn gen_random_v(direction: Option<Vec2>) -> Vec2 {
+    pub fn gen_random_direction() -> Vec2 {
         let mut rng = thread_rng();
-        let v = direction
-            .unwrap_or({
-                let angle = rng.gen_range(0.0..2.0 * std::f32::consts::PI);
-                Vec2::new(angle.cos(), angle.sin())
-            })
-            .normalize();
-        v * rng.gen_range(MIN_V_LENGTH..MAX_V_LENGTH)
+        let angle = rng.gen_range(0.0..2.0 * std::f32::consts::PI);
+        Vec2::new(angle.cos(), angle.sin()).normalize()
     }
 }
 

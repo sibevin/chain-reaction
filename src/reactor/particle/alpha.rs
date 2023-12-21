@@ -5,6 +5,8 @@ use std::f32::consts::PI;
 pub const RADIUS: f32 = 6.0;
 const MIN_LEVEL: u8 = 1;
 const MAX_LEVEL: u8 = 5;
+const MIN_V: f32 = 0.5;
+const MAX_V: f32 = 1.5;
 const COLOR: Color = Color::SILVER;
 const MAX_COUNTDOWN: u32 = 300;
 
@@ -13,9 +15,14 @@ pub struct Ability {
 }
 
 impl Ability {
-    pub fn gen_particle(pos: Vec2, v: Option<Vec2>, level: Option<u8>) -> Particle {
+    pub fn gen_particle(pos: Vec2, direction: Option<Vec2>, level: Option<u8>) -> Particle {
         let level = level.unwrap_or(Ability::pick_random_alpha_level());
-        let mut particle = Particle::new(Box::new(Ability { countdown: 0 }), pos, v, Some(level));
+        let mut particle = Particle::new(
+            Box::new(Ability { countdown: 0 }),
+            pos,
+            direction,
+            Some(level),
+        );
         particle.reset_countdown();
         particle
     }
@@ -53,6 +60,12 @@ impl ParticleAbility for Ability {
     fn max_level(&self) -> u8 {
         MAX_LEVEL
     }
+    fn min_v(&self) -> f32 {
+        MIN_V
+    }
+    fn max_v(&self) -> f32 {
+        MAX_V
+    }
     fn current_countdown(&self) -> u32 {
         self.countdown
     }
@@ -74,14 +87,14 @@ pub fn build_particle_sprite(
     commands: &mut Commands,
     bundle: impl Bundle,
     pos: Option<Vec2>,
-    v: Option<Vec2>,
+    direction: Option<Vec2>,
     level: Option<u8>,
 ) {
     let pos = match pos {
         Some(pos) => pos,
         None => field::gen_random_pos_in_field(RADIUS * 2.0),
     };
-    let particle = Particle::create(ParticleType::Alpha, pos, v, level);
+    let particle = Particle::create(ParticleType::Alpha, pos, direction, level);
     let level = particle.level();
     let root_entity = commands
         .spawn((
