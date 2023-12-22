@@ -1,8 +1,9 @@
 use crate::{app, reactor};
 use bevy::{
     prelude::*,
-    window::{Cursor, CursorIcon, PresentMode, WindowTheme},
+    window::{Cursor, CursorIcon, PresentMode, WindowMode, WindowTheme},
 };
+use bevy_persistent::prelude::*;
 
 pub struct InitPlugin;
 
@@ -35,8 +36,16 @@ pub fn startup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut audio_se_asset: ResMut<app::audio::AudioSeAsset>,
+    settings: Res<Persistent<app::settings::Settings>>,
+    mut window_query: Query<&mut Window>,
 ) {
     commands.spawn(Camera2dBundle::default());
     reactor::field::build_reactor_field(&mut commands, &asset_server);
-    app::audio::init_audio_se_asset(&mut audio_se_asset, &asset_server)
+    app::audio::init_audio_se_asset(&mut audio_se_asset, &asset_server);
+    let mut window = window_query.single_mut();
+    if settings.is_enabled("fullscreen") {
+        window.mode = WindowMode::Fullscreen
+    } else {
+        window.mode = WindowMode::Windowed
+    }
 }

@@ -1,5 +1,6 @@
 use crate::app::settings;
 use bevy::{audio::*, prelude::*};
+use bevy_persistent::prelude::*;
 
 #[derive(Component)]
 pub struct AudioBgm;
@@ -65,7 +66,12 @@ pub fn init_audio_se_asset(
     );
 }
 
-pub fn init_audio(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn init_audio(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+
+    settings: Res<Persistent<settings::Settings>>,
+) {
     commands.spawn((
         AudioBundle {
             source: asset_server.load(
@@ -73,8 +79,8 @@ pub fn init_audio(mut commands: Commands, asset_server: Res<AssetServer>) {
             ),
             settings: PlaybackSettings {
                 mode: bevy::audio::PlaybackMode::Loop,
-                volume: Volume::Absolute(VolumeLevel::new(to_volume(50))),
-                paused: false,
+                volume: Volume::Absolute(VolumeLevel::new(to_volume(settings.get_value("bgm")))),
+                paused: !settings.is_enabled("bgm"),
                 ..default()
             },
             ..default()
@@ -84,7 +90,7 @@ pub fn init_audio(mut commands: Commands, asset_server: Res<AssetServer>) {
 }
 
 pub fn reduce_bgm_volume(
-    settings: Res<settings::Settings>,
+    settings: Res<Persistent<settings::Settings>>,
     audio_bgm_query: Query<&AudioSink, With<AudioBgm>>,
 ) {
     if let Ok(sink) = audio_bgm_query.get_single() {
@@ -93,7 +99,7 @@ pub fn reduce_bgm_volume(
 }
 
 pub fn roll_bgm_volume_back(
-    settings: Res<settings::Settings>,
+    settings: Res<Persistent<settings::Settings>>,
     audio_bgm_query: Query<&AudioSink, With<AudioBgm>>,
 ) {
     if let Ok(sink) = audio_bgm_query.get_single() {
@@ -109,7 +115,7 @@ pub fn play_se(
     se_type: AudioSe,
     commands: &mut Commands,
     audio_se_asset: &Res<AudioSeAsset>,
-    settings: &settings::Settings,
+    settings: &Persistent<settings::Settings>,
 ) {
     if settings.is_enabled("se") {
         commands.spawn((AudioBundle {

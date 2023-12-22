@@ -1,4 +1,5 @@
 use bevy::{input, prelude::*, window::WindowMode};
+use bevy_persistent::prelude::*;
 use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 
 use crate::{app, page, reactor};
@@ -61,7 +62,7 @@ enum ButtonAction {
 fn page_setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    settings: Res<app::settings::Settings>,
+    settings: Res<Persistent<app::settings::Settings>>,
 ) {
     commands
         .spawn((page::build_page_layout(), OnPage))
@@ -260,7 +261,7 @@ fn handle_slider_mouse_interaction(
     >,
     mut range_bg_bar_query: Query<(Entity, &mut Style), (With<RangeBgBar>, Without<RangeValueBar>)>,
     mut range_bar_text_query: Query<(Entity, &mut Text), With<RangeBarText>>,
-    mut settings: ResMut<app::settings::Settings>,
+    mut settings: ResMut<Persistent<app::settings::Settings>>,
     mut mouse_motion_events: EventReader<input::mouse::MouseMotion>,
     audio_bgm_query: Query<&AudioSink, With<app::audio::AudioBgm>>,
 ) {
@@ -293,7 +294,7 @@ fn move_test_panel_action(
     mut panel_query: Query<(&Interaction, &Children), (With<Interaction>, With<MoveTestPanel>)>,
     mut ball_query: Query<&mut Style, With<MoveTestBall>>,
     mut mouse_motion_events: EventReader<input::mouse::MouseMotion>,
-    settings: Res<app::settings::Settings>,
+    settings: Res<Persistent<app::settings::Settings>>,
 ) {
     for (interaction, children) in &mut panel_query {
         match *interaction {
@@ -524,7 +525,7 @@ fn control_test_ball_by_keyboard(
     keyboard_input: Res<Input<KeyCode>>,
     panel_query: Query<(&Interaction, &Children), (With<Interaction>, With<MoveTestPanel>)>,
     mut ball_query: Query<&mut Style, With<MoveTestBall>>,
-    settings: Res<app::settings::Settings>,
+    settings: Res<Persistent<app::settings::Settings>>,
 ) {
     let mut delta: Vec2 = Vec2::default();
     if keyboard_input.pressed(KeyCode::W)
@@ -572,7 +573,7 @@ const SLIDER_DELTA: i8 = 5;
 fn handle_slider_navigation(
     mut events: EventReader<NavEvent>,
     mut action_query: Query<(&ButtonAction, &Children), With<app::interaction::IaSlider>>,
-    mut settings: ResMut<app::settings::Settings>,
+    mut settings: ResMut<Persistent<app::settings::Settings>>,
     mut range_value_bar_query: Query<
         (Entity, &mut Style),
         (With<RangeValueBar>, Without<RangeBgBar>),
@@ -633,7 +634,7 @@ fn update_slider_display(
     children: &Children,
     target: &str,
     delta: i8,
-    settings: &mut ResMut<app::settings::Settings>,
+    settings: &mut ResMut<Persistent<app::settings::Settings>>,
     range_value_bar_query: &mut Query<
         (Entity, &mut Style),
         (With<RangeValueBar>, Without<RangeBgBar>),
@@ -646,7 +647,11 @@ fn update_slider_display(
     audio_bgm_query: &Query<&AudioSink, With<app::audio::AudioBgm>>,
 ) {
     let updated_value = settings.get_value(target) as i8 + delta;
-    settings.set_value(target, updated_value);
+    settings
+        .update(|settings| {
+            settings.set_value(target, updated_value);
+        })
+        .expect("failed to update slider");
     let value = settings.get_value(target);
     if target == "bgm" {
         if let Ok(sink) = audio_bgm_query.get_single() {
@@ -681,7 +686,7 @@ fn handle_ui_navigation(
     mut events: EventReader<NavEvent>,
     mut commands: Commands,
     mut game_state: ResMut<NextState<app::GameState>>,
-    mut settings: ResMut<app::settings::Settings>,
+    mut settings: ResMut<Persistent<app::settings::Settings>>,
     mut window_query: Query<&mut Window>,
     mut switch_icon_query: Query<(Entity, &mut UiImage), With<SwitchButtonIcon>>,
     asset_server: Res<AssetServer>,
@@ -692,7 +697,11 @@ fn handle_ui_navigation(
         &mut action_query,
         |(mut action, children)| match &mut *action {
             ButtonAction::Toggle(target) => {
-                settings.toggle(target.as_ref());
+                settings
+                    .update(|settings| {
+                        settings.toggle(target.as_ref());
+                    })
+                    .expect("failed to update boolean switch");
                 let is_enabled = settings.is_enabled(&target);
                 let mut is_found = false;
                 for (icon_entity, mut icon_image) in switch_icon_query.iter_mut() {

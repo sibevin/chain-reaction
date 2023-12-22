@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_persistent::prelude::*;
 use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 
 use crate::{app, page};
@@ -38,10 +39,14 @@ enum ButtonAction {
 fn page_setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut settings: ResMut<app::settings::Settings>,
+    mut settings: ResMut<Persistent<app::settings::Settings>>,
 ) {
     if settings.is_enabled("first") {
-        settings.toggle("first");
+        settings
+            .update(|settings| {
+                settings.toggle("first");
+            })
+            .expect("failed to update first run in help");
     }
     commands
         .spawn((page::build_page_layout(), OnPage))

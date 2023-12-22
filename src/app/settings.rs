@@ -1,6 +1,9 @@
 use bevy::prelude::*;
+use bevy_persistent::prelude::*;
+use serde::{Deserialize, Serialize};
+use std::path::Path;
 
-#[derive(Resource)]
+#[derive(Resource, Serialize, Deserialize)]
 pub struct Settings {
     first_run: bool,
     bgm_enabled: bool,
@@ -77,14 +80,26 @@ pub struct SettingsPlugin;
 
 impl Plugin for SettingsPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(Settings {
-            first_run: true,
-            bgm_enabled: true,
-            bgm_volume: 50,
-            se_enabled: true,
-            se_volume: 50,
-            fullscreen_enabled: false,
-            sensitivity: 50,
-        });
+        let config_dir = dirs::config_dir()
+            .map(|native_config_dir| native_config_dir.join("chain-reaction"))
+            .unwrap_or(Path::new("local").join("configuration"));
+
+        app.insert_resource(
+            Persistent::<Settings>::builder()
+                .name("variables")
+                .format(StorageFormat::Json)
+                .path(config_dir.join("variables.json"))
+                .default(Settings {
+                    first_run: true,
+                    bgm_enabled: true,
+                    bgm_volume: 50,
+                    se_enabled: true,
+                    se_volume: 50,
+                    fullscreen_enabled: false,
+                    sensitivity: 50,
+                })
+                .build()
+                .expect("failed to initialize variables"),
+        );
     }
 }

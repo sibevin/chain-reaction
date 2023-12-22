@@ -3,6 +3,7 @@ use crate::{
     reactor::{self, field, hit::*, particle::*},
 };
 use bevy::{input, prelude::*};
+use bevy_persistent::prelude::*;
 use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 use std::f32::consts::PI;
 
@@ -174,7 +175,7 @@ fn control_u_by_mouse(
     mut panel_query: Query<&Interaction, (With<Interaction>, With<GameControlPanel>)>,
     mut u_particle_query: Query<(&mut Particle, &mut Transform), With<reactor::ControlParticle>>,
     mut mouse_motion_events: EventReader<input::mouse::MouseMotion>,
-    settings: Res<app::settings::Settings>,
+    settings: Res<Persistent<app::settings::Settings>>,
 ) {
     for interaction in &mut panel_query {
         match *interaction {
@@ -228,7 +229,7 @@ fn handle_particle_reaction(
     mut timer_query: Query<&mut reactor::ReactorTimer>,
     time: Res<Time>,
     mut reactor_state: ResMut<NextState<reactor::ReactorState>>,
-    settings: ResMut<app::settings::Settings>,
+    settings: Res<Persistent<app::settings::Settings>>,
     audio_se_asset: Res<app::audio::AudioSeAsset>,
     mut field_score_query: Query<
         (&mut Text, &mut field::FieldScore),
@@ -250,7 +251,7 @@ fn handle_particle_reaction(
                                     app::audio::AudioSe::Pop,
                                     &mut commands,
                                     &audio_se_asset,
-                                    settings.as_ref(),
+                                    &settings,
                                 );
                             }
                             HitAction::Release(count) => {
@@ -282,7 +283,7 @@ fn handle_particle_reaction(
                                     app::audio::AudioSe::Hit,
                                     &mut commands,
                                     &audio_se_asset,
-                                    settings.as_ref(),
+                                    &settings,
                                 );
                                 killed_entities.push(e);
                             }
@@ -311,7 +312,7 @@ fn handle_particle_reaction(
                                     app::audio::AudioSe::Pop,
                                     &mut commands,
                                     &audio_se_asset,
-                                    settings.as_ref(),
+                                    &settings,
                                 );
                                 killed_entities.push(e);
                             }
@@ -331,7 +332,7 @@ fn handle_particle_reaction(
                                     app::audio::AudioSe::PowerUp,
                                     &mut commands,
                                     &audio_se_asset,
-                                    settings.as_ref(),
+                                    &settings,
                                 );
                                 field_score.0 += CONTROL_HIT_SCORE;
                                 text.sections[0].value =
@@ -356,7 +357,7 @@ fn handle_particle_reaction(
                                     app::audio::AudioSe::PowerUp,
                                     &mut commands,
                                     &audio_se_asset,
-                                    settings.as_ref(),
+                                    &settings,
                                 );
                                 field_score.0 += HYPER_HIT_BASE_SCORE * p.level() as u32;
                                 text.sections[0].value =
@@ -371,7 +372,7 @@ fn handle_particle_reaction(
                                     app::audio::AudioSe::Boom,
                                     &mut commands,
                                     &audio_se_asset,
-                                    settings.as_ref(),
+                                    &settings,
                                 );
                             }
                             _ => (),
@@ -392,7 +393,7 @@ const KEYBOARD_DELTA_BIAS: f32 = 1.5;
 fn control_u_by_keyboard(
     keyboard_input: Res<Input<KeyCode>>,
     mut u_particle_query: Query<(&mut Particle, &mut Transform), With<reactor::ControlParticle>>,
-    settings: Res<app::settings::Settings>,
+    settings: Res<Persistent<app::settings::Settings>>,
 ) {
     let (mut u_particle, mut u_transform) = u_particle_query.get_single_mut().unwrap();
     let mut delta: Vec2 = Vec2::default();

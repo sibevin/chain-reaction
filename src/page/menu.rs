@@ -1,4 +1,5 @@
 use bevy::{app::AppExit, prelude::*};
+use bevy_persistent::prelude::*;
 use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 
 use crate::{app, page};
@@ -157,7 +158,7 @@ fn handle_menu_navigation(
     mut events: EventReader<NavEvent>,
     mut game_state: ResMut<NextState<app::GameState>>,
     mut app_exit_events: EventWriter<AppExit>,
-    mut settings: ResMut<app::settings::Settings>,
+    mut settings: ResMut<Persistent<app::settings::Settings>>,
 ) {
     events.nav_iter().activated_in_query_foreach_mut(
         &mut actions,
