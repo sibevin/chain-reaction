@@ -8,9 +8,12 @@ license = "GPL-3.0-or-later"
 
 [dependencies]
 bevy = "0.12.1"
+bevy-persistent = { version = "0.4.2", features = ["bincode", "json"] }
 bevy-ui-navigation = "0.33.1"
 bevy_vector_shapes = "0.6.0"
+dirs = "5.0.1"
 rand = "0.8.5"
+serde = { version = "1.0.193", features = ["derive"] }
 webbrowser = "0.8.12"
 
 [profile.dev]
