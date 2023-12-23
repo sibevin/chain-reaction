@@ -2,12 +2,14 @@ use crate::app;
 use bevy::prelude::*;
 
 pub mod about;
+pub mod auto;
 pub mod game;
 pub mod help;
+pub mod leaderboard;
 pub mod menu;
 pub mod settings;
 
-pub const PAGE_PADDING: f32 = 4.0;
+pub const PAGE_PADDING: f32 = 6.0;
 const PAGE_TITLE_RATIO: f32 = 1.2;
 const SEP_W: f32 = 500.0;
 
@@ -19,6 +21,7 @@ pub fn build_page_layout() -> NodeBundle {
             padding: UiRect::all(app::ui::px_p(PAGE_PADDING)),
             ..default()
         },
+        background_color: app::ui::COVER_COLOR.into(),
         ..default()
     }
 }
@@ -27,8 +30,10 @@ pub fn build_game_title(parent: &mut ChildBuilder, asset_server: &Res<AssetServe
     parent
         .spawn(NodeBundle {
             style: Style {
+                position_type: PositionType::Absolute,
+                left: Val::Px(0.0),
                 flex_direction: FlexDirection::Row,
-                align_items: AlignItems::Center,
+                align_items: AlignItems::Start,
                 ..default()
             },
             ..default()
@@ -37,9 +42,9 @@ pub fn build_game_title(parent: &mut ChildBuilder, asset_server: &Res<AssetServe
             let icon = asset_server.load("images/app/logo_120x.png");
             parent.spawn(ImageBundle {
                 style: Style {
-                    width: Val::Px(80.0),
-                    height: Val::Px(80.0),
-                    margin: UiRect::right(app::ui::px_p(4.0)),
+                    width: Val::Px(120.0),
+                    height: Val::Px(120.0),
+                    margin: UiRect::right(app::ui::px_p(2.0)),
                     ..default()
                 },
                 image: UiImage::new(icon),
@@ -72,10 +77,11 @@ pub fn build_page_title(
     parent
         .spawn((NodeBundle {
             style: Style {
+                position_type: PositionType::Absolute,
+                right: Val::Px(0.0),
                 height: Val::Auto,
                 justify_content: JustifyContent::SpaceBetween,
                 align_items: AlignItems::Center,
-                margin: UiRect::top(app::ui::px_p(2.0)),
                 padding: UiRect::all(app::ui::px_p(2.0)),
                 border: UiRect::all(app::ui::px_p(0.5)),
                 ..default()

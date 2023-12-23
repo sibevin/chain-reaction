@@ -41,6 +41,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         flex_direction: FlexDirection::Column,
                         align_items: AlignItems::Center,
                         justify_content: JustifyContent::Center,
+                        margin: UiRect::bottom(app::ui::px_p(30.0)),
                         ..default()
                     },
                     ..default()
@@ -51,6 +52,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                             style: Style {
                                 flex_direction: FlexDirection::Row,
                                 align_items: AlignItems::Center,
+                                margin: UiRect::bottom(app::ui::px_p(8.0)),
                                 ..default()
                             },
                             ..default()
@@ -86,73 +88,124 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     parent
                         .spawn(NodeBundle {
                             style: Style {
-                                flex_direction: FlexDirection::Column,
-                                align_items: AlignItems::Center,
+                                align_items: AlignItems::Start,
+                                column_gap: Val::Px(app::ui::MENU_ENTRY_PADDING),
                                 ..default()
                             },
                             ..default()
                         })
                         .with_children(|parent| {
-                            app::ui::build_menu_entry(
-                                parent,
-                                &asset_server,
-                                (
-                                    ButtonAction::FirstRun,
-                                    app::interaction::IaButton,
-                                    Focusable::new().prioritized(),
-                                ),
-                                "Start",
-                                "play-light",
-                            );
-                            app::ui::build_menu_entry(
-                                parent,
-                                &asset_server,
-                                (
-                                    ButtonAction::MoveToPage(app::GameState::Help),
-                                    app::interaction::IaButton,
-                                    Focusable::default(),
-                                ),
-                                "Formula",
-                                "question-light",
-                            );
-                            app::ui::build_menu_entry(
-                                parent,
-                                &asset_server,
-                                (
-                                    ButtonAction::MoveToPage(app::GameState::Settings),
-                                    app::interaction::IaButton,
-                                    Focusable::default(),
-                                ),
-                                "Variables",
-                                "gear-light",
-                            );
-                            app::ui::build_menu_entry(
-                                parent,
-                                &asset_server,
-                                (
-                                    ButtonAction::MoveToPage(app::GameState::About),
-                                    app::interaction::IaButton,
-                                    Focusable::default(),
-                                ),
-                                "References",
-                                "star-light",
-                            );
-                            #[cfg(not(target_arch = "wasm32"))]
-                            {
-                                app::ui::build_menu_entry(
-                                    parent,
-                                    &asset_server,
-                                    (
-                                        ButtonAction::Quit,
-                                        app::interaction::IaButton,
-                                        Focusable::default(),
-                                    ),
-                                    "Quit",
-                                    "sign-out-light",
-                                );
-                            }
+                            parent
+                                .spawn(NodeBundle {
+                                    style: Style {
+                                        flex_direction: FlexDirection::Column,
+                                        align_items: AlignItems::Center,
+                                        row_gap: Val::Px(app::ui::MENU_ENTRY_PADDING),
+                                        ..default()
+                                    },
+                                    ..default()
+                                })
+                                .with_children(|parent| {
+                                    app::ui::build_menu_entry(
+                                        parent,
+                                        &asset_server,
+                                        (
+                                            ButtonAction::FirstRun,
+                                            app::interaction::IaButton,
+                                            Focusable::new().prioritized(),
+                                        ),
+                                        "Start",
+                                        "play-light",
+                                    );
+                                    // app::ui::build_menu_entry(
+                                    //     parent,
+                                    //     &asset_server,
+                                    //     (
+                                    //         ButtonAction::MoveToPage(app::GameState::Leaderboard),
+                                    //         app::interaction::IaButton,
+                                    //         Focusable::default(),
+                                    //     ),
+                                    //     "Report",
+                                    //     "list-numbers",
+                                    // );
+                                    app::ui::build_menu_entry(
+                                        parent,
+                                        &asset_server,
+                                        (
+                                            ButtonAction::MoveToPage(app::GameState::Help),
+                                            app::interaction::IaButton,
+                                            Focusable::default(),
+                                        ),
+                                        "Formula",
+                                        "question-light",
+                                    );
+                                });
+                            parent
+                                .spawn(NodeBundle {
+                                    style: Style {
+                                        flex_direction: FlexDirection::Column,
+                                        align_items: AlignItems::Center,
+                                        row_gap: Val::Px(app::ui::MENU_ENTRY_PADDING),
+                                        ..default()
+                                    },
+                                    ..default()
+                                })
+                                .with_children(|parent| {
+                                    app::ui::build_menu_entry(
+                                        parent,
+                                        &asset_server,
+                                        (
+                                            ButtonAction::MoveToPage(app::GameState::Settings),
+                                            app::interaction::IaButton,
+                                            Focusable::default(),
+                                        ),
+                                        "Variables",
+                                        "gear-light",
+                                    );
+                                    app::ui::build_menu_entry(
+                                        parent,
+                                        &asset_server,
+                                        (
+                                            ButtonAction::MoveToPage(app::GameState::About),
+                                            app::interaction::IaButton,
+                                            Focusable::default(),
+                                        ),
+                                        "References",
+                                        "star-light",
+                                    );
+                                    #[cfg(not(target_arch = "wasm32"))]
+                                    {
+                                        app::ui::build_menu_entry(
+                                            parent,
+                                            &asset_server,
+                                            (
+                                                ButtonAction::Quit,
+                                                app::interaction::IaButton,
+                                                Focusable::default(),
+                                            ),
+                                            "Quit",
+                                            "sign-out-light",
+                                        );
+                                    }
+                                });
                         });
                 });
+            app::ui::build_icon_btn(
+                parent,
+                &asset_server,
+                (
+                    ButtonAction::MoveToPage(app::GameState::Auto),
+                    app::interaction::IaButton,
+                    Focusable::default(),
+                ),
+                Style {
+                    position_type: PositionType::Absolute,
+                    bottom: app::ui::px_p(page::PAGE_PADDING),
+                    left: app::ui::px_p(page::PAGE_PADDING),
+                    ..default()
+                },
+                "monitor",
+            );
         });
 }
 

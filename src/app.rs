@@ -14,6 +14,8 @@ pub enum GameState {
     Settings,
     About,
     Help,
+    Leaderboard,
+    Auto,
 }
 
 pub const WINDOW_W: f32 = 1280.0;

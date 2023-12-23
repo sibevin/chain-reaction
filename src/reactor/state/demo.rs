@@ -1,7 +1,4 @@
-use crate::{
-    app,
-    reactor::{self, field, hit::*, particle::*},
-};
+use crate::reactor::{self, field, hit::*, particle::*};
 use bevy::prelude::*;
 use std::f32::consts::PI;
 
@@ -42,35 +39,14 @@ impl Plugin for StatePlugin {
 #[derive(Component)]
 struct DemoParticle;
 
-#[derive(Component)]
-struct DemoCover;
-
 fn state_setup(mut commands: Commands) {
     trigger::build_particle_sprite(&mut commands, DemoParticle, None, None, None);
+    trigger::build_particle_sprite(&mut commands, DemoParticle, None, None, None);
     hyper::build_particle_sprite(&mut commands, DemoParticle, None, None, None);
-    commands.spawn((
-        NodeBundle {
-            style: Style {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                ..default()
-            },
-            background_color: app::ui::COVER_COLOR.into(),
-            ..default()
-        },
-        DemoCover,
-    ));
 }
 
-fn state_exit(
-    mut commands: Commands,
-    cover_query: Query<Entity, With<DemoCover>>,
-    particle_query: Query<Entity, With<DemoParticle>>,
-) {
+fn state_exit(mut commands: Commands, particle_query: Query<Entity, With<DemoParticle>>) {
     for entity in &particle_query {
-        commands.entity(entity).despawn_recursive();
-    }
-    for entity in &cover_query {
         commands.entity(entity).despawn_recursive();
     }
 }

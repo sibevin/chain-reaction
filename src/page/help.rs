@@ -63,25 +63,8 @@ fn page_setup(
                     ..default()
                 })
                 .with_children(|parent| {
-                    parent
-                        .spawn(NodeBundle {
-                            style: Style {
-                                width: Val::Percent(100.0),
-                                align_items: AlignItems::Start,
-                                justify_content: JustifyContent::SpaceBetween,
-                                ..default()
-                            },
-                            ..default()
-                        })
-                        .with_children(|parent| {
-                            page::build_game_title(parent, &asset_server);
-                            page::build_page_title(
-                                parent,
-                                &asset_server,
-                                "Formula",
-                                "question-light",
-                            );
-                        });
+                    page::build_game_title(parent, &asset_server);
+                    page::build_page_title(parent, &asset_server, "Formula", "question-light");
                     parent
                         .spawn(NodeBundle {
                             style: Style {
@@ -112,6 +95,7 @@ fn page_setup(
                                         align_items: AlignItems::Start,
                                         justify_content: JustifyContent::Center,
                                         margin: UiRect::all(app::ui::px_p(4.0)),
+                                        row_gap: app::ui::px_p(4.0),
                                         ..default()
                                     },
                                     ..default()
@@ -132,45 +116,41 @@ fn page_setup(
                                 "caret-double-right-light",
                             );
                         });
-                    parent
-                        .spawn(NodeBundle {
-                            style: Style {
-                                width: Val::Percent(100.0),
-                                align_items: AlignItems::Center,
-                                justify_content: JustifyContent::SpaceBetween,
-                                ..default()
-                            },
-                            ..default()
-                        })
-                        .with_children(|parent| {
-                            app::ui::build_icon_btn(
-                                parent,
-                                &asset_server,
-                                (
-                                    ButtonAction::BackToMainMenu,
-                                    app::interaction::IaButton,
-                                    Focusable::default(),
-                                ),
-                                Style::default(),
-                                "arrow-left-light",
-                            );
-                            app::ui::build_btn(
-                                parent,
-                                &asset_server,
-                                (
-                                    ButtonAction::Start,
-                                    app::interaction::IaButton,
-                                    Focusable::default(),
-                                ),
-                                Style {
-                                    padding: UiRect::all(app::ui::px_p(3.0)),
-                                    ..default()
-                                },
-                                Some("Start"),
-                                Some("play-light"),
-                            );
-                        });
                 });
+            app::ui::build_icon_btn(
+                parent,
+                &asset_server,
+                (
+                    ButtonAction::BackToMainMenu,
+                    app::interaction::IaButton,
+                    Focusable::default(),
+                ),
+                Style {
+                    position_type: PositionType::Absolute,
+                    bottom: app::ui::px_p(page::PAGE_PADDING),
+                    left: app::ui::px_p(page::PAGE_PADDING),
+                    ..default()
+                },
+                "arrow-left-light",
+            );
+            app::ui::build_btn(
+                parent,
+                &asset_server,
+                (
+                    ButtonAction::Start,
+                    app::interaction::IaButton,
+                    Focusable::default(),
+                ),
+                Style {
+                    position_type: PositionType::Absolute,
+                    bottom: app::ui::px_p(page::PAGE_PADDING),
+                    right: app::ui::px_p(page::PAGE_PADDING),
+                    padding: UiRect::all(app::ui::px_p(app::ui::BTN_PADDING)),
+                    ..default()
+                },
+                Some("Start"),
+                Some("play-light"),
+            );
         });
 }
 
@@ -260,6 +240,7 @@ fn build_help_dots(parent: &mut ChildBuilder) {
                 width: Val::Percent(100.0),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
+                column_gap: app::ui::px_p(4.0),
                 ..default()
             },
             ..default()
@@ -275,12 +256,6 @@ fn build_help_dots(parent: &mut ChildBuilder) {
                         style: Style {
                             width: app::ui::px_p(HELP_DOT_SIZE),
                             height: app::ui::px_p(HELP_DOT_SIZE),
-                            margin: UiRect::new(
-                                app::ui::px_p(2.0),
-                                app::ui::px_p(2.0),
-                                app::ui::px_p(0.0),
-                                app::ui::px_p(4.0),
-                            ),
                             border: UiRect::all(app::ui::px_p(0.5)),
                             ..default()
                         },

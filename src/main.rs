@@ -29,6 +29,7 @@ fn main() {
             page::settings::PagePlugin,
             page::help::PagePlugin,
             page::about::PagePlugin,
+            page::auto::PagePlugin,
             app::interaction::InteractionPlugin,
         ))
         .run();

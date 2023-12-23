@@ -79,31 +79,15 @@ fn page_setup(
                     ..default()
                 })
                 .with_children(|parent| {
-                    parent
-                        .spawn(NodeBundle {
-                            style: Style {
-                                width: Val::Percent(100.0),
-                                align_items: AlignItems::Start,
-                                justify_content: JustifyContent::SpaceBetween,
-                                ..default()
-                            },
-                            ..default()
-                        })
-                        .with_children(|parent| {
-                            page::build_game_title(parent, &asset_server);
-                            page::build_page_title(
-                                parent,
-                                &asset_server,
-                                "Variables",
-                                "gear-light",
-                            );
-                        });
+                    page::build_game_title(parent, &asset_server);
+                    page::build_page_title(parent, &asset_server, "Variables", "gear-light");
                     parent
                         .spawn(NodeBundle {
                             style: Style {
                                 flex_grow: 1.0,
                                 align_items: AlignItems::Center,
                                 justify_content: JustifyContent::Center,
+                                margin: UiRect::top(app::ui::px_p(24.0)),
                                 ..default()
                             },
                             ..default()
@@ -411,7 +395,7 @@ fn build_slider_bar(
                 style: Style {
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
-                    padding: UiRect::all(app::ui::px_p(6.0)),
+                    padding: UiRect::all(app::ui::px_p(4.0)),
                     border: UiRect::all(app::ui::px_p(1.0)),
                     ..default()
                 },

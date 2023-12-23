@@ -9,6 +9,7 @@ pub const SPACE_SIZE: f32 = FONT_SIZE / 10.0;
 pub const BORDER_W: f32 = SPACE_SIZE * 1.0;
 pub const ICON_SIZE: f32 = FONT_SIZE * 0.8;
 pub const BTN_PADDING: f32 = 3.0;
+pub const MENU_ENTRY_PADDING: f32 = 16.0;
 
 pub const BG_COLOR: Color = Color::BLACK;
 pub const FG_COLOR: Color = Color::rgb(0.9, 0.9, 0.9);
@@ -106,7 +107,6 @@ pub fn build_btn(
 }
 
 const MENU_ENTRY_W: f32 = 280.0;
-const MENU_ENTRY_PADDING: f32 = 20.0;
 const MENU_ENTRY_RATIO: f32 = 1.2;
 
 pub fn build_menu_entry(
@@ -123,7 +123,6 @@ pub fn build_menu_entry(
                     width: Val::Px(MENU_ENTRY_W),
                     justify_content: JustifyContent::SpaceBetween,
                     align_items: AlignItems::Center,
-                    margin: UiRect::bottom(Val::Px(MENU_ENTRY_PADDING)),
                     padding: UiRect::all(px_p(4.0)),
                     ..default()
                 },
