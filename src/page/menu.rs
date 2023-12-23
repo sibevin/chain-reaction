@@ -137,17 +137,20 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 "References",
                                 "star-light",
                             );
-                            app::ui::build_menu_entry(
-                                parent,
-                                &asset_server,
-                                (
-                                    ButtonAction::Quit,
-                                    app::interaction::IaButton,
-                                    Focusable::default(),
-                                ),
-                                "Quit",
-                                "sign-out-light",
-                            );
+                            #[cfg(not(target_arch = "wasm32"))]
+                            {
+                                app::ui::build_menu_entry(
+                                    parent,
+                                    &asset_server,
+                                    (
+                                        ButtonAction::Quit,
+                                        app::interaction::IaButton,
+                                        Focusable::default(),
+                                    ),
+                                    "Quit",
+                                    "sign-out-light",
+                                );
+                            }
                         });
                 });
         });

@@ -193,18 +193,23 @@ fn page_setup(
                                                         settings.get_value("se"),
                                                     );
                                                 });
-                                            page::build_sep_title(
-                                                parent,
-                                                &asset_server,
-                                                "Fullscreen",
-                                                "frame-corners-fill",
-                                            );
-                                            build_switch_btn(
-                                                parent,
-                                                &asset_server,
-                                                ButtonAction::Toggle(String::from("fullscreen")),
-                                                settings.is_enabled("fullscreen"),
-                                            );
+                                            #[cfg(not(target_arch = "wasm32"))]
+                                            {
+                                                page::build_sep_title(
+                                                    parent,
+                                                    &asset_server,
+                                                    "Fullscreen",
+                                                    "frame-corners-fill",
+                                                );
+                                                build_switch_btn(
+                                                    parent,
+                                                    &asset_server,
+                                                    ButtonAction::Toggle(String::from(
+                                                        "fullscreen",
+                                                    )),
+                                                    settings.is_enabled("fullscreen"),
+                                                );
+                                            }
                                         });
                                     parent
                                         .spawn(NodeBundle {
