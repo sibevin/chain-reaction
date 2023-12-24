@@ -187,8 +187,8 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                     app::ui::build_link(
                                         parent,
                                         &asset_server,
-                                        ButtonAction::Link(String::from("https://kottke.org/plus/type/silkscreen/index.html")),
-                                        "Silkscreen",
+                                        ButtonAction::Link(String::from("http://yoworks.com/telegrama/index.html")),
+                                        "Telegrama",
                                         Some("globe-light"),
                                         "digit",
                                         true

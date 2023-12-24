@@ -43,9 +43,11 @@ pub fn format_field_text(field: &str, value: u32) -> String {
     if field == "time" {
         format!("{:0>5}.{:0>2}", value / 100, value % 100)
     } else if field == "alpha_count" {
-        format!("{:0>5}", value)
+        format!("{:0>4}", value)
     } else if field == "score" {
-        format!("{:0>8}", value)
+        let value_str = format!("{:0>6}", value);
+        let (first, second) = value_str.split_at(3);
+        format!("{},{}", first, second)
     } else {
         format!("{}", value)
     }
@@ -93,6 +95,8 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                                 align_items: AlignItems::Center,
                                 justify_content: JustifyContent::SpaceBetween,
                                 border: UiRect::top(app::ui::px_p(0.5)),
+                                padding: UiRect::horizontal(Val::Px(FIELD_PADDING * 1.4)),
+                                column_gap: Val::Px(FIELD_PADDING * 1.4),
                                 ..default()
                             },
                             border_color: FIELD_COLOR.into(),
@@ -104,7 +108,6 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                                     width: Val::Px(FIELD_TEXT_SIZE * 0.6),
                                     height: Val::Px(FIELD_TEXT_SIZE * 0.6),
                                     border: UiRect::all(app::ui::px_p(0.5)),
-                                    margin: UiRect::left(Val::Px(FIELD_PADDING * 1.4)),
                                     ..default()
                                 },
                                 border_color: FIELD_COLOR.into(),
@@ -124,7 +127,6 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                                     parent
                                         .spawn((NodeBundle {
                                             style: Style {
-                                                width: Val::Px(reactor::FIELD_W * 0.25),
                                                 align_items: AlignItems::Center,
                                                 justify_content: JustifyContent::Start,
                                                 ..default()
@@ -138,7 +140,9 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                                                 style: Style {
                                                     width: Val::Px(FIELD_TEXT_SIZE),
                                                     height: Val::Px(FIELD_TEXT_SIZE),
-                                                    margin: UiRect::all(Val::Px(FIELD_PADDING)),
+                                                    margin: UiRect::right(Val::Px(
+                                                        FIELD_PADDING * 0.5,
+                                                    )),
                                                     ..default()
                                                 },
                                                 image: UiImage::new(icon),
@@ -162,45 +166,7 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                                         .spawn((NodeBundle {
                                             style: Style {
                                                 align_items: AlignItems::Center,
-                                                justify_content: JustifyContent::Center,
-                                                ..default()
-                                            },
-                                            ..default()
-                                        },))
-                                        .with_children(|parent| {
-                                            let icon = asset_server
-                                                .load("images/icons/circles-three-fill.png");
-                                            parent.spawn(ImageBundle {
-                                                style: Style {
-                                                    width: Val::Px(FIELD_TEXT_SIZE),
-                                                    height: Val::Px(FIELD_TEXT_SIZE),
-                                                    margin: UiRect::all(Val::Px(FIELD_PADDING)),
-                                                    ..default()
-                                                },
-                                                image: UiImage::new(icon),
-                                                ..default()
-                                            });
-                                            parent.spawn((
-                                                TextBundle::from_section(
-                                                    format_field_text("alpha_count", 0),
-                                                    TextStyle {
-                                                        font: asset_server
-                                                            .load(app::ui::FONT_DIGIT),
-                                                        font_size: FIELD_TEXT_SIZE,
-                                                        color: FIELD_TEXT_COLOR,
-                                                        ..default()
-                                                    },
-                                                ),
-                                                FieldAlphaCount(0),
-                                            ));
-                                        });
-                                    parent
-                                        .spawn((NodeBundle {
-                                            style: Style {
-                                                width: Val::Px(reactor::FIELD_W * 0.31),
-                                                align_items: AlignItems::Center,
                                                 justify_content: JustifyContent::Start,
-                                                margin: UiRect::right(Val::Px(FIELD_PADDING)),
                                                 ..default()
                                             },
                                             ..default()
@@ -212,7 +178,9 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                                                 style: Style {
                                                     width: Val::Px(FIELD_TEXT_SIZE),
                                                     height: Val::Px(FIELD_TEXT_SIZE),
-                                                    margin: UiRect::all(Val::Px(FIELD_PADDING)),
+                                                    margin: UiRect::right(Val::Px(
+                                                        FIELD_PADDING * 0.5,
+                                                    )),
                                                     ..default()
                                                 },
                                                 image: UiImage::new(icon),
@@ -230,6 +198,44 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                                                     },
                                                 ),
                                                 FieldScore(0),
+                                            ));
+                                        });
+                                    parent
+                                        .spawn((NodeBundle {
+                                            style: Style {
+                                                align_items: AlignItems::Center,
+                                                justify_content: JustifyContent::Center,
+                                                ..default()
+                                            },
+                                            ..default()
+                                        },))
+                                        .with_children(|parent| {
+                                            let icon = asset_server
+                                                .load("images/icons/circles-three-fill.png");
+                                            parent.spawn(ImageBundle {
+                                                style: Style {
+                                                    width: Val::Px(FIELD_TEXT_SIZE),
+                                                    height: Val::Px(FIELD_TEXT_SIZE),
+                                                    margin: UiRect::right(Val::Px(
+                                                        FIELD_PADDING * 0.5,
+                                                    )),
+                                                    ..default()
+                                                },
+                                                image: UiImage::new(icon),
+                                                ..default()
+                                            });
+                                            parent.spawn((
+                                                TextBundle::from_section(
+                                                    format_field_text("alpha_count", 0),
+                                                    TextStyle {
+                                                        font: asset_server
+                                                            .load(app::ui::FONT_DIGIT),
+                                                        font_size: FIELD_TEXT_SIZE,
+                                                        color: FIELD_TEXT_COLOR,
+                                                        ..default()
+                                                    },
+                                                ),
+                                                FieldAlphaCount(0),
                                             ));
                                         });
                                 });
