@@ -1,6 +1,6 @@
 use crate::{
     app,
-    reactor::{self, field, hit::*, particle::*},
+    reactor::{self, field, hit::*, particle::*, status},
 };
 use bevy::{input, prelude::*};
 use bevy_persistent::prelude::*;
@@ -19,9 +19,7 @@ impl Plugin for StatePlugin {
                     control_u_by_keyboard,
                     handle_pause_btn.after(NavRequestSystem),
                     move_particle,
-                    reactor::field::timer::update_field,
-                    reactor::field::alpha_count::update_field,
-                    reactor::field::score::update_field,
+                    field::update_reactor_field,
                     handle_particle_reaction,
                 )
                     .run_if(in_state(reactor::ReactorState::Running)),
@@ -41,7 +39,12 @@ enum ButtonAction {
     Pause,
 }
 
-fn state_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn state_setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut key_binding: ResMut<app::key_binding::KeyBindingConfig>,
+) {
+    key_binding.mode = app::key_binding::KeyBindingMode::Gaming;
     commands
         .spawn((
             NodeBundle {
@@ -115,11 +118,11 @@ fn move_particle(
     mut particle_query: Query<(Entity, &mut Transform, &mut Particle), With<Particle>>,
     mut timer_query: Query<&mut reactor::ReactorTimer>,
     time: Res<Time>,
-    alpha_count_query: Query<&field::FieldAlphaCount, With<field::FieldAlphaCount>>,
+    status: Res<status::ReactorStatus>,
 ) {
     for mut timer in &mut timer_query {
         if timer.tick(time.delta()).just_finished() {
-            let alpha_count = alpha_count_query.single().0;
+            let alpha_count = status.fetch("alpha_count");
             for (entity, mut transform, mut particle) in particle_query.iter_mut() {
                 if particle.particle_type() != ParticleType::Uou {
                     let new_pos = (*particle).travel();
@@ -231,14 +234,12 @@ fn handle_particle_reaction(
     mut reactor_state: ResMut<NextState<reactor::ReactorState>>,
     settings: Res<Persistent<app::settings::Settings>>,
     audio_se_asset: Res<app::audio::AudioSeAsset>,
-    mut field_score_query: Query<
-        (&mut Text, &mut field::FieldScore),
-        (With<field::FieldScore>, Without<field::FieldTimer>),
-    >,
+    mut field_score_query: Query<&mut Text, (With<field::FieldScore>, Without<field::FieldTimer>)>,
+    mut status: ResMut<status::ReactorStatus>,
 ) {
     for mut timer in &mut timer_query {
         if timer.tick(time.delta()).just_finished() {
-            let (mut text, mut field_score) = field_score_query.single_mut();
+            let mut text = field_score_query.single_mut();
             let hit_map = detect_hit(&mut particle_query);
             let mut killed_entities: Vec<Entity> = vec![];
             for (e, mut p) in particle_query.iter_mut() {
@@ -334,9 +335,9 @@ fn handle_particle_reaction(
                                     &audio_se_asset,
                                     &settings,
                                 );
-                                field_score.0 += CONTROL_HIT_SCORE;
-                                text.sections[0].value =
-                                    field::format_field_text("score", field_score.0);
+                                let score = status.increase("score", CONTROL_HIT_SCORE);
+                                text.sections[0].value = field::format_field_text("score", score);
+                                status.update_chain(status::StatusChain::Control);
                             }
                             _ => (),
                         },
@@ -359,15 +360,16 @@ fn handle_particle_reaction(
                                     &audio_se_asset,
                                     &settings,
                                 );
-                                field_score.0 += HYPER_HIT_BASE_SCORE * p.level() as u32;
-                                text.sections[0].value =
-                                    field::format_field_text("score", field_score.0);
+                                let score = status
+                                    .increase("score", HYPER_HIT_BASE_SCORE * p.level() as u32);
+                                text.sections[0].value = field::format_field_text("score", score);
+                                status.update_chain(status::StatusChain::Hyper);
                             }
                             _ => (),
                         },
                         ParticleType::Uou => match action {
                             HitAction::Kill => {
-                                reactor_state.set(reactor::ReactorState::Ended);
+                                reactor_state.set(reactor::ReactorState::Submit);
                                 app::audio::play_se(
                                     app::audio::AudioSe::Boom,
                                     &mut commands,

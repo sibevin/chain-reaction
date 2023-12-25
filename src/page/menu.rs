@@ -117,17 +117,17 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "Start",
                                         "play-light",
                                     );
-                                    // app::ui::build_menu_entry(
-                                    //     parent,
-                                    //     &asset_server,
-                                    //     (
-                                    //         ButtonAction::MoveToPage(app::GameState::Leaderboard),
-                                    //         app::interaction::IaButton,
-                                    //         Focusable::default(),
-                                    //     ),
-                                    //     "Report",
-                                    //     "list-numbers",
-                                    // );
+                                    app::ui::build_menu_entry(
+                                        parent,
+                                        &asset_server,
+                                        (
+                                            ButtonAction::MoveToPage(app::GameState::Leaderboard),
+                                            app::interaction::IaButton,
+                                            Focusable::default(),
+                                        ),
+                                        "Report",
+                                        "list-numbers",
+                                    );
                                     app::ui::build_menu_entry(
                                         parent,
                                         &asset_server,

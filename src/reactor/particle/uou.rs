@@ -1,12 +1,12 @@
 use crate::reactor::{field, particle::*};
 use bevy_vector_shapes::prelude::*;
 
+pub const RADIUS: f32 = 8.0;
+pub const COLOR: Color = Color::rgb(1.0, 0.84, 0.2);
 const MIN_LEVEL: u8 = 1;
 const MAX_LEVEL: u8 = 5;
 const MIN_V: f32 = 0.0;
 const MAX_V: f32 = 0.0;
-pub const RADIUS: f32 = 8.0;
-const COLOR: Color = Color::rgb(1.0, 0.84, 0.2);
 
 pub struct Ability;
 

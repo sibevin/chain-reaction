@@ -9,6 +9,22 @@ pub mod leaderboard;
 pub mod menu;
 pub mod settings;
 
+pub struct PagePlugin;
+
+impl Plugin for PagePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins((
+            menu::PagePlugin,
+            game::PagePlugin,
+            leaderboard::PagePlugin,
+            settings::PagePlugin,
+            help::PagePlugin,
+            about::PagePlugin,
+            auto::PagePlugin,
+        ));
+    }
+}
+
 pub const PAGE_PADDING: f32 = 6.0;
 const PAGE_TITLE_RATIO: f32 = 1.2;
 const SEP_W: f32 = 500.0;

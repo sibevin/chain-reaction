@@ -12,6 +12,7 @@ pub struct Settings {
     bgm_volume: u8,
     se_volume: u8,
     sensitivity: u8,
+    last_player: String,
 }
 
 impl Settings {
@@ -71,6 +72,12 @@ impl Settings {
             _ => 0,
         }
     }
+    pub fn fetch_last_player(&self) -> &str {
+        &self.last_player
+    }
+    pub fn update_last_player(&mut self, name: &str) {
+        self.last_player = String::from(name);
+    }
     fn is_value_vaild(value: i8) -> bool {
         (0..=100).contains(&value)
     }
@@ -97,6 +104,7 @@ impl Plugin for SettingsPlugin {
                     se_volume: 50,
                     fullscreen_enabled: false,
                     sensitivity: 50,
+                    last_player: String::from(""),
                 })
                 .build()
                 .expect("failed to initialize variables"),

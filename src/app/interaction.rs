@@ -2,7 +2,6 @@ use crate::app;
 use bevy::prelude::*;
 use bevy_ui_navigation::{
     prelude::{FocusState, Focusable},
-    systems::InputMapping,
     NavRequestSystem,
 };
 
@@ -22,7 +21,6 @@ pub struct InteractionPlugin;
 
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_interaction);
         app.add_systems(
             Update,
             (
@@ -34,11 +32,6 @@ impl Plugin for InteractionPlugin {
                 .after(NavRequestSystem),
         );
     }
-}
-
-fn setup_interaction(mut input_mapping: ResMut<InputMapping>) {
-    input_mapping.keyboard_navigation = true;
-    input_mapping.focus_follows_mouse = true;
 }
 
 fn update_button_interaction(

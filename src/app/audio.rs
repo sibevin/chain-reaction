@@ -47,10 +47,17 @@ impl Plugin for AudioSeAssetPlugin {
     }
 }
 
-pub fn init_audio_se_asset(
-    audio_se_asset: &mut ResMut<AudioSeAsset>,
+pub fn startup(
+    commands: &mut Commands,
     asset_server: &Res<AssetServer>,
+    audio_se_asset: &mut ResMut<AudioSeAsset>,
+    settings: &Res<Persistent<settings::Settings>>,
 ) {
+    init_se_asset(audio_se_asset, asset_server);
+    build_bgm(commands, &asset_server, &settings);
+}
+
+fn init_se_asset(audio_se_asset: &mut ResMut<AudioSeAsset>, asset_server: &Res<AssetServer>) {
     audio_se_asset.set(AudioSe::Pop, asset_server.load("audio/se/pick-92276.ogg"));
     audio_se_asset.set(
         AudioSe::PowerUp,
@@ -66,11 +73,10 @@ pub fn init_audio_se_asset(
     );
 }
 
-pub fn init_audio(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-
-    settings: Res<Persistent<settings::Settings>>,
+fn build_bgm(
+    commands: &mut Commands,
+    asset_server: &Res<AssetServer>,
+    settings: &Res<Persistent<settings::Settings>>,
 ) {
     commands.spawn((
         AudioBundle {

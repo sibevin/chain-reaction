@@ -39,13 +39,20 @@ pub fn startup(
     settings: Res<Persistent<app::settings::Settings>>,
     mut window_query: Query<&mut Window>,
 ) {
-    commands.spawn(Camera2dBundle::default());
-    reactor::field::build_reactor_field(&mut commands, &asset_server);
-    app::audio::init_audio_se_asset(&mut audio_se_asset, &asset_server);
+    // window
     let mut window = window_query.single_mut();
     if settings.is_enabled("fullscreen") {
         window.mode = WindowMode::Fullscreen
     } else {
         window.mode = WindowMode::Windowed
     }
+
+    // audio
+    app::audio::startup(&mut commands, &asset_server, &mut audio_se_asset, &settings);
+
+    // camera
+    commands.spawn(Camera2dBundle::default());
+
+    // reactor
+    reactor::startup(&mut commands, &asset_server);
 }

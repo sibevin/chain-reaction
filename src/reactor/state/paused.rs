@@ -29,11 +29,17 @@ struct StateRootUi;
 #[derive(Component)]
 enum ButtonAction {
     Resume,
+    ReStart,
     Abort,
     Quit,
 }
 
-fn state_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn state_setup(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut key_binding: ResMut<app::key_binding::KeyBindingConfig>,
+) {
+    key_binding.mode = app::key_binding::KeyBindingMode::Navgation;
     commands
         .spawn((
             NodeBundle {
@@ -95,6 +101,17 @@ fn state_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                         parent,
                         &asset_server,
                         (
+                            ButtonAction::ReStart,
+                            app::interaction::IaButton,
+                            Focusable::default(),
+                        ),
+                        "ReStart",
+                        "arrow-counter-clockwise",
+                    );
+                    app::ui::build_menu_entry(
+                        parent,
+                        &asset_server,
+                        (
                             ButtonAction::Abort,
                             app::interaction::IaButton,
                             Focusable::default(),
@@ -135,6 +152,7 @@ fn handle_ui_navigation(
         &mut actions,
         |mut action| match &mut *action {
             ButtonAction::Resume => reactor_state.set(reactor::ReactorState::Running),
+            ButtonAction::ReStart => reactor_state.set(reactor::ReactorState::Ready),
             ButtonAction::Abort => game_state.set(app::GameState::Menu),
             ButtonAction::Quit => app_exit_events.send(AppExit),
         },

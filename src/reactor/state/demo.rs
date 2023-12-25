@@ -1,4 +1,7 @@
-use crate::reactor::{self, field, hit::*, particle::*};
+use crate::{
+    app,
+    reactor::{self, field, hit::*, particle::*, status},
+};
 use bevy::prelude::*;
 use std::f32::consts::PI;
 
@@ -8,38 +11,29 @@ impl Plugin for StatePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             OnEnter(reactor::ReactorState::Demo),
-            (
-                state_setup,
-                reactor::field::timer::reset_field,
-                reactor::field::score::reset_field,
-            ),
+            (state_setup, field::reset_reactor_field),
         )
         .add_systems(
             Update,
             (
                 state_action,
-                reactor::field::timer::update_field,
-                reactor::field::alpha_count::update_field,
-                reactor::field::score::update_field,
+                field::update_reactor_field,
                 handle_particle_reaction,
             )
                 .run_if(in_state(reactor::ReactorState::Demo)),
         )
-        .add_systems(
-            OnExit(reactor::ReactorState::Demo),
-            (
-                state_exit,
-                reactor::field::timer::reset_field,
-                reactor::field::score::reset_field,
-            ),
-        );
+        .add_systems(OnExit(reactor::ReactorState::Demo), state_exit);
     }
 }
 
 #[derive(Component)]
 struct DemoParticle;
 
-fn state_setup(mut commands: Commands) {
+fn state_setup(
+    mut commands: Commands,
+    mut key_binding: ResMut<app::key_binding::KeyBindingConfig>,
+) {
+    key_binding.mode = app::key_binding::KeyBindingMode::Navgation;
     trigger::build_particle_sprite(&mut commands, DemoParticle, None, None, None);
     trigger::build_particle_sprite(&mut commands, DemoParticle, None, None, None);
     hyper::build_particle_sprite(&mut commands, DemoParticle, None, None, None);
@@ -56,11 +50,11 @@ fn state_action(
     mut particle_query: Query<(Entity, &mut Transform, &mut Particle), With<Particle>>,
     mut timer_query: Query<&mut reactor::ReactorTimer>,
     time: Res<Time>,
-    alpha_count_query: Query<&field::FieldAlphaCount, With<field::FieldAlphaCount>>,
+    status: ResMut<status::ReactorStatus>,
 ) {
     for mut timer in &mut timer_query {
         if timer.tick(time.delta()).just_finished() {
-            let alpha_count = alpha_count_query.single().0;
+            let alpha_count = status.fetch("alpha_count");
             for (entity, mut transform, mut particle) in particle_query.iter_mut() {
                 let new_pos = (*particle).travel();
                 transform.translation.x = new_pos.x;

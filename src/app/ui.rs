@@ -8,7 +8,7 @@ pub const BTN_FS: f32 = FONT_SIZE;
 pub const SPACE_SIZE: f32 = FONT_SIZE / 10.0;
 pub const BORDER_W: f32 = SPACE_SIZE * 1.0;
 pub const ICON_SIZE: f32 = FONT_SIZE * 0.8;
-pub const BTN_PADDING: f32 = 3.0;
+pub const BTN_PADDING: f32 = 5.0;
 pub const MENU_ENTRY_PADDING: f32 = 16.0;
 
 pub const BG_COLOR: Color = Color::BLACK;
@@ -38,7 +38,7 @@ pub fn build_icon_btn(
     let icon_style = Style {
         width: Val::Auto,
         height: Val::Auto,
-        padding: UiRect::all(px_p(BTN_PADDING)),
+        padding: UiRect::all(px_p(BTN_PADDING * 0.6)),
         ..style
     };
     build_btn(parent, asset_server, bundle, icon_style, None, Some(icon))

@@ -3,6 +3,8 @@ use bevy::prelude::*;
 pub mod audio;
 pub mod init;
 pub mod interaction;
+pub mod key_binding;
+pub mod leaderboard;
 pub mod settings;
 pub mod ui;
 
