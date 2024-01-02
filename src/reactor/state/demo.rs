@@ -41,6 +41,9 @@ fn state_setup(
     key_binding.mode = app::key_binding::KeyBindingMode::Navgation;
     trigger::build_particle_sprite(&mut commands, DemoParticle, None, None, None);
     trigger::build_particle_sprite(&mut commands, DemoParticle, None, None, None);
+    trigger::build_particle_sprite(&mut commands, DemoParticle, None, None, None);
+    hyper::build_particle_sprite(&mut commands, DemoParticle, None, None, None);
+    hyper::build_particle_sprite(&mut commands, DemoParticle, None, None, None);
     hyper::build_particle_sprite(&mut commands, DemoParticle, None, None, None);
 }
 
@@ -70,7 +73,7 @@ fn state_action(
                     }
                     ParticleType::Hyper => {
                         if particle.tick_countdown() == 0 {
-                            if alpha_count > 50 {
+                            if alpha_count > 150 {
                                 let new_pos = field::gen_random_pos_in_field(particle.radius());
                                 (*particle).jump(new_pos);
                                 transform.translation.x = new_pos.x;
@@ -78,7 +81,7 @@ fn state_action(
                                 control::build_particle_sprite(
                                     &mut commands,
                                     DemoParticle,
-                                    Some(particle.pos()),
+                                    None,
                                     None,
                                     Some(particle.level()),
                                 );
@@ -188,6 +191,9 @@ fn handle_particle_reaction(
                                         p.countdown_ratio(),
                                     );
                                 }
+                            }
+                            HitAction::Kill => {
+                                killed_entities.push(e);
                             }
                             _ => (),
                         },
