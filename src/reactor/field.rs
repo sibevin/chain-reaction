@@ -9,20 +9,13 @@ const FIELD_PADDING: f32 = (reactor::FIELD_NAV_H - FIELD_TEXT_SIZE) / 2.0;
 const FIELD_COLOR: Color = Color::rgb(0.2, 0.2, 0.2);
 const FIELD_TEXT_COLOR: Color = Color::rgb(0.5, 0.5, 0.5);
 
-#[derive(Component)]
-pub struct FieldTimer;
+pub const REACTOR_FIELDS: [&str; 4] = ["score", "time", "alpha_count", "chain"];
 
 #[derive(Component)]
-pub struct FieldAlphaCount;
+pub struct ReactorField(String);
 
 #[derive(Component)]
-pub struct FieldScore;
-
-#[derive(Component)]
-pub struct FieldIconChain;
-
-#[derive(Component)]
-pub struct FieldChain;
+pub struct ReactorChainIcon;
 
 #[derive(Component)]
 pub struct TargetRankField(String);
@@ -162,10 +155,7 @@ fn build_target_fields(parent: &mut ChildBuilder, asset_server: &Res<AssetServer
                                 ..default()
                             })
                             .with_children(|parent| {
-                                // let number = status.fetch(field);
                                 let (target_rank, target_value) = (0, 0);
-                                // let (target_rank, target_value) =
-                                // leaderboard.target(field, number);
                                 let target_value_text = match field {
                                     "score" => format_field_text("score", target_value),
                                     "time" => format_field_text("time", target_value),
@@ -298,132 +288,26 @@ fn build_reactor_fields(parent: &mut ChildBuilder, asset_server: &Res<AssetServe
                     ..default()
                 },))
                 .with_children(|parent| {
-                    parent
-                        .spawn((NodeBundle {
-                            style: Style {
-                                align_items: AlignItems::Center,
-                                justify_content: JustifyContent::Start,
-                                ..default()
-                            },
-                            ..default()
-                        },))
-                        .with_children(|parent| {
-                            let icon = asset_server.load("images/icons/trophy-fill.png");
-                            parent.spawn(ImageBundle {
+                    for field in REACTOR_FIELDS {
+                        let icon_path = match field {
+                            "score" => "images/icons/trophy-fill.png",
+                            "time" => "images/icons/timer-fill.png",
+                            "alpha_count" => "images/icons/circles-three-fill.png",
+                            "chain" => "images/icons/line-segments.png",
+                            _ => panic!("Invalid field"),
+                        };
+                        parent
+                            .spawn((NodeBundle {
                                 style: Style {
-                                    width: Val::Px(FIELD_TEXT_SIZE),
-                                    height: Val::Px(FIELD_TEXT_SIZE),
-                                    margin: UiRect::right(Val::Px(FIELD_PADDING * 0.5)),
+                                    align_items: AlignItems::Center,
+                                    justify_content: JustifyContent::Start,
                                     ..default()
                                 },
-                                image: UiImage::new(icon),
                                 ..default()
-                            });
-                            parent.spawn((
-                                TextBundle::from_section(
-                                    format_field_text("score", 0),
-                                    TextStyle {
-                                        font: asset_server.load(app::ui::FONT_DIGIT),
-                                        font_size: FIELD_TEXT_SIZE,
-                                        color: FIELD_TEXT_COLOR,
-                                        ..default()
-                                    },
-                                ),
-                                FieldScore,
-                            ));
-                        });
-                    parent
-                        .spawn((NodeBundle {
-                            style: Style {
-                                align_items: AlignItems::Center,
-                                justify_content: JustifyContent::Center,
-                                ..default()
-                            },
-                            ..default()
-                        },))
-                        .with_children(|parent| {
-                            let icon = asset_server.load("images/icons/timer-fill.png");
-                            parent.spawn(ImageBundle {
-                                style: Style {
-                                    width: Val::Px(FIELD_TEXT_SIZE),
-                                    height: Val::Px(FIELD_TEXT_SIZE),
-                                    margin: UiRect::right(Val::Px(FIELD_PADDING * 0.5)),
-                                    ..default()
-                                },
-                                image: UiImage::new(icon),
-                                ..default()
-                            });
-                            parent.spawn((
-                                TextBundle::from_section(
-                                    format_field_text("time", 0),
-                                    TextStyle {
-                                        font: asset_server.load(app::ui::FONT_DIGIT),
-                                        font_size: FIELD_TEXT_SIZE,
-                                        color: FIELD_TEXT_COLOR,
-                                        ..default()
-                                    },
-                                ),
-                                FieldTimer,
-                            ));
-                        });
-                    parent
-                        .spawn((NodeBundle {
-                            style: Style {
-                                align_items: AlignItems::Center,
-                                justify_content: JustifyContent::Center,
-                                ..default()
-                            },
-                            ..default()
-                        },))
-                        .with_children(|parent| {
-                            let icon = asset_server.load("images/icons/circles-three-fill.png");
-                            parent.spawn(ImageBundle {
-                                style: Style {
-                                    width: Val::Px(FIELD_TEXT_SIZE),
-                                    height: Val::Px(FIELD_TEXT_SIZE),
-                                    margin: UiRect::right(Val::Px(FIELD_PADDING * 0.5)),
-                                    ..default()
-                                },
-                                image: UiImage::new(icon),
-                                ..default()
-                            });
-                            parent.spawn((
-                                TextBundle::from_section(
-                                    format_field_text("alpha_count", 0),
-                                    TextStyle {
-                                        font: asset_server.load(app::ui::FONT_DIGIT),
-                                        font_size: FIELD_TEXT_SIZE,
-                                        color: FIELD_TEXT_COLOR,
-                                        ..default()
-                                    },
-                                ),
-                                FieldAlphaCount,
-                            ));
-                        });
-                    parent
-                        .spawn((NodeBundle {
-                            style: Style {
-                                align_items: AlignItems::Center,
-                                justify_content: JustifyContent::Center,
-                                ..default()
-                            },
-                            ..default()
-                        },))
-                        .with_children(|parent| {
-                            let icon = asset_server.load("images/icons/line-segments.png");
-                            parent.spawn(ImageBundle {
-                                style: Style {
-                                    width: Val::Px(FIELD_TEXT_SIZE),
-                                    height: Val::Px(FIELD_TEXT_SIZE),
-                                    margin: UiRect::right(Val::Px(FIELD_PADDING * 0.5)),
-                                    ..default()
-                                },
-                                image: UiImage::new(icon),
-                                ..default()
-                            });
-                            let icon = asset_server.load("images/icons/circle.png");
-                            parent.spawn((
-                                ImageBundle {
+                            },))
+                            .with_children(|parent| {
+                                let icon = asset_server.load(icon_path);
+                                parent.spawn(ImageBundle {
                                     style: Style {
                                         width: Val::Px(FIELD_TEXT_SIZE),
                                         height: Val::Px(FIELD_TEXT_SIZE),
@@ -432,145 +316,122 @@ fn build_reactor_fields(parent: &mut ChildBuilder, asset_server: &Res<AssetServe
                                     },
                                     image: UiImage::new(icon),
                                     ..default()
-                                },
-                                FieldIconChain,
-                            ));
-                            parent.spawn((
-                                TextBundle::from_section(
-                                    format_field_text("chain", 0),
-                                    TextStyle {
-                                        font: asset_server.load(app::ui::FONT_DIGIT),
-                                        font_size: FIELD_TEXT_SIZE,
-                                        color: FIELD_TEXT_COLOR,
-                                        ..default()
-                                    },
-                                ),
-                                FieldChain,
-                            ));
-                        });
+                                });
+                                if field == "chain" {
+                                    let icon = asset_server.load("images/icons/circle.png");
+                                    parent.spawn((
+                                        ImageBundle {
+                                            style: Style {
+                                                width: Val::Px(FIELD_TEXT_SIZE),
+                                                height: Val::Px(FIELD_TEXT_SIZE),
+                                                margin: UiRect::right(Val::Px(FIELD_PADDING * 0.5)),
+                                                ..default()
+                                            },
+                                            image: UiImage::new(icon),
+                                            ..default()
+                                        },
+                                        ReactorChainIcon,
+                                    ));
+                                }
+                                parent.spawn((
+                                    TextBundle::from_section(
+                                        format_field_text(field, 0),
+                                        TextStyle {
+                                            font: asset_server.load(app::ui::FONT_DIGIT),
+                                            font_size: FIELD_TEXT_SIZE,
+                                            color: FIELD_TEXT_COLOR,
+                                            ..default()
+                                        },
+                                    ),
+                                    ReactorField(String::from(field)),
+                                ));
+                            });
+                    }
                 });
         });
 }
 
 const SCORE_PER_SECOND: u32 = 10;
 
-pub fn update_reactor_field(
+pub fn update_reactor_fields(
     time: Res<Time>,
+    mut reactor_fields_query: Query<(&mut Text, &ReactorField), With<ReactorField>>,
+    mut reactor_chain_icon_query: Query<&mut UiImage, With<ReactorChainIcon>>,
     mut reactor_timer_query: Query<&mut reactor::ReactorTimer>,
     mut score_timer_query: Query<&mut reactor::ScoreTimer>,
-    mut field_timer_query: Query<
-        &mut Text,
-        (
-            With<FieldTimer>,
-            Without<FieldScore>,
-            Without<FieldAlphaCount>,
-            Without<FieldChain>,
-        ),
-    >,
-    mut field_score_query: Query<
-        &mut Text,
-        (
-            With<FieldScore>,
-            Without<FieldTimer>,
-            Without<FieldAlphaCount>,
-            Without<FieldChain>,
-        ),
-    >,
-    mut field_ac_query: Query<
-        &mut Text,
-        (
-            With<FieldAlphaCount>,
-            Without<FieldTimer>,
-            Without<FieldScore>,
-            Without<FieldChain>,
-        ),
-    >,
-    mut field_chain_query: Query<
-        &mut Text,
-        (
-            With<FieldChain>,
-            Without<FieldTimer>,
-            Without<FieldScore>,
-            Without<FieldAlphaCount>,
-        ),
-    >,
-    mut field_icon_chain_query: Query<&mut UiImage, (With<FieldIconChain>,)>,
     mut status: ResMut<reactor::status::ReactorStatus>,
     particle_query: Query<&reactor::particle::Particle, With<reactor::particle::Particle>>,
     asset_server: Res<AssetServer>,
 ) {
     let mut reactor_timer = reactor_timer_query.single_mut();
     if reactor_timer.tick(time.delta()).just_finished() {
-        let time = status.increase("time", 1);
-        let mut text = field_timer_query.single_mut();
-        text.sections[0].value = format_field_text("time", time);
-        let mut total_alpha_count = 0;
-        for particle in particle_query.iter() {
-            if particle.particle_type() == reactor::particle::ParticleType::Alpha {
-                total_alpha_count += 1;
+        for (mut text, field) in reactor_fields_query.iter_mut() {
+            match field.0.as_ref() {
+                "score" => {
+                    text.sections[0].value = format_field_text("score", status.fetch("score"));
+                }
+                "time" => {
+                    let time = status.increase("time", 1);
+                    text.sections[0].value = format_field_text("time", time);
+                }
+                "alpha_count" => {
+                    let mut total_alpha_count = 0;
+                    for particle in particle_query.iter() {
+                        if particle.particle_type() == reactor::particle::ParticleType::Alpha {
+                            total_alpha_count += 1;
+                        }
+                    }
+                    status.update("alpha_count", total_alpha_count);
+                    status.compare_and_update_max_field("alpha_count", total_alpha_count);
+                    text.sections[0].value = format_field_text("alpha_count", total_alpha_count);
+                }
+                "chain" => {
+                    text.sections[0].value =
+                        format_field_text("chain", status.fetch("chain_length"));
+                    text.sections[0].style.color = match status.current_chain() {
+                        reactor::status::StatusChain::Control => reactor::particle::control::COLOR,
+                        reactor::status::StatusChain::None => FIELD_TEXT_COLOR,
+                        reactor::status::StatusChain::Hyper => reactor::particle::hyper::COLOR,
+                    };
+                }
+                _ => (),
             }
         }
-        status.update("alpha_count", total_alpha_count);
-        status.compare_and_update_max_field("alpha_count", total_alpha_count);
-        let mut text = field_ac_query.single_mut();
-        text.sections[0].value = format_field_text("alpha_count", total_alpha_count);
-        let mut text = field_chain_query.single_mut();
-        text.sections[0].value = format_field_text("chain", status.fetch("chain_length"));
-        text.sections[0].style.color = match status.current_chain() {
-            reactor::status::StatusChain::Control => reactor::particle::control::COLOR,
-            reactor::status::StatusChain::None => FIELD_TEXT_COLOR,
-            reactor::status::StatusChain::Hyper => reactor::particle::hyper::COLOR,
-        };
-        let mut image = field_icon_chain_query.single_mut();
+        let mut image = reactor_chain_icon_query.single_mut();
         image.texture = match status.current_chain() {
             reactor::status::StatusChain::Control => asset_server.load("images/icons/square.png"),
             reactor::status::StatusChain::None => asset_server.load("images/icons/circle.png"),
             reactor::status::StatusChain::Hyper => asset_server.load("images/icons/hexagon.png"),
-        }
+        };
     }
+
     let mut score_timer = score_timer_query.single_mut();
     if score_timer.tick(time.delta()).just_finished() {
-        let alpha_count = status.fetch("alpha_count");
-        status.increase("score", alpha_count);
-        let score = status.increase("score", SCORE_PER_SECOND);
-        let mut text = field_score_query.single_mut();
-        text.sections[0].value = format_field_text("score", score);
+        for (mut text, field) in reactor_fields_query.iter_mut() {
+            match field.0.as_ref() {
+                "score" => {
+                    let alpha_count = status.fetch("alpha_count");
+                    status.increase("score", alpha_count);
+                    let score = status.increase("score", SCORE_PER_SECOND);
+                    text.sections[0].value = format_field_text("score", score);
+                }
+                _ => (),
+            }
+        }
     }
 }
 
-pub fn reset_reactor_field(
-    mut field_timer_query: Query<
-        &mut Text,
-        (
-            With<FieldTimer>,
-            Without<FieldScore>,
-            Without<FieldAlphaCount>,
-        ),
-    >,
-    mut field_score_query: Query<
-        &mut Text,
-        (
-            With<FieldScore>,
-            Without<FieldTimer>,
-            Without<FieldAlphaCount>,
-        ),
-    >,
-    mut field_ac_query: Query<
-        &mut Text,
-        (
-            With<FieldAlphaCount>,
-            Without<FieldTimer>,
-            Without<FieldScore>,
-        ),
-    >,
+pub fn reset_reactor_fields(
+    mut reactor_fields_query: Query<(&mut Text, &ReactorField), With<ReactorField>>,
+    mut reactor_chain_icon_query: Query<&mut UiImage, With<ReactorChainIcon>>,
     mut status: ResMut<reactor::status::ReactorStatus>,
+    asset_server: Res<AssetServer>,
 ) {
-    let mut text = field_timer_query.single_mut();
-    text.sections[0].value = format_field_text("time", 0);
-    let mut text = field_score_query.single_mut();
-    text.sections[0].value = format_field_text("score", 0);
-    let mut text = field_ac_query.single_mut();
-    text.sections[0].value = format_field_text("alpha_count", 0);
+    for (mut text, field) in reactor_fields_query.iter_mut() {
+        text.sections[0].value = format_field_text(field.0.as_ref(), 0);
+    }
+    let mut image = reactor_chain_icon_query.single_mut();
+    image.texture = asset_server.load("images/icons/circle.png");
     status.reset();
 }
 

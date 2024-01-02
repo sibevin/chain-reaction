@@ -19,7 +19,7 @@ impl Plugin for StatePlugin {
                     control_u_by_keyboard,
                     handle_pause_btn.after(NavRequestSystem),
                     move_particle,
-                    field::update_reactor_field,
+                    field::update_reactor_fields,
                     field::update_target_fields,
                     handle_particle_reaction,
                 )
@@ -235,12 +235,10 @@ fn handle_particle_reaction(
     mut reactor_state: ResMut<NextState<reactor::ReactorState>>,
     settings: Res<Persistent<app::settings::Settings>>,
     audio_se_asset: Res<app::audio::AudioSeAsset>,
-    mut field_score_query: Query<&mut Text, (With<field::FieldScore>, Without<field::FieldTimer>)>,
     mut status: ResMut<status::ReactorStatus>,
 ) {
     for mut timer in &mut timer_query {
         if timer.tick(time.delta()).just_finished() {
-            let mut text = field_score_query.single_mut();
             let hit_map = detect_hit(&mut particle_query);
             let mut killed_entities: Vec<Entity> = vec![];
             for (e, mut p) in particle_query.iter_mut() {
@@ -336,8 +334,7 @@ fn handle_particle_reaction(
                                     &audio_se_asset,
                                     &settings,
                                 );
-                                let score = status.increase("score", CONTROL_HIT_SCORE);
-                                text.sections[0].value = field::format_field_text("score", score);
+                                status.increase("score", CONTROL_HIT_SCORE);
                                 status.update_chain(status::StatusChain::Control);
                             }
                             _ => (),
@@ -361,9 +358,7 @@ fn handle_particle_reaction(
                                     &audio_se_asset,
                                     &settings,
                                 );
-                                let score = status
-                                    .increase("score", HYPER_HIT_BASE_SCORE * p.level() as u32);
-                                text.sections[0].value = field::format_field_text("score", score);
+                                status.increase("score", HYPER_HIT_BASE_SCORE * p.level() as u32);
                                 status.update_chain(status::StatusChain::Hyper);
                             }
                             _ => (),

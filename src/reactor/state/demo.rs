@@ -12,7 +12,7 @@ impl Plugin for StatePlugin {
         app.add_systems(
             OnEnter(reactor::ReactorState::Demo),
             (
-                field::reset_reactor_field,
+                field::reset_reactor_fields,
                 field::reset_target_fields,
                 state_setup,
             ),
@@ -21,7 +21,7 @@ impl Plugin for StatePlugin {
             Update,
             (
                 state_action,
-                field::update_reactor_field,
+                field::update_reactor_fields,
                 field::update_target_fields,
                 handle_particle_reaction,
             )

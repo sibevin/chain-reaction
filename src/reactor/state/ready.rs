@@ -8,7 +8,7 @@ impl Plugin for StatePlugin {
         app.add_systems(
             OnEnter(reactor::ReactorState::Ready),
             (
-                field::reset_reactor_field,
+                field::reset_reactor_fields,
                 field::reset_target_fields,
                 state_setup,
             ),
