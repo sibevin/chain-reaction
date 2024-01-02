@@ -5,8 +5,8 @@ use std::f32::consts::PI;
 pub const RADIUS: f32 = 6.0;
 const MIN_LEVEL: u8 = 1;
 const MAX_LEVEL: u8 = 5;
-const MIN_V: f32 = 0.5;
-const MAX_V: f32 = 1.5;
+const MIN_V: f32 = 0.3;
+const MAX_V: f32 = 1.0;
 const COLOR: Color = Color::SILVER;
 const MAX_COUNTDOWN: u32 = 300;
 

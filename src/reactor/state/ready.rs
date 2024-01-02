@@ -1,5 +1,6 @@
 use crate::reactor::{self, field, particle::*};
 use bevy::prelude::*;
+use std::f32::consts::PI;
 
 pub struct StatePlugin;
 
@@ -16,6 +17,9 @@ impl Plugin for StatePlugin {
     }
 }
 
+const PARTICLE_COUNT: u8 = 3;
+const POS_RADIUS: f32 = reactor::FIELD_H / 3.0;
+
 fn state_setup(
     mut commands: Commands,
     particle_query: Query<Entity, With<reactor::RunningParticle>>,
@@ -31,37 +35,29 @@ fn state_setup(
         None,
         None,
     );
-    let hyper_pos = Vec2::new(reactor::FIELD_H / 3.0, -reactor::FIELD_H / 3.0);
-    hyper::build_particle_sprite(
-        &mut commands,
-        reactor::RunningParticle,
-        Some(hyper_pos),
-        Some(hyper_pos),
-        None,
-    );
-    let hyper_pos = Vec2::new(-reactor::FIELD_H / 3.0, -reactor::FIELD_H / 3.0);
-    hyper::build_particle_sprite(
-        &mut commands,
-        reactor::RunningParticle,
-        Some(hyper_pos),
-        Some(hyper_pos),
-        None,
-    );
-    let trigger_pos = Vec2::new(reactor::FIELD_H / 3.0, reactor::FIELD_H / 3.0);
-    trigger::build_particle_sprite(
-        &mut commands,
-        reactor::RunningParticle,
-        Some(trigger_pos),
-        Some(trigger_pos),
-        None,
-    );
-    let trigger_pos = Vec2::new(-reactor::FIELD_H / 3.0, reactor::FIELD_H / 3.0);
-    trigger::build_particle_sprite(
-        &mut commands,
-        reactor::RunningParticle,
-        Some(trigger_pos),
-        Some(trigger_pos),
-        None,
-    );
+    let start_angle = 0.0;
+    for i in 0..PARTICLE_COUNT {
+        let angle = (start_angle + PI * 2.0 * i as f32) / PARTICLE_COUNT as f32;
+        let pos = Vec2::new(POS_RADIUS * angle.cos(), POS_RADIUS * angle.sin());
+        hyper::build_particle_sprite(
+            &mut commands,
+            reactor::RunningParticle,
+            Some(pos),
+            Some(pos),
+            None,
+        );
+    }
+    let start_angle = 60.0;
+    for i in 0..PARTICLE_COUNT {
+        let angle = (start_angle + PI * 2.0 * i as f32) / PARTICLE_COUNT as f32;
+        let pos = Vec2::new(POS_RADIUS * angle.cos(), POS_RADIUS * angle.sin());
+        trigger::build_particle_sprite(
+            &mut commands,
+            reactor::RunningParticle,
+            Some(pos),
+            Some(pos),
+            None,
+        );
+    }
     reactor_state.set(reactor::ReactorState::Running);
 }

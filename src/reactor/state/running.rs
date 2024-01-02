@@ -230,6 +230,7 @@ const CONTROL_HIT_SCORE: u32 = 100;
 fn handle_particle_reaction(
     mut commands: Commands,
     mut particle_query: Query<(Entity, &mut Particle), With<Particle>>,
+    u_particle_query: Query<&Transform, With<reactor::ControlParticle>>,
     mut timer_query: Query<&mut reactor::ReactorTimer>,
     time: Res<Time>,
     mut reactor_state: ResMut<NextState<reactor::ReactorState>>,
@@ -239,6 +240,8 @@ fn handle_particle_reaction(
 ) {
     for mut timer in &mut timer_query {
         if timer.tick(time.delta()).just_finished() {
+            let u_particle = u_particle_query.single();
+            let u_pos: Vec2 = Vec2::new(u_particle.translation.x, u_particle.translation.y);
             let hit_map = detect_hit(&mut particle_query);
             let mut killed_entities: Vec<Entity> = vec![];
             for (e, mut p) in particle_query.iter_mut() {
@@ -318,15 +321,18 @@ fn handle_particle_reaction(
                             }
                             HitAction::UouHit => {
                                 let radius = p.radius();
+                                let new_c_pos = field::gen_random_pos_in_field(radius);
                                 control::build_particle_sprite(
                                     &mut commands,
                                     reactor::RunningParticle,
-                                    Some(field::gen_random_pos_in_field(radius)),
-                                    None,
+                                    Some(new_c_pos),
+                                    Some(new_c_pos - u_pos),
                                     Some(p.level() + 1),
                                 );
                                 p.update_level(1);
-                                p.jump(field::gen_random_pos_in_field(radius));
+                                let ori_c_pos = field::gen_random_pos_in_field(radius);
+                                p.jump(ori_c_pos);
+                                p.assign_random_v(Some(ori_c_pos - u_pos));
                                 p.reset_countdown();
                                 app::audio::play_se(
                                     app::audio::AudioSe::PowerUp,
@@ -341,17 +347,20 @@ fn handle_particle_reaction(
                         },
                         ParticleType::Hyper => match action {
                             HitAction::UouHit => {
+                                let radius = p.radius();
+                                let new_c_pos = field::gen_random_pos_in_field(radius);
                                 control::build_particle_sprite(
                                     &mut commands,
                                     reactor::RunningParticle,
-                                    None,
-                                    None,
+                                    Some(new_c_pos),
+                                    Some(new_c_pos - u_pos),
                                     Some(p.level()),
                                 );
                                 p.update_level(1);
-                                let radius = p.radius();
-                                p.jump(field::gen_random_pos_in_field(radius));
+                                let h_pos = field::gen_random_pos_in_field(radius);
+                                p.jump(h_pos);
                                 p.reset_countdown();
+                                p.assign_random_v(Some(h_pos - u_pos));
                                 app::audio::play_se(
                                     app::audio::AudioSe::PowerUp,
                                     &mut commands,
