@@ -365,6 +365,18 @@ pub fn update_reactor_fields(
 ) {
     let mut reactor_timer = reactor_timer_query.single_mut();
     if reactor_timer.tick(time.delta()).just_finished() {
+        let mut control_count = 0;
+        let mut full_level_control_count = 0;
+        for particle in particle_query.iter() {
+            if particle.particle_type() == reactor::particle::ParticleType::Control {
+                control_count += 1;
+                if particle.level() == reactor::particle::control::MAX_LEVEL {
+                    full_level_control_count += 1;
+                }
+            }
+        }
+        status.compare_and_update_max_field("control_count", control_count);
+        status.compare_and_update_max_field("full_level_control_count", full_level_control_count);
         for (mut text, field) in reactor_fields_query.iter_mut() {
             match field.0.as_ref() {
                 "score" => {

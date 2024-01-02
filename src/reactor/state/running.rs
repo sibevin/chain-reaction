@@ -110,8 +110,13 @@ fn state_setup(
         });
 }
 
-fn state_exit(commands: Commands, to_despawn: Query<Entity, With<StateRootUi>>) {
+fn state_exit(
+    commands: Commands,
+    to_despawn: Query<Entity, With<StateRootUi>>,
+    status: Res<status::ReactorStatus>,
+) {
     app::ui::despawn_ui::<StateRootUi>(to_despawn, commands);
+    dbg!(status);
 }
 
 fn move_particle(
@@ -242,6 +247,7 @@ fn handle_particle_reaction(
         if timer.tick(time.delta()).just_finished() {
             let u_particle = u_particle_query.single();
             let u_pos: Vec2 = Vec2::new(u_particle.translation.x, u_particle.translation.y);
+            status.update_stopping_time(u_pos);
             let hit_map = detect_hit(&mut particle_query);
             let mut killed_entities: Vec<Entity> = vec![];
             for (e, mut p) in particle_query.iter_mut() {
@@ -329,7 +335,12 @@ fn handle_particle_reaction(
                                     Some(new_c_pos - u_pos),
                                     Some(p.level() + 1),
                                 );
+                                status.increase("total_control_count", 1);
                                 p.update_level(1);
+                                status.compare_and_update_max_field(
+                                    "control_level",
+                                    p.level() as u32,
+                                );
                                 let ori_c_pos = field::gen_random_pos_in_field(radius);
                                 p.jump(ori_c_pos);
                                 p.assign_random_v(Some(ori_c_pos - u_pos));
@@ -356,7 +367,11 @@ fn handle_particle_reaction(
                                     Some(new_c_pos - u_pos),
                                     Some(p.level()),
                                 );
+                                status.increase("total_control_count", 1);
+                                status.increase("total_hyper_count", 1);
                                 p.update_level(1);
+                                status
+                                    .compare_and_update_max_field("hyper_level", p.level() as u32);
                                 let h_pos = field::gen_random_pos_in_field(radius);
                                 p.jump(h_pos);
                                 p.reset_countdown();

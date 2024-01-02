@@ -6,8 +6,8 @@ use bevy_vector_shapes::prelude::*;
 use std::f32::consts::{PI, TAU};
 
 pub const COLOR: Color = Color::LIME_GREEN;
+pub const MAX_LEVEL: u8 = 8;
 const MIN_LEVEL: u8 = 1;
-const MAX_LEVEL: u8 = 8;
 const MIN_V: f32 = 2.0;
 const MAX_V: f32 = 4.0;
 const RADIUS: f32 = 12.0;

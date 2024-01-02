@@ -88,7 +88,7 @@ impl Particle {
         level: Option<u8>,
     ) -> Self {
         let level = match level {
-            Some(level) => level,
+            Some(level) => level.clamp(ability.min_level(), ability.max_level()),
             None => ability.min_level(),
         };
         let v = ability.gen_random_v(direction);
