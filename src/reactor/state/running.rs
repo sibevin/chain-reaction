@@ -20,6 +20,7 @@ impl Plugin for StatePlugin {
                     handle_pause_btn.after(NavRequestSystem),
                     move_particle,
                     field::update_reactor_field,
+                    field::update_target_fields,
                     handle_particle_reaction,
                 )
                     .run_if(in_state(reactor::ReactorState::Running)),

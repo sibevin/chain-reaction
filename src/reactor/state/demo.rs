@@ -11,13 +11,18 @@ impl Plugin for StatePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             OnEnter(reactor::ReactorState::Demo),
-            (state_setup, field::reset_reactor_field),
+            (
+                field::reset_reactor_field,
+                field::reset_target_fields,
+                state_setup,
+            ),
         )
         .add_systems(
             Update,
             (
                 state_action,
                 field::update_reactor_field,
+                field::update_target_fields,
                 handle_particle_reaction,
             )
                 .run_if(in_state(reactor::ReactorState::Demo)),

@@ -7,7 +7,11 @@ impl Plugin for StatePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             OnEnter(reactor::ReactorState::Ready),
-            (field::reset_reactor_field, state_setup),
+            (
+                field::reset_reactor_field,
+                field::reset_target_fields,
+                state_setup,
+            ),
         );
     }
 }
