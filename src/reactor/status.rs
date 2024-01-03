@@ -1,6 +1,6 @@
 use crate::app::leaderboard::LeaderboardRecord;
 use bevy::prelude::*;
-use std::time::{SystemTime, UNIX_EPOCH};
+use chrono::Local;
 
 #[derive(PartialEq, Default, Debug)]
 pub enum StatusChain {
@@ -32,12 +32,12 @@ pub struct ReactorStatus {
     total_stopping_time: u32,
     max_stopping_time: u32,
     u_pos: Vec2,
-    created_ts: u64,
+    created_dt: String,
 }
 
 impl ReactorStatus {
     pub fn uid(&self) -> String {
-        format!("{}_{}_{}", self.created_ts, self.time, self.score,)
+        format!("{}_{}_{}", self.created_dt, self.time, self.score,)
     }
 
     pub fn update_chain(&mut self, chain: StatusChain) {
@@ -87,15 +87,12 @@ impl ReactorStatus {
             max_hyper_level: self.max_hyper_level,
             total_stopping_time: self.total_stopping_time,
             max_stopping_time: self.max_stopping_time,
-            created_ts: self.created_ts,
+            created_dt: self.created_dt.clone(),
         };
     }
 
     pub fn mark_timestamp(&mut self) {
-        self.created_ts = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
+        self.created_dt = Local::now().format("%Y-%m-%d_%H:%M:%S%.3f").to_string();
     }
 
     pub fn reset(&mut self) {

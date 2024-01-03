@@ -29,12 +29,12 @@ pub struct LeaderboardRecord {
     pub max_hyper_level: u32,
     pub total_stopping_time: u32,
     pub max_stopping_time: u32,
-    pub created_ts: u64,
+    pub created_dt: String,
 }
 
 impl LeaderboardRecord {
     pub fn uid(&self) -> String {
-        format!("{}_{}_{}", self.created_ts, self.time, self.score,)
+        format!("{}_{}_{}", self.created_dt, self.time, self.score,)
     }
 
     pub fn fetch(&self, field: &str) -> u32 {
