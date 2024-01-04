@@ -10,7 +10,7 @@ pub mod trigger;
 pub mod uou;
 
 const MOVING_TAILING_COUNT: usize = 3;
-const SIDE_THICKNESS: f32 = 0.3;
+const SIDE_THICKNESS: f32 = 2.0;
 
 #[derive(Component, Debug, PartialEq)]
 pub enum ParticleType {
@@ -34,6 +34,7 @@ pub struct Particle {
     v: Vec2,
     is_moving: bool,
     tailings: [Vec2; MOVING_TAILING_COUNT],
+    canvas_entity: Option<Entity>,
 }
 
 pub trait ParticleAbility {
@@ -72,13 +73,22 @@ impl Particle {
         pos: Vec2,
         direction: Option<Vec2>,
         level: Option<u8>,
+        canvas_entity: Option<Entity>,
     ) -> Self {
         match particle_type {
-            ParticleType::Alpha => alpha::Ability::gen_particle(pos, direction, level),
-            ParticleType::Hyper => hyper::Ability::gen_particle(pos, direction, level),
-            ParticleType::Control => control::Ability::gen_particle(pos, direction, level),
-            ParticleType::Trigger => trigger::Ability::gen_particle(pos, direction, level),
-            ParticleType::Uou => uou::Ability::gen_particle(pos, direction, level),
+            ParticleType::Alpha => {
+                alpha::Ability::gen_particle(pos, direction, level, canvas_entity)
+            }
+            ParticleType::Hyper => {
+                hyper::Ability::gen_particle(pos, direction, level, canvas_entity)
+            }
+            ParticleType::Control => {
+                control::Ability::gen_particle(pos, direction, level, canvas_entity)
+            }
+            ParticleType::Trigger => {
+                trigger::Ability::gen_particle(pos, direction, level, canvas_entity)
+            }
+            ParticleType::Uou => uou::Ability::gen_particle(pos, direction, level, canvas_entity),
         }
     }
     pub fn new(
@@ -86,6 +96,7 @@ impl Particle {
         pos: Vec2,
         direction: Option<Vec2>,
         level: Option<u8>,
+        canvas_entity: Option<Entity>,
     ) -> Self {
         let level = match level {
             Some(level) => level.clamp(ability.min_level(), ability.max_level()),
@@ -99,6 +110,7 @@ impl Particle {
             v,
             is_moving: true,
             tailings: [pos; MOVING_TAILING_COUNT],
+            canvas_entity,
         }
     }
     pub fn particle_type(&self) -> ParticleType {
@@ -115,6 +127,9 @@ impl Particle {
     }
     pub fn v(&self) -> Vec2 {
         self.v
+    }
+    pub fn canvas_entity(&self) -> Option<Entity> {
+        self.canvas_entity
     }
     pub fn set_v(&mut self, v: Vec2) {
         self.v = v

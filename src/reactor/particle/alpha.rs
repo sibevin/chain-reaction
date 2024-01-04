@@ -1,5 +1,5 @@
 use crate::reactor::{field, particle::*};
-use bevy_vector_shapes::prelude::*;
+use bevy::sprite::MaterialMesh2dBundle;
 use std::f32::consts::PI;
 
 pub const RADIUS: f32 = 6.0;
@@ -15,13 +15,19 @@ pub struct Ability {
 }
 
 impl Ability {
-    pub fn gen_particle(pos: Vec2, direction: Option<Vec2>, level: Option<u8>) -> Particle {
+    pub fn gen_particle(
+        pos: Vec2,
+        direction: Option<Vec2>,
+        level: Option<u8>,
+        canvas_entity: Option<Entity>,
+    ) -> Particle {
         let level = level.unwrap_or(Ability::pick_random_alpha_level());
         let mut particle = Particle::new(
             Box::new(Ability { countdown: 0 }),
             pos,
             direction,
             Some(level),
+            canvas_entity,
         );
         particle.reset_countdown();
         particle
@@ -85,6 +91,8 @@ impl ParticleAbility for Ability {
 
 pub fn build_particle_sprite(
     commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<ColorMaterial>>,
     bundle: impl Bundle,
     pos: Option<Vec2>,
     direction: Option<Vec2>,
@@ -94,9 +102,9 @@ pub fn build_particle_sprite(
         Some(pos) => pos,
         None => field::gen_random_pos_in_field(RADIUS * 2.0),
     };
-    let particle = Particle::create(ParticleType::Alpha, pos, direction, level);
+    let particle = Particle::create(ParticleType::Alpha, pos, direction, level, None);
     let level = particle.level();
-    let root_entity = commands
+    commands
         .spawn((
             SpriteBundle {
                 transform: Transform::from_xyz(pos.x, pos.y, 0.0),
@@ -105,37 +113,28 @@ pub fn build_particle_sprite(
             bundle,
             particle,
         ))
-        .id();
-    update_particle_sprite(commands, root_entity, level);
-}
-
-pub fn update_particle_sprite(commands: &mut Commands, root_entity: Entity, level: u8) {
-    commands.entity(root_entity).despawn_descendants();
-    commands.entity(root_entity).with_children(|parent| {
-        parent.spawn(ShapeBundle::circle(
-            &ShapeConfig {
+        .with_children(|parent| {
+            parent.spawn(MaterialMesh2dBundle {
+                mesh: meshes.add(shape::Circle::new(RADIUS).into()).into(),
+                material: materials.add(ColorMaterial::from(COLOR)),
                 transform: Transform::from_xyz(0.0, 0.0, 1.0),
-                color: COLOR,
-                hollow: false,
-                ..ShapeConfig::default_2d()
-            },
-            RADIUS,
-        ));
-        if level > 1 {
-            for i in 1..=level {
-                let angle = PI * 2.0 * ((i - 1) as f32 + 0.25) / level as f32;
-                parent.spawn(ShapeBundle::line(
-                    &ShapeConfig {
-                        transform: Transform::from_xyz(0.0, 0.0, 4.0),
-                        color: COLOR,
-                        cap: Cap::None,
-                        thickness: SIDE_THICKNESS * 3.0,
-                        ..ShapeConfig::default_2d()
-                    },
-                    Vec3::new(0.0, 0.0, 0.0),
-                    Vec3::new(angle.cos(), angle.sin(), 0.0) * RADIUS * 1.5,
-                ));
+                ..default()
+            });
+            if level > 1 {
+                for i in 1..=level {
+                    let angle = PI * 2.0 * ((i - 1) as f32 + 0.25) / level as f32;
+                    let transform =
+                        Transform::from_xyz(angle.cos() * RADIUS, angle.sin() * RADIUS, 2.0)
+                            .with_rotation(Quat::from_rotation_z(angle + PI * 0.5));
+                    parent.spawn(MaterialMesh2dBundle {
+                        mesh: meshes
+                            .add(shape::Quad::new(Vec2::new(RADIUS * 0.2, RADIUS)).into())
+                            .into(),
+                        material: materials.add(ColorMaterial::from(COLOR)),
+                        transform,
+                        ..default()
+                    });
+                }
             }
-        }
-    });
+        });
 }

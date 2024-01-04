@@ -1,5 +1,7 @@
 use crate::{app, reactor};
-use bevy::{app::AppExit, prelude::*};
+#[cfg(not(target_arch = "wasm32"))]
+use bevy::app::AppExit;
+use bevy::prelude::*;
 use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 
 pub struct StatePlugin;
@@ -31,6 +33,7 @@ enum ButtonAction {
     Resume,
     ReStart,
     Abort,
+    #[cfg(not(target_arch = "wasm32"))]
     Quit,
 }
 
@@ -146,7 +149,7 @@ fn handle_ui_navigation(
     mut events: EventReader<NavEvent>,
     mut game_state: ResMut<NextState<app::GameState>>,
     mut reactor_state: ResMut<NextState<reactor::ReactorState>>,
-    mut app_exit_events: EventWriter<AppExit>,
+    #[cfg(not(target_arch = "wasm32"))] mut app_exit_events: EventWriter<AppExit>,
 ) {
     events.nav_iter().activated_in_query_foreach_mut(
         &mut actions,
@@ -154,6 +157,7 @@ fn handle_ui_navigation(
             ButtonAction::Resume => reactor_state.set(reactor::ReactorState::Running),
             ButtonAction::ReStart => reactor_state.set(reactor::ReactorState::Ready),
             ButtonAction::Abort => game_state.set(app::GameState::Menu),
+            #[cfg(not(target_arch = "wasm32"))]
             ButtonAction::Quit => app_exit_events.send(AppExit),
         },
     );

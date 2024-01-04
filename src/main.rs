@@ -1,6 +1,7 @@
 use bevy::prelude::*;
+use bevy_prototype_lyon::prelude::*;
 use bevy_ui_navigation::prelude::*;
-use bevy_vector_shapes::prelude::*;
+
 use chain_reaction::{app, page, reactor};
 
 fn main() {
@@ -10,7 +11,7 @@ fn main() {
         .add_systems(Startup, app::init::startup)
         .add_plugins((
             app::init::InitPlugin,
-            Shape2dPlugin::default(),
+            ShapePlugin,
             DefaultNavigationPlugins,
             app::settings::SettingsPlugin,
             app::leaderboard::LeaderboardPlugin,

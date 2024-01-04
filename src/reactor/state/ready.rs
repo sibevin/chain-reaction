@@ -22,6 +22,8 @@ const POS_RADIUS: f32 = reactor::FIELD_H / 3.0;
 
 fn state_setup(
     mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
     particle_query: Query<Entity, With<reactor::RunningParticle>>,
     mut reactor_state: ResMut<NextState<reactor::ReactorState>>,
 ) {
@@ -30,6 +32,8 @@ fn state_setup(
     }
     uou::build_particle_sprite(
         &mut commands,
+        &mut meshes,
+        &mut materials,
         (reactor::RunningParticle, reactor::ControlParticle),
         Some(Vec2::new(0.0, 0.0)),
         None,

@@ -1,5 +1,5 @@
 use crate::reactor::{field, particle::*};
-use bevy_vector_shapes::prelude::*;
+use bevy::sprite::MaterialMesh2dBundle;
 
 pub const RADIUS: f32 = 8.0;
 pub const COLOR: Color = Color::rgb(1.0, 0.84, 0.2);
@@ -11,8 +11,13 @@ const MAX_V: f32 = 0.0;
 pub struct Ability;
 
 impl Ability {
-    pub fn gen_particle(pos: Vec2, direction: Option<Vec2>, level: Option<u8>) -> Particle {
-        Particle::new(Box::new(Ability), pos, direction, level)
+    pub fn gen_particle(
+        pos: Vec2,
+        direction: Option<Vec2>,
+        level: Option<u8>,
+        canvas_entity: Option<Entity>,
+    ) -> Particle {
+        Particle::new(Box::new(Ability), pos, direction, level, canvas_entity)
     }
 }
 
@@ -45,6 +50,8 @@ impl ParticleAbility for Ability {
 
 pub fn build_particle_sprite(
     commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<ColorMaterial>>,
     bundle: impl Bundle,
     pos: Option<Vec2>,
     direction: Option<Vec2>,
@@ -54,7 +61,7 @@ pub fn build_particle_sprite(
         Some(pos) => pos,
         None => field::gen_random_pos_in_field(RADIUS * 2.0),
     };
-    let particle = Particle::create(ParticleType::Uou, pos, direction, level);
+    let particle = Particle::create(ParticleType::Uou, pos, direction, level, None);
     commands
         .spawn((
             SpriteBundle {
@@ -65,14 +72,11 @@ pub fn build_particle_sprite(
             particle,
         ))
         .with_children(|parent| {
-            parent.spawn(ShapeBundle::circle(
-                &ShapeConfig {
-                    transform: Transform::from_xyz(0.0, 0.0, 3.0),
-                    color: COLOR,
-                    hollow: false,
-                    ..ShapeConfig::default_2d()
-                },
-                RADIUS,
-            ));
+            parent.spawn(MaterialMesh2dBundle {
+                mesh: meshes.add(shape::Circle::new(RADIUS).into()).into(),
+                material: materials.add(ColorMaterial::from(COLOR)),
+                transform: Transform::from_xyz(0.0, 0.0, 1.0),
+                ..default()
+            });
         });
 }

@@ -1,5 +1,5 @@
 use crate::reactor::{field, particle::*};
-use bevy_vector_shapes::prelude::*;
+use bevy_prototype_lyon::prelude::*;
 use std::f32::consts::TAU;
 
 const MIN_LEVEL: u8 = 1;
@@ -14,8 +14,19 @@ pub struct Ability {
 }
 
 impl Ability {
-    pub fn gen_particle(pos: Vec2, direction: Option<Vec2>, level: Option<u8>) -> Particle {
-        let mut particle = Particle::new(Box::new(Ability { countdown: 0 }), pos, direction, level);
+    pub fn gen_particle(
+        pos: Vec2,
+        direction: Option<Vec2>,
+        level: Option<u8>,
+        canvas_entity: Option<Entity>,
+    ) -> Particle {
+        let mut particle = Particle::new(
+            Box::new(Ability { countdown: 0 }),
+            pos,
+            direction,
+            level,
+            canvas_entity,
+        );
         particle.reset_countdown();
         particle
     }
@@ -73,8 +84,7 @@ pub fn build_particle_sprite(
         Some(pos) => pos,
         None => field::gen_random_pos_in_field(RADIUS * 2.0),
     };
-    let particle = Particle::create(ParticleType::Trigger, pos, direction, level);
-    let side_ratio = particle.countdown_ratio();
+    let mut canvas_entity = None;
     let root_entity = commands
         .spawn((
             SpriteBundle {
@@ -82,50 +92,87 @@ pub fn build_particle_sprite(
                 ..Default::default()
             },
             bundle,
-            particle,
         ))
+        .with_children(|parent| {
+            parent
+                .spawn(SpriteBundle {
+                    transform: Transform::from_xyz(0.0, 0.0, 0.1),
+                    ..default()
+                })
+                .with_children(|parent| {
+                    let shape = shapes::RegularPolygon {
+                        sides: 3,
+                        feature: shapes::RegularPolygonFeature::Radius(RADIUS),
+                        ..shapes::RegularPolygon::default()
+                    };
+                    parent.spawn((
+                        ShapeBundle {
+                            path: GeometryBuilder::build_as(&shape),
+                            ..default()
+                        },
+                        Fill::color(COLOR),
+                    ));
+                    let shape = shapes::Circle {
+                        radius: alpha::RADIUS,
+                        center: Vec2::new(0.0, RADIUS * 1.5),
+                    };
+                    parent.spawn((
+                        ShapeBundle {
+                            path: GeometryBuilder::build_as(&shape),
+                            ..default()
+                        },
+                        Stroke::new(COLOR, SIDE_THICKNESS),
+                    ));
+                });
+            canvas_entity = Some(
+                parent
+                    .spawn(SpriteBundle {
+                        transform: Transform::from_xyz(0.0, 0.0, 0.3),
+                        ..default()
+                    })
+                    .id(),
+            );
+        })
         .id();
-    update_particle_sprite(commands, root_entity, side_ratio);
+    let particle = Particle::create(ParticleType::Trigger, pos, direction, level, canvas_entity);
+    update_particle_sprite(commands, &particle);
+    commands.entity(root_entity).insert(particle);
 }
 
-pub fn update_particle_sprite(commands: &mut Commands, root_entity: Entity, side_ratio: f32) {
-    commands.entity(root_entity).despawn_descendants();
-    commands.entity(root_entity).with_children(|parent| {
-        parent.spawn(ShapeBundle::ngon(
-            &ShapeConfig {
-                transform: Transform::from_xyz(0.0, 0.0, 1.0),
-                color: COLOR,
-                ..ShapeConfig::default_2d()
-            },
-            3.0,
-            RADIUS,
-        ));
-        parent.spawn(ShapeBundle::arc(
-            &ShapeConfig {
-                transform: Transform::from_xyz(0.0, 0.0, 3.0),
-                color: COLOR,
-                hollow: true,
-                thickness: SIDE_THICKNESS,
-                ..ShapeConfig::default_2d()
-            },
-            RADIUS * 1.5,
-            0.0,
-            TAU * side_ratio,
-        ));
-        parent.spawn(ShapeBundle::circle(
-            &ShapeConfig {
-                transform: Transform::from_xyz(0.0, RADIUS * 1.5, 3.0),
-                color: COLOR,
-                hollow: true,
-                thickness: SIDE_THICKNESS,
-                ..ShapeConfig::default_2d()
-            },
-            alpha::RADIUS,
-        ));
-    });
+pub fn update_particle_sprite(commands: &mut Commands, particle: &Particle) {
+    if let Some(entity) = particle.canvas_entity() {
+        if let Some(mut entity_commands) = commands.get_entity(entity) {
+            entity_commands.despawn_descendants();
+            entity_commands.with_children(|parent| {
+                let side_ratio = particle.countdown_ratio();
+                let mut path_builder = PathBuilder::new();
+                path_builder.move_to(Vec2::new(0.0, RADIUS * 1.5));
+                path_builder.arc(
+                    Vec2::default(),
+                    Vec2::new(RADIUS * 1.5, RADIUS * 1.5),
+                    TAU * side_ratio,
+                    0.0,
+                );
+                parent
+                    .spawn(SpriteBundle {
+                        transform: Transform::from_xyz(0.0, 0.0, 0.3),
+                        ..default()
+                    })
+                    .with_children(|parent| {
+                        parent.spawn((
+                            ShapeBundle {
+                                path: path_builder.build(),
+                                ..default()
+                            },
+                            Stroke::new(COLOR, SIDE_THICKNESS),
+                        ));
+                    });
+            });
+        }
+    }
 }
 
-const LEVEL_INIT_BIAS_COUNT: u32 = 10;
+const LEVEL_INIT_BIAS_COUNT: u32 = 30;
 
 pub fn update_particle_level(particle: &mut Particle, total_alpha_count: u32) {
     let mut level = 0;

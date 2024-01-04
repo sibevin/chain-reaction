@@ -1,4 +1,6 @@
-use bevy::{app::AppExit, prelude::*};
+#[cfg(not(target_arch = "wasm32"))]
+use bevy::app::AppExit;
+use bevy::prelude::*;
 use bevy_persistent::prelude::*;
 use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 
@@ -26,6 +28,7 @@ struct OnPage;
 enum ButtonAction {
     FirstRun,
     MoveToPage(app::GameState),
+    #[cfg(not(target_arch = "wasm32"))]
     Quit,
 }
 
@@ -213,8 +216,8 @@ fn handle_menu_navigation(
     mut actions: Query<&mut ButtonAction>,
     mut events: EventReader<NavEvent>,
     mut game_state: ResMut<NextState<app::GameState>>,
-    mut app_exit_events: EventWriter<AppExit>,
     mut settings: ResMut<Persistent<app::settings::Settings>>,
+    #[cfg(not(target_arch = "wasm32"))] mut app_exit_events: EventWriter<AppExit>,
 ) {
     events.nav_iter().activated_in_query_foreach_mut(
         &mut actions,
@@ -228,6 +231,7 @@ fn handle_menu_navigation(
                 }
             }
             ButtonAction::MoveToPage(state) => game_state.set(*state),
+            #[cfg(not(target_arch = "wasm32"))]
             ButtonAction::Quit => app_exit_events.send(AppExit),
         },
     );

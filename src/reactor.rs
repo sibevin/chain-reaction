@@ -39,6 +39,9 @@ impl Plugin for ReactorPlugin {
 pub struct ReactorTimer(pub Timer);
 
 #[derive(Component, Deref, DerefMut)]
+pub struct PainterTimer(pub Timer);
+
+#[derive(Component, Deref, DerefMut)]
 pub struct ScoreTimer(pub Timer);
 
 #[derive(Component)]
@@ -57,6 +60,10 @@ pub const FIELD_H: f32 = app::WINDOW_H - FIELD_NAV_H;
 pub fn startup(commands: &mut Commands, asset_server: &Res<AssetServer>) {
     commands.spawn(ReactorTimer(Timer::from_seconds(
         0.01,
+        TimerMode::Repeating,
+    )));
+    commands.spawn(PainterTimer(Timer::from_seconds(
+        0.05,
         TimerMode::Repeating,
     )));
     commands.spawn(ScoreTimer(Timer::from_seconds(1.0, TimerMode::Repeating)));

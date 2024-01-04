@@ -13,6 +13,16 @@ An action game to dodge chain recation particles.
 - itch.io: https://sibevin.itch.io/chain-reaction
 - Github: https://github.com/sibevin/chain-reaction
 
+## Development
+
+### Build web
+
+1. Make sure wasm-bindgen-cli is installed. `cargo install wasm-bindgen-cli`
+2. `cargo build --release --target wasm32-unknown-unknown`
+3. `cp -r wasm build-web`
+4. `cp -r assets build-web`
+5. `wasm-bindgen --no-typescript --out-name bevy_game --out-dir build-web --target web target/wasm32-unknown-unknown/release/chain-reaction.wasm`
+
 ## Credits
 
 ### Game Design
