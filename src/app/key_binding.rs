@@ -44,7 +44,7 @@ fn handle_key_binding(
     move_by_arrow(&mut requests, &input);
     match config.mode {
         KeyBindingMode::Navgation => {
-            if input.any_just_pressed([KeyCode::Return, KeyCode::Space]) {
+            if input.any_just_pressed([KeyCode::Space]) {
                 requests.send(NavRequest::Action);
             }
             if input.any_just_pressed([KeyCode::Back, KeyCode::Delete]) {
@@ -55,7 +55,6 @@ fn handle_key_binding(
         }
         KeyBindingMode::Gaming => {
             if input.any_just_pressed([
-                KeyCode::Return,
                 KeyCode::Space,
                 KeyCode::Back,
                 KeyCode::Delete,
@@ -64,11 +63,8 @@ fn handle_key_binding(
                 requests.send(NavRequest::Action);
             }
         }
-        KeyBindingMode::Keyboard => {
-            if input.just_pressed(KeyCode::Return) {
-                requests.send(NavRequest::Action);
-            }
-        }
+        // NOTE: use default key binding only
+        KeyBindingMode::Keyboard => (),
     }
 }
 

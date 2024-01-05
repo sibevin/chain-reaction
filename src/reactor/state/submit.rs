@@ -9,7 +9,11 @@ impl Plugin for StatePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             OnEnter(reactor::ReactorState::Submit),
-            (state_setup, app::audio::reduce_bgm_volume),
+            (
+                state_setup,
+                app::audio::reduce_bgm_volume,
+                clear_extra_keyboard_char_events,
+            ),
         )
         .add_systems(
             Update,
@@ -448,11 +452,6 @@ const KB_ROW_1: [&str; 11] = [
 const KB_ROW_2: [&str; 11] = ["J", "K", "L", "N", "M", "O", "P", "Q", "R", "space", "'"];
 const KB_ROW_3: [&str; 11] = ["S", "T", "U", "V", "W", "X", "Y", "Z", ".", "-", ","];
 const KB_ROWS: [[&str; 11]; 3] = [KB_ROW_1, KB_ROW_2, KB_ROW_3];
-// const KB_ROW_1: [&str; 8] = ["A", "B", "C", "D", "E", "F", "G", "backspace"];
-// const KB_ROW_2: [&str; 8] = ["H", "I", "J", "K", "L", "N", "M", "clear"];
-// const KB_ROW_3: [&str; 8] = ["O", "P", "Q", "R", "S", "T", "space", "'"];
-// const KB_ROW_4: [&str; 8] = ["U", "V", "W", "X", "Y", "Z", ".", "-"];
-// const KB_ROWS: [[&str; 8]; 4] = [KB_ROW_1, KB_ROW_2, KB_ROW_3, KB_ROW_4];
 const KB_PADDING: f32 = 2.0;
 const KB_FS: f32 = app::ui::FONT_SIZE * 0.6;
 const KB_KEY_SIZE: f32 = 40.0;
@@ -550,7 +549,6 @@ fn handle_keybord_input(
     for event in events.read() {
         match event.state {
             ButtonState::Pressed => {
-                println!("Key press: {:?}", event);
                 if let Some(key_code) = event.key_code {
                     match key_code {
                         KeyCode::Space => modify_player_name_input_by_key(
@@ -618,10 +616,23 @@ fn modify_player_name_input_by_key(
             status.player_name = format!("{}{}", status.player_name, key);
         }
     }
-    let mut text = player_name_input.single_mut();
-    if status.player_name.len() >= app::leaderboard::MAX_PLAYER_NAME_LENGTH {
-        text.sections[0].value = format!("{}", status.player_name);
-    } else {
-        text.sections[0].value = format!("{}_", status.player_name);
+    for mut text in player_name_input.iter_mut() {
+        if status.player_name.len() >= app::leaderboard::MAX_PLAYER_NAME_LENGTH {
+            text.sections[0].value = format!("{}", status.player_name);
+        } else {
+            text.sections[0].value = format!("{}_", status.player_name);
+        }
+    }
+}
+
+fn clear_extra_keyboard_char_events(
+    mut keyboard_events: ResMut<Events<keyboard::KeyboardInput>>,
+    mut char_events: ResMut<Events<ReceivedCharacter>>,
+) {
+    if !keyboard_events.is_empty() {
+        keyboard_events.clear();
+    }
+    if !char_events.is_empty() {
+        char_events.clear();
     }
 }
