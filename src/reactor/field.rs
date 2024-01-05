@@ -1,5 +1,7 @@
 use crate::{app, page, reactor};
 use bevy::prelude::*;
+#[cfg(not(target_arch = "wasm32"))]
+use bevy::{render::view::window::screenshot::ScreenshotManager, window::PrimaryWindow};
 use bevy_persistent::prelude::*;
 use rand::{thread_rng, Rng};
 
@@ -362,6 +364,9 @@ pub fn update_reactor_fields(
     mut status: ResMut<reactor::status::ReactorStatus>,
     particle_query: Query<&reactor::particle::Particle, With<reactor::particle::Particle>>,
     asset_server: Res<AssetServer>,
+    #[cfg(not(target_arch = "wasm32"))] main_window: Query<Entity, With<PrimaryWindow>>,
+    #[cfg(not(target_arch = "wasm32"))] mut screenshot_manager: ResMut<ScreenshotManager>,
+    #[cfg(not(target_arch = "wasm32"))] reactor_status: Res<State<reactor::ReactorState>>,
 ) {
     let mut reactor_timer = reactor_timer_query.single_mut();
     if reactor_timer.tick(time.delta()).just_finished() {
@@ -394,7 +399,16 @@ pub fn update_reactor_fields(
                         }
                     }
                     status.update("alpha_count", total_alpha_count);
-                    status.compare_and_update_max_field("alpha_count", total_alpha_count);
+                    if status.compare_and_update_max_field("alpha_count", total_alpha_count) {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        if reactor_status.eq(&reactor::ReactorState::Running) {
+                            app::screenshot::shot_current(
+                                &main_window,
+                                &mut screenshot_manager,
+                                "max_alpha",
+                            );
+                        }
+                    }
                     text.sections[0].value = format_field_text("alpha_count", total_alpha_count);
                 }
                 "chain" => {

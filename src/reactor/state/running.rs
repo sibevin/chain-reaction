@@ -3,6 +3,8 @@ use crate::{
     reactor::{self, field, hit::*, particle::*, status},
 };
 use bevy::{input, prelude::*};
+#[cfg(not(target_arch = "wasm32"))]
+use bevy::{render::view::window::screenshot::ScreenshotManager, window::PrimaryWindow};
 use bevy_persistent::prelude::*;
 use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 use std::f32::consts::PI;
@@ -116,7 +118,7 @@ fn state_exit(
     status: Res<status::ReactorStatus>,
 ) {
     app::ui::despawn_ui::<StateRootUi>(to_despawn, commands);
-    dbg!(status);
+    dbg!("(running) status = {}", status);
 }
 
 fn move_particle(
@@ -238,6 +240,8 @@ fn handle_particle_reaction(
     settings: Res<Persistent<app::settings::Settings>>,
     audio_se_asset: Res<app::audio::AudioSeAsset>,
     mut status: ResMut<status::ReactorStatus>,
+    #[cfg(not(target_arch = "wasm32"))] main_window: Query<Entity, With<PrimaryWindow>>,
+    #[cfg(not(target_arch = "wasm32"))] mut screenshot_manager: ResMut<ScreenshotManager>,
 ) {
     let mut timer = painter_timer_query.single_mut();
     if timer.tick(time.delta()).just_finished() {
@@ -398,6 +402,12 @@ fn handle_particle_reaction(
                     },
                     ParticleType::Uou => match action {
                         HitAction::Kill => {
+                            #[cfg(not(target_arch = "wasm32"))]
+                            app::screenshot::shot_current(
+                                &main_window,
+                                &mut screenshot_manager,
+                                "end",
+                            );
                             reactor_state.set(reactor::ReactorState::Submit);
                             app::audio::play_se(
                                 app::audio::AudioSe::Boom,

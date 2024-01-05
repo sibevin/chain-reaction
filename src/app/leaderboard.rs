@@ -3,6 +3,9 @@ use bevy_persistent::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
+#[cfg(not(target_arch = "wasm32"))]
+use crate::app;
+
 pub const MAX_PLAYER_NAME_LENGTH: usize = 12;
 pub const MAX_RECORDS_PER_LIST: usize = 9;
 pub const LEADERBOARD_LISTS: [&str; 5] = [
@@ -29,12 +32,13 @@ pub struct LeaderboardRecord {
     pub max_hyper_level: u32,
     pub total_stopping_time: u32,
     pub max_stopping_time: u32,
-    pub created_dt: String,
+    pub started_at: String,
+    pub ended_at: String,
 }
 
 impl LeaderboardRecord {
-    pub fn uid(&self) -> String {
-        format!("{}_{}_{}", self.created_dt, self.time, self.score,)
+    pub fn uid(&self) -> &str {
+        &self.started_at
     }
 
     pub fn fetch(&self, field: &str) -> u32 {
@@ -88,6 +92,8 @@ pub struct Leaderboard {
 impl Leaderboard {
     pub fn store(&mut self, record: LeaderboardRecord) {
         use std::cmp::Reverse;
+        #[cfg(not(target_arch = "wasm32"))]
+        app::screenshot::store_leaderboard_screenshots(record.uid());
         self.records.push(record);
         self.records.sort_by_key(|record| {
             (

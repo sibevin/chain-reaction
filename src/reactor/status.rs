@@ -32,12 +32,13 @@ pub struct ReactorStatus {
     total_stopping_time: u32,
     max_stopping_time: u32,
     u_pos: Vec2,
-    created_dt: String,
+    started_at: String,
+    ended_at: String,
 }
 
 impl ReactorStatus {
-    pub fn uid(&self) -> String {
-        format!("{}_{}_{}", self.created_dt, self.time, self.score,)
+    pub fn uid(&self) -> &str {
+        &self.started_at
     }
 
     pub fn update_chain(&mut self, chain: StatusChain) {
@@ -45,11 +46,11 @@ impl ReactorStatus {
             match chain {
                 StatusChain::Control => {
                     self.chain_length += 1;
-                    self.compare_and_update_max_field("control_chain", self.chain_length)
+                    self.compare_and_update_max_field("control_chain", self.chain_length);
                 }
                 StatusChain::Hyper => {
                     self.chain_length += 1;
-                    self.compare_and_update_max_field("hyper_chain", self.chain_length)
+                    self.compare_and_update_max_field("hyper_chain", self.chain_length);
                 }
                 StatusChain::None => (),
             }
@@ -57,11 +58,11 @@ impl ReactorStatus {
             match chain {
                 StatusChain::Control => {
                     self.chain_length = 1;
-                    self.compare_and_update_max_field("control_chain", self.chain_length)
+                    self.compare_and_update_max_field("control_chain", self.chain_length);
                 }
                 StatusChain::Hyper => {
                     self.chain_length = 1;
-                    self.compare_and_update_max_field("hyper_chain", self.chain_length)
+                    self.compare_and_update_max_field("hyper_chain", self.chain_length);
                 }
                 StatusChain::None => {
                     self.chain_length = 0;
@@ -87,18 +88,28 @@ impl ReactorStatus {
             max_hyper_level: self.max_hyper_level,
             total_stopping_time: self.total_stopping_time,
             max_stopping_time: self.max_stopping_time,
-            created_dt: self.created_dt.clone(),
+            started_at: self.started_at.clone(),
+            ended_at: self.ended_at.clone(),
         };
     }
 
-    pub fn mark_timestamp(&mut self) {
-        self.created_dt = Local::now().format("%Y-%m-%d_%H:%M:%S%.3f").to_string();
+    pub fn mark_timeline(&mut self, timeline_type: &str) {
+        match timeline_type {
+            "started" => {
+                self.started_at = Local::now().format("%Y-%m-%d_%H:%M:%S%.9f").to_string();
+            }
+            "ended" => {
+                self.ended_at = Local::now().format("%Y-%m-%d_%H:%M:%S%.9f").to_string();
+            }
+            _ => panic!("Invalid timeline type"),
+        }
     }
 
     pub fn reset(&mut self) {
         let highlight_uid = self.highlight_uid.clone();
         *self = self::default();
         self.highlight_uid = highlight_uid;
+        self.mark_timeline("started");
     }
 
     pub fn fetch(&self, field: &str) -> u32 {
@@ -202,49 +213,59 @@ impl ReactorStatus {
         }
     }
 
-    pub fn compare_and_update_max_field(&mut self, field: &str, value: u32) {
+    pub fn compare_and_update_max_field(&mut self, field: &str, value: u32) -> bool {
+        let mut is_updated = false;
         match field {
             "alpha_count" => {
                 if value > self.max_alpha_count {
                     self.max_alpha_count = value;
+                    is_updated = true;
                 }
             }
             "control_chain" => {
                 if value > self.max_control_chain {
                     self.max_control_chain = value;
+                    is_updated = true;
                 }
             }
             "hyper_chain" => {
                 if value > self.max_hyper_chain {
                     self.max_hyper_chain = value;
+                    is_updated = true;
                 }
             }
             "control_count" => {
                 if value > self.max_control_count {
                     self.max_control_count = value;
+                    is_updated = true;
                 }
             }
             "full_level_control_count" => {
                 if value > self.max_full_level_control_count {
                     self.max_full_level_control_count = value;
+                    is_updated = true;
                 }
             }
             "control_level" => {
                 if value > self.max_control_level {
                     self.max_control_level = value;
+                    is_updated = true;
                 }
             }
             "hyper_level" => {
                 if value > self.max_hyper_level {
                     self.max_hyper_level = value;
+                    is_updated = true;
                 }
             }
             "stopping_time" => {
                 if value > self.max_stopping_time {
                     self.max_stopping_time = value;
+                    is_updated = true;
                 }
             }
             _ => panic!("Invalid field"),
         }
+        is_updated
     }
 }

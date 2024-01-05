@@ -54,7 +54,7 @@ fn state_setup(
     mut key_binding: ResMut<app::key_binding::KeyBindingConfig>,
 ) {
     key_binding.mode = app::key_binding::KeyBindingMode::Keyboard;
-    status.mark_timestamp();
+    status.mark_timeline("ended");
     let lb_record = status.export();
     let is_new_record = leaderboard.is_new_record(&lb_record);
     if !is_new_record {
@@ -238,6 +238,7 @@ fn state_setup(
                     );
                 });
         });
+    dbg!("(submit) status = {}", status);
 }
 
 fn state_exit(to_despawn: Query<Entity, With<StateRootUi>>, commands: Commands) {
@@ -268,7 +269,7 @@ fn handle_ui_navigation(
                         settings.update_last_player(status.player_name.as_str());
                     })
                     .expect("failed to last player");
-                status.highlight_uid = status.uid();
+                status.highlight_uid = String::from(status.uid());
                 reactor_state.set(reactor::ReactorState::Ended);
             }
             ButtonAction::Key(key) => {
