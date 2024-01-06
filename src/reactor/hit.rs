@@ -15,10 +15,12 @@ pub enum HitAction {
     Release(u32),
 }
 
+type EntityParticle<'a> = (Rc<RefCell<Entity>>, Rc<RefCell<Mut<'a, Particle>>>);
+
 pub fn detect_hit(
     particle_query: &mut Query<(Entity, &mut Particle), With<Particle>>,
 ) -> HashMap<Entity, HitAction> {
-    let mut particles: Vec<(Rc<RefCell<Entity>>, Rc<RefCell<Mut<'_, Particle>>>)> = Vec::new();
+    let mut particles: Vec<EntityParticle> = Vec::new();
     for (e, p) in particle_query.iter_mut() {
         particles.push((Rc::new(RefCell::new(e)), Rc::new(RefCell::new(p))));
     }
@@ -132,12 +134,11 @@ pub fn record_hit_action(
             }
             _ => (),
         },
-        ParticleType::Trigger => match p2.particle_type() {
-            ParticleType::Uou => {
+        ParticleType::Trigger => {
+            if p2.particle_type() == ParticleType::Uou {
                 e1_action = HitAction::UouHit;
             }
-            _ => (),
-        },
+        }
     }
     hit_map.insert(e1, e1_action);
     hit_map.insert(e2, e2_action);

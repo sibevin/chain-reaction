@@ -54,7 +54,7 @@ pub fn startup(
     settings: &Res<Persistent<settings::Settings>>,
 ) {
     init_se_asset(audio_se_asset, asset_server);
-    build_bgm(commands, &asset_server, &settings);
+    build_bgm(commands, asset_server, settings);
 }
 
 fn init_se_asset(audio_se_asset: &mut ResMut<AudioSeAsset>, asset_server: &Res<AssetServer>) {
@@ -89,7 +89,6 @@ fn build_bgm(
                 paused: !settings.is_enabled("bgm"),
                 ..default()
             },
-            ..default()
         },
         AudioBgm,
     ));
@@ -132,7 +131,6 @@ pub fn play_se(
                 paused: false,
                 ..default()
             },
-            ..default()
         },));
     }
 }

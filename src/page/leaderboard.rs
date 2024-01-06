@@ -264,15 +264,15 @@ fn page_setup(
         });
 }
 
+type LeaderboardListOnly = (With<LeaderboardList>, Without<ScreenshotPanel>);
+type ScreenshotPanelOnly = (With<ScreenshotPanel>, Without<LeaderboardList>);
+
 fn handle_ui_navigation(
     mut actions: Query<&mut ButtonAction>,
     mut events: EventReader<NavEvent>,
     mut game_state: ResMut<NextState<app::GameState>>,
-    mut lb_lists: Query<
-        (&LeaderboardList, &mut Visibility),
-        (With<LeaderboardList>, Without<ScreenshotPanel>),
-    >,
-    mut ss_panel_query: Query<&mut Visibility, (With<ScreenshotPanel>, Without<LeaderboardList>)>,
+    mut lb_lists: Query<(&LeaderboardList, &mut Visibility), LeaderboardListOnly>,
+    mut ss_panel_query: Query<&mut Visibility, ScreenshotPanelOnly>,
     #[cfg(not(target_arch = "wasm32"))] mut ss_image_query: Query<
         &mut UiImage,
         With<ScreenshotImage>,
@@ -427,12 +427,11 @@ fn build_list(
                                 })
                                 .with_children(|parent| {
                                     parent.spawn((TextBundle::from_section(
-                                        format!("{}", rank_text),
+                                        rank_text.to_string(),
                                         TextStyle {
                                             font: asset_server.load(app::ui::FONT_DIGIT),
                                             font_size: LB_FS * 0.6,
                                             color: app::ui::BG_COLOR,
-                                            ..default()
                                         },
                                     ),));
                                 });
@@ -442,7 +441,6 @@ fn build_list(
                                     font: asset_server.load(app::ui::FONT_DIGIT),
                                     font_size: LB_FS,
                                     color: text_color,
-                                    ..default()
                                 },
                             ),));
                             if list == "max_control_chain" {
@@ -475,14 +473,13 @@ fn build_list(
                                     font: asset_server.load(app::ui::FONT_DIGIT),
                                     font_size: LB_FS,
                                     color: number_color,
-                                    ..default()
                                 },
                             ),));
                             if list == "score" || list == "max_alpha_count" {
                                 #[cfg(not(target_arch = "wasm32"))]
                                 app::ui::build_icon_btn(
                                     parent,
-                                    &asset_server,
+                                    asset_server,
                                     (
                                         ButtonAction::ShowScreenshot(
                                             String::from(record.uid()),

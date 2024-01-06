@@ -73,7 +73,7 @@ impl ReactorStatus {
     }
 
     pub fn export(&self) -> LeaderboardRecord {
-        return LeaderboardRecord {
+        LeaderboardRecord {
             player_name: self.player_name.clone(),
             time: self.time,
             score: self.score,
@@ -90,7 +90,7 @@ impl ReactorStatus {
             max_stopping_time: self.max_stopping_time,
             started_at: self.started_at.clone(),
             ended_at: self.ended_at.clone(),
-        };
+        }
     }
 
     pub fn mark_timeline(&mut self, timeline_type: &str) {
@@ -115,46 +115,46 @@ impl ReactorStatus {
     pub fn fetch(&self, field: &str) -> u32 {
         match field {
             "time" => {
-                return self.time;
+                self.time
             }
             "score" => {
-                return self.score;
+                self.score
             }
             "alpha_count" => {
-                return self.alpha_count;
+                self.alpha_count
             }
             "chain_length" => {
-                return self.chain_length;
+                self.chain_length
             }
             "max_alpha_count" => {
-                return self.max_alpha_count;
+                self.max_alpha_count
             }
             "max_control_chain" => {
-                return self.max_control_chain;
+                self.max_control_chain
             }
             "max_hyper_chain" => {
-                return self.max_hyper_chain;
+                self.max_hyper_chain
             }
             "total_control_count" => {
-                return self.total_control_count;
+                self.total_control_count
             }
             "total_hyper_count" => {
-                return self.total_hyper_count;
+                self.total_hyper_count
             }
             "max_control_count" => {
-                return self.max_control_count;
+                self.max_control_count
             }
             "max_full_level_control_count" => {
-                return self.max_full_level_control_count;
+                self.max_full_level_control_count
             }
             "max_control_level" => {
-                return self.max_control_level;
+                self.max_control_level
             }
             "max_hyper_level" => {
-                return self.max_hyper_level;
+                self.max_hyper_level
             }
             "max_stopping_time" => {
-                return self.max_stopping_time;
+                self.max_stopping_time
             }
             _ => panic!("Invalid field"),
         }
@@ -182,23 +182,23 @@ impl ReactorStatus {
         match field {
             "time" => {
                 self.time += amount;
-                return self.time;
+                self.time
             }
             "score" => {
                 self.score += amount;
-                return self.score;
+                self.score
             }
             "alpha_count" => {
                 self.alpha_count += amount;
-                return self.alpha_count;
+                self.alpha_count
             }
             "total_control_count" => {
                 self.total_control_count += amount;
-                return self.total_control_count;
+                self.total_control_count
             }
             "total_hyper_count" => {
                 self.total_hyper_count += amount;
-                return self.total_hyper_count;
+                self.total_hyper_count
             }
             _ => panic!("Invalid field"),
         }

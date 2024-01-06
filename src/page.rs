@@ -73,7 +73,6 @@ pub fn build_game_title(parent: &mut ChildBuilder, asset_server: &Res<AssetServe
                         font: asset_server.load(app::ui::FONT),
                         font_size: app::ui::FONT_SIZE * 2.0,
                         color: app::ui::FG_COLOR,
-                        ..default()
                     },
                 )
                 .with_style(Style {

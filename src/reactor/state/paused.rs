@@ -70,7 +70,6 @@ fn state_setup(
                         font: asset_server.load(app::ui::FONT),
                         font_size: app::ui::FONT_SIZE * 2.0,
                         color: app::ui::FG_COLOR,
-                        ..default()
                     },
                 )
                 .with_style(Style {

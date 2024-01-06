@@ -182,23 +182,19 @@ fn control_u_by_mouse(
     settings: Res<Persistent<app::settings::Settings>>,
 ) {
     for interaction in &mut panel_query {
-        match *interaction {
-            Interaction::Pressed => {
-                let events = mouse_motion_events.read().collect::<Vec<_>>();
-                for event in events.iter().rev().take(3) {
-                    let (mut u_particle, mut u_transform) =
-                        u_particle_query.get_single_mut().unwrap();
-                    let new_pos = calculate_u_new_pos(
-                        u_particle.pos(),
-                        event.delta,
-                        settings.get_value("sensitivity"),
-                    );
-                    u_particle.jump(new_pos);
-                    u_transform.translation.x = new_pos.x;
-                    u_transform.translation.y = new_pos.y;
-                }
+        if *interaction == Interaction::Pressed {
+            let events = mouse_motion_events.read().collect::<Vec<_>>();
+            for event in events.iter().rev().take(3) {
+                let (mut u_particle, mut u_transform) = u_particle_query.get_single_mut().unwrap();
+                let new_pos = calculate_u_new_pos(
+                    u_particle.pos(),
+                    event.delta,
+                    settings.get_value("sensitivity"),
+                );
+                u_particle.jump(new_pos);
+                u_transform.translation.x = new_pos.x;
+                u_transform.translation.y = new_pos.y;
             }
-            _ => (),
         }
     }
 }
@@ -227,6 +223,7 @@ fn calculate_u_new_pos(current: Vec2, delta: Vec2, sensitivity: u8) -> Vec2 {
 const HYPER_HIT_BASE_SCORE: u32 = 100;
 const CONTROL_HIT_SCORE: u32 = 100;
 
+#[allow(clippy::too_many_arguments)]
 fn handle_particle_reaction(
     mut commands: Commands,
     mut particle_query: Query<(Entity, &mut Particle), With<Particle>>,
@@ -370,8 +367,8 @@ fn handle_particle_reaction(
                         }
                         _ => (),
                     },
-                    ParticleType::Hyper => match action {
-                        HitAction::UouHit => {
+                    ParticleType::Hyper => {
+                        if let HitAction::UouHit = action {
                             let radius = p.radius();
                             let new_c_pos = field::gen_random_pos_in_field(radius);
                             control::build_particle_sprite(
@@ -398,10 +395,9 @@ fn handle_particle_reaction(
                             status.increase("score", HYPER_HIT_BASE_SCORE * p.level() as u32);
                             status.update_chain(status::StatusChain::Hyper);
                         }
-                        _ => (),
-                    },
-                    ParticleType::Uou => match action {
-                        HitAction::Kill => {
+                    }
+                    ParticleType::Uou => {
+                        if let HitAction::Kill = action {
                             #[cfg(not(target_arch = "wasm32"))]
                             app::screenshot::shot_current(
                                 &main_window,
@@ -416,8 +412,7 @@ fn handle_particle_reaction(
                                 &settings,
                             );
                         }
-                        _ => (),
-                    },
+                    }
                     _ => (),
                 }
             }

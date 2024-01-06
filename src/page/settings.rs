@@ -59,6 +59,9 @@ enum ButtonAction {
     PlaySe,
 }
 
+type RangeBgBarOnly = (With<RangeBgBar>, Without<RangeValueBar>);
+type RangeValueBarOnly = (With<RangeValueBar>, Without<RangeBgBar>);
+
 fn page_setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -238,13 +241,10 @@ fn page_setup(
 fn handle_slider_mouse_interaction(
     range_bar_query: Query<
         (&Interaction, &ButtonAction, &Children),
-        (With<Interaction>, With<app::interaction::IaSlider>),
+        With<app::interaction::IaSlider>,
     >,
-    mut range_value_bar_query: Query<
-        (Entity, &mut Style),
-        (With<RangeValueBar>, Without<RangeBgBar>),
-    >,
-    mut range_bg_bar_query: Query<(Entity, &mut Style), (With<RangeBgBar>, Without<RangeValueBar>)>,
+    mut range_value_bar_query: Query<(Entity, &mut Style), RangeValueBarOnly>,
+    mut range_bg_bar_query: Query<(Entity, &mut Style), RangeBgBarOnly>,
     mut range_bar_text_query: Query<(Entity, &mut Text), With<RangeBarText>>,
     mut settings: ResMut<Persistent<app::settings::Settings>>,
     mut mouse_motion_events: EventReader<input::mouse::MouseMotion>,
@@ -252,61 +252,55 @@ fn handle_slider_mouse_interaction(
 ) {
     for (interaction, action, children) in &range_bar_query {
         if let ButtonAction::SetValue(target) = action {
-            match *interaction {
-                Interaction::Pressed => {
-                    let events = mouse_motion_events.read().collect::<Vec<_>>();
-                    for event in events.iter().rev().take(3) {
-                        update_slider_display(
-                            children,
-                            target,
-                            (event.delta.x * 0.5) as i8,
-                            &mut settings,
-                            &mut range_value_bar_query,
-                            &mut range_bg_bar_query,
-                            &mut range_bar_text_query,
-                            &audio_bgm_query,
-                        );
-                        break;
+            if *interaction == Interaction::Pressed {
+                let events = mouse_motion_events.read().collect::<Vec<_>>();
+                if let Some(event) = events.iter().rev().take(3).next() {
+                    update_slider_display(
+                        children,
+                        target,
+                        (event.delta.x * 0.5) as i8,
+                        &mut settings,
+                        &mut range_value_bar_query,
+                        &mut range_bg_bar_query,
+                        &mut range_bar_text_query,
+                    );
+                    if target == "bgm" {
+                        update_bgm_volume(&mut settings, &audio_bgm_query);
                     }
                 }
-                _ => (),
             }
         }
     }
 }
 
 fn move_test_panel_action(
-    mut panel_query: Query<(&Interaction, &Children), (With<Interaction>, With<MoveTestPanel>)>,
+    mut panel_query: Query<(&Interaction, &Children), With<MoveTestPanel>>,
     mut ball_query: Query<&mut Style, With<MoveTestBall>>,
     mut mouse_motion_events: EventReader<input::mouse::MouseMotion>,
     settings: Res<Persistent<app::settings::Settings>>,
 ) {
     for (interaction, children) in &mut panel_query {
-        match *interaction {
-            Interaction::Pressed => {
-                let events = mouse_motion_events.read().collect::<Vec<_>>();
-                for event in events.iter().rev().take(3) {
-                    let mut ball_style = ball_query.get_mut(children[0]).unwrap();
-                    let ori_x: f32 = match ball_style.left {
-                        Val::Px(value) => value,
-                        _ => 0.,
-                    };
-                    let ori_y: f32 = match ball_style.top {
-                        Val::Px(value) => value,
-                        _ => 0.,
-                    };
+        if *interaction == Interaction::Pressed {
+            let events = mouse_motion_events.read().collect::<Vec<_>>();
+            if let Some(event) = events.iter().rev().take(3).next() {
+                let mut ball_style = ball_query.get_mut(children[0]).unwrap();
+                let ori_x: f32 = match ball_style.left {
+                    Val::Px(value) => value,
+                    _ => 0.,
+                };
+                let ori_y: f32 = match ball_style.top {
+                    Val::Px(value) => value,
+                    _ => 0.,
+                };
 
-                    let new_pos = calculate_test_ball_pos(
-                        (ori_x, ori_y),
-                        event.delta,
-                        settings.get_value("sensitivity"),
-                    );
-                    ball_style.left = Val::Px(new_pos.0);
-                    ball_style.top = Val::Px(new_pos.1);
-                    break;
-                }
+                let new_pos = calculate_test_ball_pos(
+                    (ori_x, ori_y),
+                    event.delta,
+                    settings.get_value("sensitivity"),
+                );
+                ball_style.left = Val::Px(new_pos.0);
+                ball_style.top = Val::Px(new_pos.1);
             }
-            _ => (),
         }
     }
 }
@@ -508,7 +502,7 @@ const KEYBOARD_DELTA_BIAS: f32 = 1.5;
 
 fn control_test_ball_by_keyboard(
     keyboard_input: Res<Input<KeyCode>>,
-    panel_query: Query<(&Interaction, &Children), (With<Interaction>, With<MoveTestPanel>)>,
+    panel_query: Query<(&Interaction, &Children), With<MoveTestPanel>>,
     mut ball_query: Query<&mut Style, With<MoveTestBall>>,
     settings: Res<Persistent<app::settings::Settings>>,
 ) {
@@ -559,58 +553,52 @@ fn handle_slider_navigation(
     mut events: EventReader<NavEvent>,
     mut action_query: Query<(&ButtonAction, &Children), With<app::interaction::IaSlider>>,
     mut settings: ResMut<Persistent<app::settings::Settings>>,
-    mut range_value_bar_query: Query<
-        (Entity, &mut Style),
-        (With<RangeValueBar>, Without<RangeBgBar>),
-    >,
-    mut range_bg_bar_query: Query<(Entity, &mut Style), (With<RangeBgBar>, Without<RangeValueBar>)>,
+    mut range_value_bar_query: Query<(Entity, &mut Style), RangeValueBarOnly>,
+    mut range_bg_bar_query: Query<(Entity, &mut Style), RangeBgBarOnly>,
     mut range_bar_text_query: Query<(Entity, &mut Text), With<RangeBarText>>,
     audio_bgm_query: Query<&AudioSink, With<app::audio::AudioBgm>>,
 ) {
     for event in events.read() {
-        match event {
-            NavEvent::NoChanges { from, request } => match request {
+        if let NavEvent::NoChanges { from, request } = event {
+            match request {
                 NavRequest::Action => {
                     for (action, children) in action_query.iter_many_mut(vec![*from.first()]) {
-                        match action {
-                            ButtonAction::SetValue(target) => {
-                                update_slider_display(
-                                    children,
-                                    target,
-                                    SLIDER_DELTA,
-                                    &mut settings,
-                                    &mut range_value_bar_query,
-                                    &mut range_bg_bar_query,
-                                    &mut range_bar_text_query,
-                                    &audio_bgm_query,
-                                );
+                        if let ButtonAction::SetValue(target) = action {
+                            update_slider_display(
+                                children,
+                                target,
+                                SLIDER_DELTA,
+                                &mut settings,
+                                &mut range_value_bar_query,
+                                &mut range_bg_bar_query,
+                                &mut range_bar_text_query,
+                            );
+                            if target == "bgm" {
+                                update_bgm_volume(&mut settings, &audio_bgm_query);
                             }
-                            _ => (),
                         }
                     }
                 }
                 NavRequest::Cancel => {
                     for (action, children) in action_query.iter_many_mut(vec![*from.first()]) {
-                        match action {
-                            ButtonAction::SetValue(target) => {
-                                update_slider_display(
-                                    children,
-                                    target,
-                                    -SLIDER_DELTA,
-                                    &mut settings,
-                                    &mut range_value_bar_query,
-                                    &mut range_bg_bar_query,
-                                    &mut range_bar_text_query,
-                                    &audio_bgm_query,
-                                );
+                        if let ButtonAction::SetValue(target) = action {
+                            update_slider_display(
+                                children,
+                                target,
+                                -SLIDER_DELTA,
+                                &mut settings,
+                                &mut range_value_bar_query,
+                                &mut range_bg_bar_query,
+                                &mut range_bar_text_query,
+                            );
+                            if target == "bgm" {
+                                update_bgm_volume(&mut settings, &audio_bgm_query);
                             }
-                            _ => (),
                         }
                     }
                 }
                 _ => (),
-            },
-            _ => (),
+            }
         }
     }
 }
@@ -620,16 +608,9 @@ fn update_slider_display(
     target: &str,
     delta: i8,
     settings: &mut ResMut<Persistent<app::settings::Settings>>,
-    range_value_bar_query: &mut Query<
-        (Entity, &mut Style),
-        (With<RangeValueBar>, Without<RangeBgBar>),
-    >,
-    range_bg_bar_query: &mut Query<
-        (Entity, &mut Style),
-        (With<RangeBgBar>, Without<RangeValueBar>),
-    >,
+    range_value_bar_query: &mut Query<(Entity, &mut Style), RangeValueBarOnly>,
+    range_bg_bar_query: &mut Query<(Entity, &mut Style), RangeBgBarOnly>,
     range_bar_text_query: &mut Query<(Entity, &mut Text), With<RangeBarText>>,
-    audio_bgm_query: &Query<&AudioSink, With<app::audio::AudioBgm>>,
 ) {
     let updated_value = settings.get_value(target) as i8 + delta;
     settings
@@ -638,11 +619,6 @@ fn update_slider_display(
         })
         .expect("failed to update slider");
     let value = settings.get_value(target);
-    if target == "bgm" {
-        if let Ok(sink) = audio_bgm_query.get_single() {
-            sink.set_volume(app::audio::to_volume(value));
-        }
-    }
     let range_bar_w = calculate_range_bar_width(value);
     for child in children {
         for (bar_entity, mut bar_style) in range_value_bar_query.iter_mut() {
@@ -666,6 +642,17 @@ fn update_slider_display(
     }
 }
 
+fn update_bgm_volume(
+    settings: &mut ResMut<Persistent<app::settings::Settings>>,
+    audio_bgm_query: &Query<&AudioSink, With<app::audio::AudioBgm>>,
+) {
+    let value = settings.get_value("bgm");
+    if let Ok(sink) = audio_bgm_query.get_single() {
+        sink.set_volume(app::audio::to_volume(value));
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 fn handle_ui_navigation(
     mut action_query: Query<(&mut ButtonAction, &Children), Without<app::interaction::IaSlider>>,
     mut events: EventReader<NavEvent>,
@@ -687,7 +674,7 @@ fn handle_ui_navigation(
                         settings.toggle(target.as_ref());
                     })
                     .expect("failed to update boolean switch");
-                let is_enabled = settings.is_enabled(&target);
+                let is_enabled = settings.is_enabled(target);
                 let mut is_found = false;
                 for (icon_entity, mut icon_image) in switch_icon_query.iter_mut() {
                     for child in children {

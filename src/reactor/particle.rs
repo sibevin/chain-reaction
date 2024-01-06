@@ -196,14 +196,14 @@ impl Particle {
         let field_rect = reactor::field::get_field_rect(0.0);
         let mut new_v = v;
         let new_pos = pos + v;
-        if new_pos.x + r > field_rect.max.x && v.x > 0.0 {
-            new_v.x = -new_v.x;
-        } else if new_pos.x - r < field_rect.min.x && v.x < 0.0 {
+        if (new_pos.x + r > field_rect.max.x && v.x > 0.0)
+            || (new_pos.x - r < field_rect.min.x && v.x < 0.0)
+        {
             new_v.x = -new_v.x;
         }
-        if new_pos.y + r > field_rect.max.y && v.y > 0.0 {
-            new_v.y = -new_v.y;
-        } else if new_pos.y - r < field_rect.min.y && v.y < 0.0 {
+        if (new_pos.y + r > field_rect.max.y && v.y > 0.0)
+            || (new_pos.y - r < field_rect.min.y && v.y < 0.0)
+        {
             new_v.y = -new_v.y;
         }
         new_v

@@ -28,6 +28,9 @@ pub struct TargetValueField(String);
 #[derive(Component)]
 pub struct TargetBar(String);
 
+type TargetRankFieldOnly = (With<TargetRankField>, Without<TargetValueField>);
+type TargetValueFieldOnly = (With<TargetValueField>, Without<TargetRankField>);
+
 pub fn get_field_rect(padding: f32) -> Rect {
     Rect::new(
         -reactor::FIELD_W / 2.0 + padding,
@@ -103,9 +106,9 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                             },
                             ..default()
                         },))
-                        .with_children(|parent| build_target_fields(parent, &asset_server));
+                        .with_children(|parent| build_target_fields(parent, asset_server));
 
-                    build_reactor_fields(parent, &asset_server);
+                    build_reactor_fields(parent, asset_server);
                 });
         })
         .id()
@@ -199,12 +202,11 @@ fn build_target_fields(parent: &mut ChildBuilder, asset_server: &Res<AssetServer
                                     .with_children(|parent| {
                                         parent.spawn((
                                             TextBundle::from_section(
-                                                format!("{}", target_rank_text),
+                                                target_rank_text.to_string(),
                                                 TextStyle {
                                                     font: asset_server.load(app::ui::FONT_DIGIT),
                                                     font_size: TARGET_TEXT_SIZE * 0.6,
                                                     color: app::ui::BG_COLOR,
-                                                    ..default()
                                                 },
                                             ),
                                             TargetRankField(String::from(field)),
@@ -217,7 +219,6 @@ fn build_target_fields(parent: &mut ChildBuilder, asset_server: &Res<AssetServer
                                             font: asset_server.load(app::ui::FONT_DIGIT),
                                             font_size: TARGET_TEXT_SIZE,
                                             color: number_color,
-                                            ..default()
                                         },
                                     ),
                                     TargetValueField(String::from(field)),
@@ -342,7 +343,6 @@ fn build_reactor_fields(parent: &mut ChildBuilder, asset_server: &Res<AssetServe
                                             font: asset_server.load(app::ui::FONT_DIGIT),
                                             font_size: FIELD_TEXT_SIZE,
                                             color: FIELD_TEXT_COLOR,
-                                            ..default()
                                         },
                                     ),
                                     ReactorField(String::from(field)),
@@ -355,6 +355,7 @@ fn build_reactor_fields(parent: &mut ChildBuilder, asset_server: &Res<AssetServe
 
 const SCORE_PER_SECOND: u32 = 10;
 
+#[allow(clippy::too_many_arguments)]
 pub fn update_reactor_fields(
     time: Res<Time>,
     mut reactor_fields_query: Query<(&mut Text, &ReactorField), With<ReactorField>>,
@@ -434,14 +435,11 @@ pub fn update_reactor_fields(
     let mut score_timer = score_timer_query.single_mut();
     if score_timer.tick(time.delta()).just_finished() {
         for (mut text, field) in reactor_fields_query.iter_mut() {
-            match field.0.as_ref() {
-                "score" => {
-                    let alpha_count = status.fetch("alpha_count");
-                    status.increase("score", alpha_count);
-                    let score = status.increase("score", SCORE_PER_SECOND);
-                    text.sections[0].value = format_field_text("score", score);
-                }
-                _ => (),
+            if field.0 == "score" {
+                let alpha_count = status.fetch("alpha_count");
+                status.increase("score", alpha_count);
+                let score = status.increase("score", SCORE_PER_SECOND);
+                text.sections[0].value = format_field_text("score", score);
             }
         }
     }
@@ -462,11 +460,8 @@ pub fn reset_reactor_fields(
 }
 
 pub fn update_target_fields(
-    mut target_rank_fields_query: Query<
-        (&mut Text, &TargetRankField),
-        (With<TargetRankField>, Without<TargetValueField>),
-    >,
-    mut target_value_fields_query: Query<(&mut Text, &TargetValueField), With<TargetValueField>>,
+    mut target_rank_fields_query: Query<(&mut Text, &TargetRankField), TargetRankFieldOnly>,
+    mut target_value_fields_query: Query<(&mut Text, &TargetValueField), TargetValueFieldOnly>,
     mut target_bars_query: Query<(&mut Style, &TargetBar), With<TargetBar>>,
     status: Res<reactor::status::ReactorStatus>,
     leaderboard: Res<Persistent<app::leaderboard::Leaderboard>>,
@@ -506,7 +501,7 @@ pub fn update_target_fields(
         let (_, target_value, prev_value) = leaderboard.target(bar.0.as_ref(), number);
         let bar_precent = if target_value == prev_value {
             100.0
-        } else if number - prev_value <= 0 {
+        } else if number - prev_value == 0 {
             0.0
         } else {
             (number - prev_value) as f32 / (target_value - prev_value) as f32 * 100.0
@@ -516,11 +511,8 @@ pub fn update_target_fields(
 }
 
 pub fn reset_target_fields(
-    mut target_rank_fields_query: Query<
-        (&mut Text, &TargetRankField),
-        (With<TargetRankField>, Without<TargetValueField>),
-    >,
-    mut target_value_fields_query: Query<(&mut Text, &TargetValueField), With<TargetValueField>>,
+    mut target_rank_fields_query: Query<(&mut Text, &TargetRankField), TargetRankFieldOnly>,
+    mut target_value_fields_query: Query<(&mut Text, &TargetValueField), TargetValueFieldOnly>,
     mut target_bars_query: Query<&mut Style, With<TargetBar>>,
     leaderboard: Res<Persistent<app::leaderboard::Leaderboard>>,
 ) {

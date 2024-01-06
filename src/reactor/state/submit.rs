@@ -101,87 +101,6 @@ fn state_setup(
                         &status,
                         &leaderboard,
                     );
-                    // parent.spawn(TextBundle::from_section(
-                    //     "Game Over",
-                    //     TextStyle {
-                    //         font: asset_server.load(app::ui::FONT),
-                    //         font_size: app::ui::FONT_SIZE * 3.0,
-                    //         color: Color::rgba(1.0, 0.0, 0.0, 0.8),
-                    //         ..default()
-                    //     },
-                    // ));
-                    // parent
-                    //     .spawn((NodeBundle {
-                    //         style: Style {
-                    //             flex_direction: FlexDirection::Column,
-                    //             align_items: AlignItems::Center,
-                    //             justify_content: JustifyContent::Center,
-                    //             row_gap: app::ui::px_p(4.0),
-                    //             ..default()
-                    //         },
-                    //         ..default()
-                    //     },))
-                    //     .with_children(|parent| {
-                    //         parent
-                    //             .spawn((NodeBundle {
-                    //                 style: Style {
-                    //                     align_items: AlignItems::Center,
-                    //                     justify_content: JustifyContent::Center,
-                    //                     column_gap: app::ui::px_p(8.0),
-                    //                     ..default()
-                    //                 },
-                    //                 ..default()
-                    //             },))
-                    //             .with_children(|parent| {
-                    //                 build_result_entry(
-                    //                     parent,
-                    //                     &asset_server,
-                    //                     &status,
-                    //                     &leaderboard,
-                    //                     "score",
-                    //                 );
-                    //                 build_result_entry(
-                    //                     parent,
-                    //                     &asset_server,
-                    //                     &status,
-                    //                     &leaderboard,
-                    //                     "time",
-                    //                 );
-                    //                 build_result_entry(
-                    //                     parent,
-                    //                     &asset_server,
-                    //                     &status,
-                    //                     &leaderboard,
-                    //                     "max_alpha_count",
-                    //                 );
-                    //             });
-                    //         parent
-                    //             .spawn((NodeBundle {
-                    //                 style: Style {
-                    //                     align_items: AlignItems::Center,
-                    //                     justify_content: JustifyContent::Center,
-                    //                     column_gap: app::ui::px_p(8.0),
-                    //                     ..default()
-                    //                 },
-                    //                 ..default()
-                    //             },))
-                    //             .with_children(|parent| {
-                    //                 build_result_entry(
-                    //                     parent,
-                    //                     &asset_server,
-                    //                     &status,
-                    //                     &leaderboard,
-                    //                     "max_control_chain",
-                    //                 );
-                    //                 build_result_entry(
-                    //                     parent,
-                    //                     &asset_server,
-                    //                     &status,
-                    //                     &leaderboard,
-                    //                     "max_hyper_chain",
-                    //                 );
-                    //             });
-                    //     });
                     parent
                         .spawn(NodeBundle {
                             style: Style {
@@ -219,7 +138,6 @@ fn state_setup(
                                                 font: asset_server.load(app::ui::FONT_DIGIT),
                                                 font_size: app::ui::FONT_SIZE,
                                                 color: app::ui::FG_COLOR,
-                                                ..default()
                                             },
                                         ),
                                         PlayerNameInput,
@@ -332,7 +250,7 @@ fn build_keyboard(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) ->
                     })
                     .with_children(|parent| {
                         for kb_key in kb_row {
-                            build_key_btn(parent, &asset_server, kb_key);
+                            build_key_btn(parent, asset_server, kb_key);
                         }
                     });
             }
@@ -396,44 +314,41 @@ fn handle_keybord_input(
 ) {
     use bevy::input::ButtonState;
     for event in events.read() {
-        match event.state {
-            ButtonState::Pressed => {
-                if let Some(key_code) = event.key_code {
-                    match key_code {
-                        KeyCode::Space => modify_player_name_input_by_key(
-                            "space",
-                            &mut status,
-                            &mut player_name_input,
-                        ),
-                        KeyCode::Back => modify_player_name_input_by_key(
-                            "backspace",
-                            &mut status,
-                            &mut player_name_input,
-                        ),
-                        KeyCode::Delete => modify_player_name_input_by_key(
-                            "clear",
-                            &mut status,
-                            &mut player_name_input,
-                        ),
-                        _ => {
-                            for event in char_events.read() {
-                                let key = String::from(event.char).to_ascii_uppercase();
-                                if KB_ROW_1.contains(&key.as_str())
-                                    || KB_ROW_2.contains(&key.as_str())
-                                    || KB_ROW_3.contains(&key.as_str())
-                                {
-                                    modify_player_name_input_by_key(
-                                        &key,
-                                        &mut status,
-                                        &mut player_name_input,
-                                    );
-                                }
+        if event.state == ButtonState::Pressed {
+            if let Some(key_code) = event.key_code {
+                match key_code {
+                    KeyCode::Space => modify_player_name_input_by_key(
+                        "space",
+                        &mut status,
+                        &mut player_name_input,
+                    ),
+                    KeyCode::Back => modify_player_name_input_by_key(
+                        "backspace",
+                        &mut status,
+                        &mut player_name_input,
+                    ),
+                    KeyCode::Delete => modify_player_name_input_by_key(
+                        "clear",
+                        &mut status,
+                        &mut player_name_input,
+                    ),
+                    _ => {
+                        for event in char_events.read() {
+                            let key = String::from(event.char).to_ascii_uppercase();
+                            if KB_ROW_1.contains(&key.as_str())
+                                || KB_ROW_2.contains(&key.as_str())
+                                || KB_ROW_3.contains(&key.as_str())
+                            {
+                                modify_player_name_input_by_key(
+                                    &key,
+                                    &mut status,
+                                    &mut player_name_input,
+                                );
                             }
                         }
                     }
                 }
             }
-            _ => (),
         }
     }
 }
@@ -467,7 +382,7 @@ fn modify_player_name_input_by_key(
     }
     for mut text in player_name_input.iter_mut() {
         if status.player_name.len() >= app::leaderboard::MAX_PLAYER_NAME_LENGTH {
-            text.sections[0].value = format!("{}", status.player_name);
+            text.sections[0].value = status.player_name.to_string();
         } else {
             text.sections[0].value = format!("{}_", status.player_name);
         }

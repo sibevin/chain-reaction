@@ -114,7 +114,6 @@ fn state_setup(
                                                 font: asset_server.load(app::ui::FONT_DIGIT),
                                                 font_size: app::ui::FONT_SIZE,
                                                 color: app::ui::FG_COLOR,
-                                                ..default()
                                             },
                                         ));
                                     });

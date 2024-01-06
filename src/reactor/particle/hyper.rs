@@ -68,9 +68,7 @@ impl ParticleAbility for Ability {
         self.countdown = self.max_countdown(level);
     }
     fn tick_countdown(&mut self) -> u32 {
-        if self.countdown - 1 <= 0 {
-            self.countdown = 0;
-        } else {
+        if self.countdown > 0 {
             self.countdown -= 1;
         }
         self.countdown

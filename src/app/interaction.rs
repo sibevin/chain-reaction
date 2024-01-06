@@ -34,8 +34,10 @@ impl Plugin for InteractionPlugin {
     }
 }
 
+type FocusableButton = (Changed<Focusable>, With<IaButton>);
+
 fn update_button_interaction(
-    mut focusables: Query<(&Focusable, &mut BackgroundColor), (Changed<Focusable>, With<IaButton>)>,
+    mut focusables: Query<(&Focusable, &mut BackgroundColor), FocusableButton>,
 ) {
     for (focus, mut color) in focusables.iter_mut() {
         let new_color = if matches!(focus.state(), FocusState::Focused) {
@@ -47,8 +49,10 @@ fn update_button_interaction(
     }
 }
 
+type FocusableSwitch = (Changed<Focusable>, With<IaSwitch>);
+
 fn update_switch_interaction(
-    mut focusables: Query<(&Focusable, &mut BorderColor), (Changed<Focusable>, With<IaSwitch>)>,
+    mut focusables: Query<(&Focusable, &mut BorderColor), FocusableSwitch>,
 ) {
     for (focus, mut color) in focusables.iter_mut() {
         let new_color = if matches!(focus.state(), FocusState::Focused) {
@@ -59,9 +63,11 @@ fn update_switch_interaction(
         *color = new_color.into();
     }
 }
+
+type FocusableSlider = (Changed<Focusable>, With<IaSlider>);
 
 fn update_slider_interaction(
-    mut focusables: Query<(&Focusable, &mut BorderColor), (Changed<Focusable>, With<IaSlider>)>,
+    mut focusables: Query<(&Focusable, &mut BorderColor), FocusableSlider>,
 ) {
     for (focus, mut color) in focusables.iter_mut() {
         let new_color = if matches!(focus.state(), FocusState::Focused) {
@@ -73,9 +79,9 @@ fn update_slider_interaction(
     }
 }
 
-fn update_link_interaction(
-    mut focusables: Query<(&Focusable, &mut BorderColor), (Changed<Focusable>, With<IaLink>)>,
-) {
+type FocusableLink = (Changed<Focusable>, With<IaLink>);
+
+fn update_link_interaction(mut focusables: Query<(&Focusable, &mut BorderColor), FocusableLink>) {
     for (focus, mut color) in focusables.iter_mut() {
         let new_color = if matches!(focus.state(), FocusState::Focused) {
             app::ui::FG_COLOR

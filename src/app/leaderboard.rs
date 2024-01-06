@@ -44,40 +44,40 @@ impl LeaderboardRecord {
     pub fn fetch(&self, field: &str) -> u32 {
         match field {
             "time" => {
-                return self.time;
+                self.time
             }
             "score" => {
-                return self.score;
+                self.score
             }
             "max_alpha_count" => {
-                return self.max_alpha_count;
+                self.max_alpha_count
             }
             "max_control_chain" => {
-                return self.max_control_chain;
+                self.max_control_chain
             }
             "max_hyper_chain" => {
-                return self.max_hyper_chain;
+                self.max_hyper_chain
             }
             "total_control_count" => {
-                return self.total_control_count;
+                self.total_control_count
             }
             "total_hyper_count" => {
-                return self.total_hyper_count;
+                self.total_hyper_count
             }
             "max_control_count" => {
-                return self.max_control_count;
+                self.max_control_count
             }
             "max_full_level_control_count" => {
-                return self.max_full_level_control_count;
+                self.max_full_level_control_count
             }
             "max_control_level" => {
-                return self.max_control_level;
+                self.max_control_level
             }
             "max_hyper_level" => {
-                return self.max_hyper_level;
+                self.max_hyper_level
             }
             "max_stopping_time" => {
-                return self.max_stopping_time;
+                self.max_stopping_time
             }
             _ => panic!("Invalid field"),
         }
@@ -125,7 +125,7 @@ impl Leaderboard {
 
     pub fn rank(&self, field: &str, value: u32) -> u8 {
         let records = self.fetch_records(field);
-        if records.len() == 0 {
+        if records.is_empty() {
             return 1;
         }
         let mut list_rank = 1;
@@ -145,12 +145,12 @@ impl Leaderboard {
                 }
             }
         }
-        return 0;
+        0
     }
 
     pub fn target(&self, field: &str, value: u32) -> (u8, u32, u32) {
         let records = self.fetch_records(field);
-        if records.len() == 0 {
+        if records.is_empty() {
             return (0, 0, 0);
         }
         let mut list_rank = 0;
@@ -173,7 +173,7 @@ impl Leaderboard {
                 }
             }
         }
-        return (list_rank as u8, prev_value, 0);
+        (list_rank as u8, prev_value, 0)
     }
 
     pub fn is_new_in_list(&self, field: &str, value: u32) -> bool {
@@ -191,7 +191,7 @@ impl Leaderboard {
                 return true;
             }
         }
-        return false;
+        false
     }
 }
 

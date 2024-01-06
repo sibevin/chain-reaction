@@ -79,7 +79,6 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         font: asset_server.load(app::ui::FONT),
                                         font_size: app::ui::FONT_SIZE * 2.8,
                                         color: app::ui::FG_COLOR,
-                                        ..default()
                                     },
                                 )
                                 .with_style(Style {

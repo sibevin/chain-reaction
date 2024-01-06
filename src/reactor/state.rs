@@ -25,7 +25,6 @@ fn build_result_panel(
             font: asset_server.load(app::ui::FONT),
             font_size: app::ui::FONT_SIZE * 3.0,
             color: Color::rgba(1.0, 0.0, 0.0, 0.8),
-            ..default()
         },
     ));
     parent
@@ -63,25 +62,13 @@ fn build_result_panel(
                             ..default()
                         },))
                         .with_children(|parent| {
+                            build_result_entry(parent, asset_server, status, leaderboard, "score");
+                            build_result_entry(parent, asset_server, status, leaderboard, "time");
                             build_result_entry(
                                 parent,
-                                &asset_server,
-                                &status,
-                                &leaderboard,
-                                "score",
-                            );
-                            build_result_entry(
-                                parent,
-                                &asset_server,
-                                &status,
-                                &leaderboard,
-                                "time",
-                            );
-                            build_result_entry(
-                                parent,
-                                &asset_server,
-                                &status,
-                                &leaderboard,
+                                asset_server,
+                                status,
+                                leaderboard,
                                 "max_alpha_count",
                             );
                         });
@@ -98,16 +85,16 @@ fn build_result_panel(
                         .with_children(|parent| {
                             build_result_entry(
                                 parent,
-                                &asset_server,
-                                &status,
-                                &leaderboard,
+                                asset_server,
+                                status,
+                                leaderboard,
                                 "max_control_chain",
                             );
                             build_result_entry(
                                 parent,
-                                &asset_server,
-                                &status,
-                                &leaderboard,
+                                asset_server,
+                                status,
+                                leaderboard,
                                 "max_hyper_chain",
                             );
                         });
@@ -185,7 +172,7 @@ fn build_result_entry(
                         1 => String::from("1st"),
                         2 => String::from("2nd"),
                         3 => String::from("3rd"),
-                        4 | 5 | 6 | 7 | 8 | 9 | 10 => format!("{}th", rank),
+                        4..=10 => format!("{}th", rank),
                         _ => String::from("---"),
                     };
                     let is_new = leaderboard.is_new_in_list(field, status.fetch(field));
@@ -212,7 +199,6 @@ fn build_result_entry(
                                                 font: asset_server.load(app::ui::FONT_DIGIT),
                                                 font_size: RESULT_FS * 0.6,
                                                 color: app::ui::BG_COLOR,
-                                                ..default()
                                             },
                                         )
                                         .with_style(
@@ -233,7 +219,6 @@ fn build_result_entry(
                                             font: asset_server.load(app::ui::FONT_DIGIT),
                                             font_size: RESULT_FS * 0.6,
                                             color: app::ui::FG_COLOR,
-                                            ..default()
                                         },
                                     )
                                     .with_style(Style {
@@ -261,7 +246,6 @@ fn build_result_entry(
                             font: asset_server.load(app::ui::FONT_DIGIT),
                             font_size: RESULT_FS,
                             color: text_color,
-                            ..default()
                         },
                     ));
                 });
