@@ -74,6 +74,15 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                     ..default()
                                 })
                                 .with_children(|parent| {
+                                    app::ui::build_link(
+                                        parent,
+                                        &asset_server,
+                                        (),
+                                        env!("CARGO_PKG_VERSION"),
+                                        None,
+                                        "default",
+                                        false
+                                    );
                                     page::build_sep_title(
                                         parent,
                                         &asset_server,
