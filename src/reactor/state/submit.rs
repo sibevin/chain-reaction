@@ -9,15 +9,12 @@ impl Plugin for StatePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             OnEnter(reactor::ReactorState::Submit),
-            (
-                state_setup,
-                app::audio::reduce_bgm_volume,
-                clear_extra_keyboard_char_events,
-            ),
+            (state_setup, app::audio::reduce_bgm_volume),
         )
         .add_systems(
             Update,
             (
+                delay_ui_display,
                 handle_keybord_input,
                 handle_ui_navigation.after(NavRequestSystem),
             )
@@ -50,18 +47,12 @@ fn state_setup(
     mut status: ResMut<reactor::status::ReactorStatus>,
     leaderboard: Res<Persistent<app::leaderboard::Leaderboard>>,
     settings: Res<Persistent<app::settings::Settings>>,
-    mut reactor_state: ResMut<NextState<reactor::ReactorState>>,
     mut key_binding: ResMut<app::key_binding::KeyBindingConfig>,
+    mut anime_timer: ResMut<reactor::AnimeTimer>,
 ) {
+    anime_timer.0.reset();
     key_binding.mode = app::key_binding::KeyBindingMode::Keyboard;
     status.mark_timeline("ended");
-    let lb_record = status.export();
-    let is_new_record = leaderboard.is_new_record(&lb_record);
-    if !is_new_record {
-        reactor_state.set(reactor::ReactorState::Ended);
-        status.highlight_uid = String::from("");
-        return;
-    }
     status.player_name = String::from(settings.fetch_last_player());
     commands
         .spawn((
@@ -78,6 +69,7 @@ fn state_setup(
                     ..default()
                 },
                 background_color: ENDED_BG_COLOR.into(),
+                visibility: Visibility::Hidden,
                 ..default()
             },
             StateRootUi,
@@ -167,6 +159,36 @@ fn state_setup(
 
 fn state_exit(to_despawn: Query<Entity, With<StateRootUi>>, commands: Commands) {
     app::ui::despawn_ui::<StateRootUi>(to_despawn, commands);
+}
+
+#[allow(clippy::too_many_arguments)]
+fn delay_ui_display(
+    time: Res<Time>,
+    mut anime_timer: ResMut<reactor::AnimeTimer>,
+    mut status: ResMut<reactor::status::ReactorStatus>,
+    leaderboard: Res<Persistent<app::leaderboard::Leaderboard>>,
+    mut reactor_state: ResMut<NextState<reactor::ReactorState>>,
+    mut state_ui_query: Query<&mut Visibility, With<StateRootUi>>,
+    mut keyboard_events: ResMut<Events<keyboard::KeyboardInput>>,
+    mut char_events: ResMut<Events<ReceivedCharacter>>,
+) {
+    if anime_timer.0.tick(time.delta()).just_finished() {
+        let lb_record = status.export();
+        let is_new_record = leaderboard.is_new_record(&lb_record);
+        if !is_new_record {
+            reactor_state.set(reactor::ReactorState::Ended);
+            status.highlight_uid = String::from("");
+            return;
+        }
+        let mut state_ui = state_ui_query.single_mut();
+        *state_ui = Visibility::Visible;
+        if !keyboard_events.is_empty() {
+            keyboard_events.clear();
+        }
+        if !char_events.is_empty() {
+            char_events.clear();
+        }
+    }
 }
 
 fn handle_ui_navigation(
@@ -386,17 +408,5 @@ fn modify_player_name_input_by_key(
         } else {
             text.sections[0].value = format!("{}_", status.player_name);
         }
-    }
-}
-
-fn clear_extra_keyboard_char_events(
-    mut keyboard_events: ResMut<Events<keyboard::KeyboardInput>>,
-    mut char_events: ResMut<Events<ReceivedCharacter>>,
-) {
-    if !keyboard_events.is_empty() {
-        keyboard_events.clear();
-    }
-    if !char_events.is_empty() {
-        char_events.clear();
     }
 }

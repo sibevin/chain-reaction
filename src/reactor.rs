@@ -18,12 +18,16 @@ pub enum ReactorState {
     Ended,
 }
 
+#[derive(Resource)]
+pub struct AnimeTimer(pub Timer);
+
 pub struct ReactorPlugin;
 
 impl Plugin for ReactorPlugin {
     fn build(&self, app: &mut App) {
         app.add_state::<ReactorState>()
             .insert_resource(status::ReactorStatus::default())
+            .insert_resource(AnimeTimer(Timer::from_seconds(0.5, TimerMode::Once)))
             .add_plugins((
                 state::demo::StatePlugin,
                 state::ready::StatePlugin,

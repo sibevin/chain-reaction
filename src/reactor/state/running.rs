@@ -404,13 +404,13 @@ fn handle_particle_reaction(
                                 &mut screenshot_manager,
                                 "score",
                             );
-                            reactor_state.set(reactor::ReactorState::Submit);
                             app::audio::play_se(
                                 app::audio::AudioSe::Boom,
                                 &mut commands,
                                 &audio_se_asset,
                                 &settings,
                             );
+                            reactor_state.set(reactor::ReactorState::Submit);
                         }
                     }
                     _ => (),
