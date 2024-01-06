@@ -55,11 +55,11 @@ pub fn build_game_title(parent: &mut ChildBuilder, asset_server: &Res<AssetServe
             ..default()
         })
         .with_children(|parent| {
-            let icon = asset_server.load("images/app/logo_120x.png");
+            let icon = asset_server.load("images/app/logo.png");
             parent.spawn(ImageBundle {
                 style: Style {
-                    width: Val::Px(120.0),
-                    height: Val::Px(120.0),
+                    width: Val::Px(80.0),
+                    height: Val::Px(80.0),
                     margin: UiRect::right(app::ui::px_p(2.0)),
                     ..default()
                 },

@@ -55,18 +55,18 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                             style: Style {
                                 flex_direction: FlexDirection::Row,
                                 align_items: AlignItems::Center,
-                                margin: UiRect::bottom(app::ui::px_p(8.0)),
+                                margin: UiRect::bottom(app::ui::px_p(12.0)),
                                 ..default()
                             },
                             ..default()
                         })
                         .with_children(|parent| {
-                            let icon = asset_server.load("images/app/logo_120x.png");
+                            let icon = asset_server.load("images/app/logo.png");
                             parent.spawn(ImageBundle {
                                 style: Style {
-                                    width: Val::Px(120.0),
-                                    height: Val::Px(120.0),
-                                    margin: UiRect::right(app::ui::px_p(8.0)),
+                                    width: Val::Px(80.0),
+                                    height: Val::Px(80.0),
+                                    margin: UiRect::right(app::ui::px_p(6.0)),
                                     ..default()
                                 },
                                 image: UiImage::new(icon),
@@ -77,13 +77,13 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                     "Chain Reaction",
                                     TextStyle {
                                         font: asset_server.load(app::ui::FONT),
-                                        font_size: app::ui::FONT_SIZE * 3.0,
+                                        font_size: app::ui::FONT_SIZE * 2.8,
                                         color: app::ui::FG_COLOR,
                                         ..default()
                                     },
                                 )
                                 .with_style(Style {
-                                    margin: UiRect::bottom(app::ui::px_p(10.0)),
+                                    margin: UiRect::bottom(app::ui::px_p(4.0)),
                                     ..default()
                                 }),
                             );

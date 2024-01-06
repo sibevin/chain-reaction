@@ -47,7 +47,7 @@ fn handle_key_binding(
             if input.any_just_pressed([KeyCode::Space]) {
                 requests.send(NavRequest::Action);
             }
-            if input.any_just_pressed([KeyCode::Back, KeyCode::Delete]) {
+            if input.any_just_pressed([KeyCode::Delete]) {
                 requests.send(NavRequest::Cancel);
             }
             move_by_wsad(&mut requests, &input);

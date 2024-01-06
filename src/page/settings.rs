@@ -149,11 +149,18 @@ fn page_setup(
                                                 .spawn(NodeBundle {
                                                     style: Style {
                                                         align_items: AlignItems::Center,
+                                                        column_gap: app::ui::px_p(4.0),
                                                         ..default()
                                                     },
                                                     ..default()
                                                 })
                                                 .with_children(|parent| {
+                                                    build_slider_bar(
+                                                        parent,
+                                                        &asset_server,
+                                                        ButtonAction::SetValue(String::from("se")),
+                                                        settings.get_value("se"),
+                                                    );
                                                     app::ui::build_icon_btn(
                                                         parent,
                                                         &asset_server,
@@ -162,19 +169,8 @@ fn page_setup(
                                                             app::interaction::IaButton,
                                                             Focusable::default(),
                                                         ),
-                                                        Style {
-                                                            margin: UiRect::right(app::ui::px_p(
-                                                                4.0,
-                                                            )),
-                                                            ..default()
-                                                        },
+                                                        Style::default(),
                                                         "play-light",
-                                                    );
-                                                    build_slider_bar(
-                                                        parent,
-                                                        &asset_server,
-                                                        ButtonAction::SetValue(String::from("se")),
-                                                        settings.get_value("se"),
                                                     );
                                                 });
                                             #[cfg(not(target_arch = "wasm32"))]

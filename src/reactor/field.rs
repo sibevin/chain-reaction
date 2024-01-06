@@ -48,7 +48,7 @@ pub fn gen_random_pos_in_field(padding: f32) -> Vec2 {
 
 pub fn format_field_text(field: &str, value: u32) -> String {
     if field == "time" {
-        format!("{:0>5}.{:0>2}", value / 100, value % 100)
+        format!("{:0>4}.{:0>2}", value / 100, value % 100)
     } else if field == "alpha_count" {
         format!("{:0>4}", value)
     } else if field == "score" {
