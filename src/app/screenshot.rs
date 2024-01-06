@@ -1,11 +1,11 @@
 use std::fs;
 use std::path::PathBuf;
 
-use bevy::prelude::*;
 use bevy::render::view::window::screenshot::ScreenshotManager;
 use bevy::window::PrimaryWindow;
+use bevy::{prelude::*, render::texture::*};
 
-const SCREENSHOT_TYPES: [&str; 2] = ["end", "max_alpha"];
+const SCREENSHOT_TYPES: [&str; 2] = ["score", "max_alpha_count"];
 
 pub fn shot_current(
     main_window: &Query<Entity, With<PrimaryWindow>>,
@@ -32,6 +32,19 @@ pub fn store_leaderboard_screenshots(uid: &str) {
             let _ = fs::copy(src_path, dest_path);
         }
     }
+}
+
+pub fn fetch_screenshot_image(uid: &str, screenshot_type: &str) -> Image {
+    let image_path = build_screenshot_file_path(uid, screenshot_type);
+    let image_data = fs::read(image_path).unwrap();
+    Image::from_buffer(
+        &image_data,
+        ImageType::Format(ImageFormat::Png),
+        CompressedImageFormats::default(),
+        true,
+        ImageSampler::default(),
+    )
+    .unwrap()
 }
 
 fn fetch_screenshots_dir_path() -> PathBuf {

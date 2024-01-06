@@ -31,10 +31,19 @@ struct OnPage;
 enum ButtonAction {
     SwitchList(String),
     BackToMainMenu,
+    #[cfg(not(target_arch = "wasm32"))]
+    ShowScreenshot(String, String),
+    CloseScreenshot,
 }
 
 #[derive(Component)]
 struct LeaderboardList(String);
+
+#[derive(Component)]
+struct ScreenshotPanel;
+
+#[derive(Component)]
+struct ScreenshotImage;
 
 const LB_FS: f32 = app::ui::FONT_SIZE;
 const LB_ICON_SIZE: f32 = 12.0;
@@ -202,6 +211,56 @@ fn page_setup(
                 },
                 "arrow-left-light",
             );
+            parent
+                .spawn((
+                    NodeBundle {
+                        style: Style {
+                            position_type: PositionType::Absolute,
+                            top: Val::Px(0.0),
+                            bottom: Val::Px(0.0),
+                            left: Val::Px(0.0),
+                            right: Val::Px(0.0),
+                            align_items: AlignItems::Center,
+                            justify_content: JustifyContent::Center,
+                            padding: UiRect::all(app::ui::px_p(3.0)),
+                            ..default()
+                        },
+                        background_color: app::ui::BG_COLOR.into(),
+                        visibility: Visibility::Hidden,
+                        ..default()
+                    },
+                    ScreenshotPanel,
+                ))
+                .with_children(|parent| {
+                    parent.spawn((
+                        ImageBundle {
+                            style: Style {
+                                max_width: Val::Percent(100.0),
+                                max_height: Val::Percent(100.0),
+                                ..default()
+                            },
+                            image: UiImage::default(),
+                            ..default()
+                        },
+                        ScreenshotImage,
+                    ));
+                    app::ui::build_icon_btn(
+                        parent,
+                        &asset_server,
+                        (
+                            ButtonAction::CloseScreenshot,
+                            app::interaction::IaButton,
+                            Focusable::default(),
+                        ),
+                        Style {
+                            position_type: PositionType::Absolute,
+                            bottom: app::ui::px_p(page::PAGE_PADDING),
+                            left: app::ui::px_p(page::PAGE_PADDING),
+                            ..default()
+                        },
+                        "arrow-left-light",
+                    );
+                });
         });
 }
 
@@ -209,7 +268,16 @@ fn handle_ui_navigation(
     mut actions: Query<&mut ButtonAction>,
     mut events: EventReader<NavEvent>,
     mut game_state: ResMut<NextState<app::GameState>>,
-    mut lb_lists: Query<(&LeaderboardList, &mut Visibility), With<LeaderboardList>>,
+    mut lb_lists: Query<
+        (&LeaderboardList, &mut Visibility),
+        (With<LeaderboardList>, Without<ScreenshotPanel>),
+    >,
+    mut ss_panel_query: Query<&mut Visibility, (With<ScreenshotPanel>, Without<LeaderboardList>)>,
+    #[cfg(not(target_arch = "wasm32"))] mut ss_image_query: Query<
+        &mut UiImage,
+        With<ScreenshotImage>,
+    >,
+    #[cfg(not(target_arch = "wasm32"))] mut images: ResMut<Assets<Image>>,
 ) {
     events.nav_iter().activated_in_query_foreach_mut(
         &mut actions,
@@ -223,6 +291,19 @@ fn handle_ui_navigation(
                         *visibility = Visibility::Hidden;
                     }
                 }
+            }
+            #[cfg(not(target_arch = "wasm32"))]
+            ButtonAction::ShowScreenshot(uid, ss_type) => {
+                let mut ss_image = ss_image_query.single_mut();
+                let image = app::screenshot::fetch_screenshot_image(uid, ss_type);
+                let image_handle = images.add(image);
+                ss_image.texture = image_handle;
+                let mut visibility = ss_panel_query.single_mut();
+                *visibility = Visibility::Visible;
+            }
+            ButtonAction::CloseScreenshot => {
+                let mut visibility = ss_panel_query.single_mut();
+                *visibility = Visibility::Hidden;
             }
         },
     );
@@ -241,6 +322,10 @@ fn build_list(
     } else {
         Visibility::Hidden
     };
+    let mut row_gap = app::ui::px_p(4.0);
+    if cfg!(not(target_arch = "wasm32")) && (list == "score" || list == "max_alpha_count") {
+        row_gap = app::ui::px_p(2.4)
+    }
     parent
         .spawn((
             NodeBundle {
@@ -251,7 +336,7 @@ fn build_list(
                     flex_direction: FlexDirection::Column,
                     align_items: AlignItems::Center,
                     justify_content: JustifyContent::Center,
-                    row_gap: app::ui::px_p(4.0),
+                    row_gap,
                     ..default()
                 },
                 visibility,
@@ -393,6 +478,23 @@ fn build_list(
                                     ..default()
                                 },
                             ),));
+                            if list == "score" || list == "max_alpha_count" {
+                                #[cfg(not(target_arch = "wasm32"))]
+                                app::ui::build_icon_btn(
+                                    parent,
+                                    &asset_server,
+                                    (
+                                        ButtonAction::ShowScreenshot(
+                                            String::from(record.uid()),
+                                            String::from(list),
+                                        ),
+                                        app::interaction::IaButton,
+                                        Focusable::default(),
+                                    ),
+                                    Style { ..default() },
+                                    "frame-corners",
+                                );
+                            }
                         });
                 }
             }

@@ -405,7 +405,7 @@ pub fn update_reactor_fields(
                             app::screenshot::shot_current(
                                 &main_window,
                                 &mut screenshot_manager,
-                                "max_alpha",
+                                "max_alpha_count",
                             );
                         }
                     }

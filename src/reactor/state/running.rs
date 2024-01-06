@@ -406,7 +406,7 @@ fn handle_particle_reaction(
                             app::screenshot::shot_current(
                                 &main_window,
                                 &mut screenshot_manager,
-                                "end",
+                                "score",
                             );
                             reactor_state.set(reactor::ReactorState::Submit);
                             app::audio::play_se(
