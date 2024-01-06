@@ -24,6 +24,13 @@ An action game to dodge chain recation particles.
 4. `cp -r assets build-web`
 5. `wasm-bindgen --no-typescript --out-name bevy_game --out-dir build-web --target web target/wasm32-unknown-unknown/release/chain-reaction.wasm`
 
+### Release
+
+1. Update `README` and `CHANGE_LOG` if needed.
+2. Update version in `Cargo.toml/lock`.
+3. Add git tag `git tag -a "vX.Y.Z" -m "vX.Y.Z"`.
+4. Push git tags `git push --tags` to trigger CI/CD.
+
 ## Credits
 
 ### Game Design
