@@ -1,11 +1,15 @@
+# v2.0.1
+
+- (platform:web) Fix assets are not shown on itch page.
+
 # v2.0.0
 
-- Add leaderboard (Report) feature, record scores and screenshots.
-- Support menu navigation by keyboard.
-- Show score targets in the game field.
-- Add control/hyper max-chain challenges.
-- Support web platform.
+- (core) Add leaderboard feature, record scores and screenshots.
+- (core) Support menu navigation by keyboard.
+- (game) Show score targets in the game field.
+- (game) Add control/hyper max-chain challenges.
+- (platform:web) Support web platform.
 
 # v1.3.0
 
-- Support persistent storage for settings.
+- (core) Support persistent storage for settings.
