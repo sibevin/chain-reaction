@@ -2,11 +2,12 @@
 
 An action game to dodge chain recation particles.
 
-- For Bevy Jam #4 - https://itch.io/jam/bevy-jam-4
-
 ![Main Menu](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_01.png)
-![Gameplay](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_03.png)
-![Help](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_02.png)
+![Gameplay](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_02.png)
+![Game Over](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_03.png)
+![Leaderboard](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_04.png)
+![Help](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_05.png)
+![Settings](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_06.png)
 
 ## Links
 
@@ -15,7 +16,7 @@ An action game to dodge chain recation particles.
 
 ## Development
 
-### Build web
+### Build web version
 
 1. Make sure wasm-bindgen-cli is installed. `cargo install wasm-bindgen-cli`
 2. `cargo build --release --target wasm32-unknown-unknown`
