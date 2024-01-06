@@ -108,7 +108,11 @@ pub fn build_particle_sprite(
         .spawn((
             SpriteBundle {
                 transform: Transform::from_xyz(pos.x, pos.y, 0.0),
-                ..Default::default()
+                sprite: Sprite {
+                    color: COLOR,
+                    ..default()
+                },
+                ..default()
             },
             bundle,
             particle,

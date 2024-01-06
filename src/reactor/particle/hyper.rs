@@ -93,7 +93,11 @@ pub fn build_particle_sprite(
         .spawn((
             SpriteBundle {
                 transform: Transform::from_xyz(pos.x, pos.y, 0.0),
-                ..Default::default()
+                sprite: Sprite {
+                    color: COLOR,
+                    ..default()
+                },
+                ..default()
             },
             bundle,
         ))
@@ -101,6 +105,10 @@ pub fn build_particle_sprite(
             parent
                 .spawn(SpriteBundle {
                     transform: Transform::from_xyz(0.0, 0.0, 0.1),
+                    sprite: Sprite {
+                        color: COLOR,
+                        ..default()
+                    },
                     ..default()
                 })
                 .with_children(|parent| {
@@ -120,6 +128,10 @@ pub fn build_particle_sprite(
             parent
                 .spawn(SpriteBundle {
                     transform: Transform::from_xyz(0.0, 0.0, 0.2),
+                    sprite: Sprite {
+                        color: COLOR,
+                        ..default()
+                    },
                     ..default()
                 })
                 .with_children(|parent| {
@@ -139,6 +151,10 @@ pub fn build_particle_sprite(
             parent
                 .spawn(SpriteBundle {
                     transform: Transform::from_xyz(0.0, 0.0, 0.3),
+                    sprite: Sprite {
+                        color: COLOR,
+                        ..default()
+                    },
                     ..default()
                 })
                 .with_children(|parent| {
@@ -160,6 +176,10 @@ pub fn build_particle_sprite(
                 parent
                     .spawn(SpriteBundle {
                         transform: Transform::from_xyz(0.0, 0.0, 0.4),
+                        sprite: Sprite {
+                            color: COLOR,
+                            ..default()
+                        },
                         ..default()
                     })
                     .id(),
@@ -179,6 +199,10 @@ pub fn update_particle_sprite(commands: &mut Commands, particle: &Particle) {
                 parent
                     .spawn(SpriteBundle {
                         transform: Transform::from_xyz(0.0, 0.0, 0.4),
+                        sprite: Sprite {
+                            color: COLOR,
+                            ..default()
+                        },
                         ..default()
                     })
                     .with_children(|parent| {
