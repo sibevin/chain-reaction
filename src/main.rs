@@ -1,3 +1,4 @@
+use bevy::asset::AssetMetaCheck;
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
 use bevy_ui_navigation::prelude::*;
@@ -7,6 +8,7 @@ use chain_reaction::{app, page, reactor};
 fn main() {
     App::new()
         .insert_resource(ClearColor(app::ui::BG_COLOR))
+        .insert_resource(AssetMetaCheck::Never)
         .add_state::<app::GameState>()
         .add_systems(Startup, app::init::startup)
         .add_plugins((
