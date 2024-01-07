@@ -360,8 +360,8 @@ pub fn update_reactor_fields(
     time: Res<Time>,
     mut reactor_fields_query: Query<(&mut Text, &ReactorField), With<ReactorField>>,
     mut reactor_chain_icon_query: Query<&mut UiImage, With<ReactorChainIcon>>,
-    mut reactor_timer_query: Query<&mut reactor::ReactorTimer>,
-    mut score_timer_query: Query<&mut reactor::ScoreTimer>,
+    mut reactor_timer: ResMut<reactor::ReactorTimer>,
+    mut score_timer: ResMut<reactor::ScoreTimer>,
     mut status: ResMut<reactor::status::ReactorStatus>,
     particle_query: Query<&reactor::particle::Particle, With<reactor::particle::Particle>>,
     asset_server: Res<AssetServer>,
@@ -369,8 +369,7 @@ pub fn update_reactor_fields(
     #[cfg(not(target_arch = "wasm32"))] mut screenshot_manager: ResMut<ScreenshotManager>,
     #[cfg(not(target_arch = "wasm32"))] reactor_status: Res<State<reactor::ReactorState>>,
 ) {
-    let mut reactor_timer = reactor_timer_query.single_mut();
-    if reactor_timer.tick(time.delta()).just_finished() {
+    if reactor_timer.0.tick(time.delta()).just_finished() {
         let mut control_count = 0;
         let mut full_level_control_count = 0;
         for particle in particle_query.iter() {
@@ -432,8 +431,7 @@ pub fn update_reactor_fields(
         };
     }
 
-    let mut score_timer = score_timer_query.single_mut();
-    if score_timer.tick(time.delta()).just_finished() {
+    if score_timer.0.tick(time.delta()).just_finished() {
         for (mut text, field) in reactor_fields_query.iter_mut() {
             if field.0 == "score" {
                 let alpha_count = status.fetch("alpha_count");

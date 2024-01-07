@@ -56,67 +56,65 @@ fn state_exit(mut commands: Commands, particle_query: Query<Entity, With<DemoPar
 fn state_action(
     mut commands: Commands,
     mut particle_query: Query<(&mut Transform, &mut Particle), With<Particle>>,
-    mut timer_query: Query<&mut reactor::ReactorTimer>,
+    mut reactor_timer: ResMut<reactor::ReactorTimer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     time: Res<Time>,
     status: ResMut<status::ReactorStatus>,
 ) {
-    for mut timer in &mut timer_query {
-        if timer.tick(time.delta()).just_finished() {
-            let alpha_count = status.fetch("alpha_count");
-            for (mut transform, mut particle) in particle_query.iter_mut() {
-                let new_pos = (*particle).travel();
-                transform.translation.x = new_pos.x;
-                transform.translation.y = new_pos.y;
-                match particle.particle_type() {
-                    ParticleType::Alpha => {
-                        particle.tick_countdown();
-                    }
-                    ParticleType::Hyper => {
-                        if particle.tick_countdown() == 0 {
-                            if alpha_count > 150 {
-                                let new_pos = field::gen_random_pos_in_field(particle.radius());
-                                (*particle).jump(new_pos);
-                                transform.translation.x = new_pos.x;
-                                transform.translation.y = new_pos.y;
-                                control::build_particle_sprite(
-                                    &mut commands,
-                                    DemoParticle,
-                                    None,
-                                    None,
-                                    Some(particle.level()),
-                                );
-                            }
-                            if particle.level() == 1 {
-                                particle.update_level(5);
-                            } else {
-                                particle.update_level(-1);
-                            }
-                            particle.reset_countdown();
-                        }
-                    }
-                    ParticleType::Trigger => {
-                        transform.rotate_z(-time.delta_seconds() * 2.0);
-                        trigger::update_particle_level(particle.as_mut(), alpha_count);
-                        if particle.tick_countdown() == 0 {
-                            particle.reset_countdown();
-                            let (_, _, angle) = transform.rotation.to_euler(EulerRot::XYZ);
-                            let angle = angle + std::f32::consts::PI * 0.5;
-                            let direction = Vec2::new(angle.cos(), angle.sin());
-                            alpha::build_particle_sprite(
+    if reactor_timer.0.tick(time.delta()).just_finished() {
+        let alpha_count = status.fetch("alpha_count");
+        for (mut transform, mut particle) in particle_query.iter_mut() {
+            let new_pos = (*particle).travel();
+            transform.translation.x = new_pos.x;
+            transform.translation.y = new_pos.y;
+            match particle.particle_type() {
+                ParticleType::Alpha => {
+                    particle.tick_countdown();
+                }
+                ParticleType::Hyper => {
+                    if particle.tick_countdown() == 0 {
+                        if alpha_count > 150 {
+                            let new_pos = field::gen_random_pos_in_field(particle.radius());
+                            (*particle).jump(new_pos);
+                            transform.translation.x = new_pos.x;
+                            transform.translation.y = new_pos.y;
+                            control::build_particle_sprite(
                                 &mut commands,
-                                &mut meshes,
-                                &mut materials,
                                 DemoParticle,
-                                Some(particle.pos() + direction * particle.radius()),
-                                Some(direction),
                                 None,
+                                None,
+                                Some(particle.level()),
                             );
                         }
+                        if particle.level() == 1 {
+                            particle.update_level(5);
+                        } else {
+                            particle.update_level(-1);
+                        }
+                        particle.reset_countdown();
                     }
-                    _ => (),
                 }
+                ParticleType::Trigger => {
+                    transform.rotate_z(-time.delta_seconds() * 2.0);
+                    trigger::update_particle_level(particle.as_mut(), alpha_count);
+                    if particle.tick_countdown() == 0 {
+                        particle.reset_countdown();
+                        let (_, _, angle) = transform.rotation.to_euler(EulerRot::XYZ);
+                        let angle = angle + std::f32::consts::PI * 0.5;
+                        let direction = Vec2::new(angle.cos(), angle.sin());
+                        alpha::build_particle_sprite(
+                            &mut commands,
+                            &mut meshes,
+                            &mut materials,
+                            DemoParticle,
+                            Some(particle.pos() + direction * particle.radius()),
+                            Some(direction),
+                            None,
+                        );
+                    }
+                }
+                _ => (),
             }
         }
     }
@@ -125,14 +123,13 @@ fn state_action(
 fn handle_particle_reaction(
     mut commands: Commands,
     mut particle_query: Query<(Entity, &mut Particle), With<Particle>>,
-    mut timer_query: Query<&mut reactor::ReactorTimer>,
-    mut painter_timer_query: Query<&mut reactor::PainterTimer>,
+    mut reactor_timer: ResMut<reactor::ReactorTimer>,
+    mut painter_timer: ResMut<reactor::PainterTimer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     time: Res<Time>,
 ) {
-    let mut timer = painter_timer_query.single_mut();
-    if timer.tick(time.delta()).just_finished() {
+    if painter_timer.0.tick(time.delta()).just_finished() {
         for (_, particle) in particle_query.iter() {
             match particle.particle_type() {
                 ParticleType::Control => {
@@ -148,8 +145,7 @@ fn handle_particle_reaction(
             }
         }
     }
-    let mut timer = timer_query.single_mut();
-    if timer.tick(time.delta()).just_finished() {
+    if reactor_timer.0.tick(time.delta()).just_finished() {
         let hit_map = detect_hit(&mut particle_query);
         let mut killed_entities: Vec<Entity> = vec![];
         for (e, mut p) in particle_query.iter_mut() {

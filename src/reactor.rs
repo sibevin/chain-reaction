@@ -19,6 +19,15 @@ pub enum ReactorState {
 }
 
 #[derive(Resource)]
+pub struct ReactorTimer(pub Timer);
+
+#[derive(Resource)]
+pub struct PainterTimer(pub Timer);
+
+#[derive(Resource)]
+pub struct ScoreTimer(pub Timer);
+
+#[derive(Resource)]
 pub struct AnimeTimer(pub Timer);
 
 pub struct ReactorPlugin;
@@ -27,6 +36,15 @@ impl Plugin for ReactorPlugin {
     fn build(&self, app: &mut App) {
         app.add_state::<ReactorState>()
             .insert_resource(status::ReactorStatus::default())
+            .insert_resource(ReactorTimer(Timer::from_seconds(
+                0.01,
+                TimerMode::Repeating,
+            )))
+            .insert_resource(PainterTimer(Timer::from_seconds(
+                0.05,
+                TimerMode::Repeating,
+            )))
+            .insert_resource(ScoreTimer(Timer::from_seconds(1.0, TimerMode::Repeating)))
             .insert_resource(AnimeTimer(Timer::from_seconds(0.5, TimerMode::Once)))
             .add_plugins((
                 state::demo::StatePlugin,
@@ -38,15 +56,6 @@ impl Plugin for ReactorPlugin {
             ));
     }
 }
-
-#[derive(Component, Deref, DerefMut)]
-pub struct ReactorTimer(pub Timer);
-
-#[derive(Component, Deref, DerefMut)]
-pub struct PainterTimer(pub Timer);
-
-#[derive(Component, Deref, DerefMut)]
-pub struct ScoreTimer(pub Timer);
 
 #[derive(Component)]
 pub struct ControlParticle;
@@ -62,14 +71,5 @@ pub const FIELD_W: f32 = app::WINDOW_W;
 pub const FIELD_H: f32 = app::WINDOW_H - FIELD_NAV_H;
 
 pub fn startup(commands: &mut Commands, asset_server: &Res<AssetServer>) {
-    commands.spawn(ReactorTimer(Timer::from_seconds(
-        0.01,
-        TimerMode::Repeating,
-    )));
-    commands.spawn(PainterTimer(Timer::from_seconds(
-        0.05,
-        TimerMode::Repeating,
-    )));
-    commands.spawn(ScoreTimer(Timer::from_seconds(1.0, TimerMode::Repeating)));
     field::build_reactor_field(commands, asset_server);
 }

@@ -126,50 +126,48 @@ fn move_particle(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut particle_query: Query<(&mut Transform, &mut Particle), With<Particle>>,
-    mut timer_query: Query<&mut reactor::ReactorTimer>,
+    mut reactor_timer: ResMut<reactor::ReactorTimer>,
     time: Res<Time>,
     status: Res<status::ReactorStatus>,
 ) {
-    for mut timer in &mut timer_query {
-        if timer.tick(time.delta()).just_finished() {
-            let alpha_count = status.fetch("alpha_count");
-            for (mut transform, mut particle) in particle_query.iter_mut() {
-                if particle.particle_type() != ParticleType::Uou {
-                    let new_pos = (*particle).travel();
-                    transform.translation.x = new_pos.x;
-                    transform.translation.y = new_pos.y;
+    if reactor_timer.0.tick(time.delta()).just_finished() {
+        let alpha_count = status.fetch("alpha_count");
+        for (mut transform, mut particle) in particle_query.iter_mut() {
+            if particle.particle_type() != ParticleType::Uou {
+                let new_pos = (*particle).travel();
+                transform.translation.x = new_pos.x;
+                transform.translation.y = new_pos.y;
+            }
+            match particle.particle_type() {
+                ParticleType::Alpha => {
+                    particle.tick_countdown();
                 }
-                match particle.particle_type() {
-                    ParticleType::Alpha => {
-                        particle.tick_countdown();
+                ParticleType::Hyper => {
+                    if particle.level() > 1 && particle.tick_countdown() == 0 {
+                        particle.update_level(-1);
+                        particle.reset_countdown();
                     }
-                    ParticleType::Hyper => {
-                        if particle.level() > 1 && particle.tick_countdown() == 0 {
-                            particle.update_level(-1);
-                            particle.reset_countdown();
-                        }
-                    }
-                    ParticleType::Trigger => {
-                        transform.rotate_z(-time.delta_seconds() * 2.0);
-                        trigger::update_particle_level(particle.as_mut(), alpha_count);
-                        if particle.tick_countdown() == 0 {
-                            particle.reset_countdown();
-                            let (_, _, angle) = transform.rotation.to_euler(EulerRot::XYZ);
-                            let angle = angle + std::f32::consts::PI * 0.5;
-                            let direction = Vec2::new(angle.cos(), angle.sin());
-                            alpha::build_particle_sprite(
-                                &mut commands,
-                                &mut meshes,
-                                &mut materials,
-                                reactor::RunningParticle,
-                                Some(particle.pos() + direction * particle.radius()),
-                                Some(direction),
-                                None,
-                            );
-                        }
-                    }
-                    _ => (),
                 }
+                ParticleType::Trigger => {
+                    transform.rotate_z(-time.delta_seconds() * 2.0);
+                    trigger::update_particle_level(particle.as_mut(), alpha_count);
+                    if particle.tick_countdown() == 0 {
+                        particle.reset_countdown();
+                        let (_, _, angle) = transform.rotation.to_euler(EulerRot::XYZ);
+                        let angle = angle + std::f32::consts::PI * 0.5;
+                        let direction = Vec2::new(angle.cos(), angle.sin());
+                        alpha::build_particle_sprite(
+                            &mut commands,
+                            &mut meshes,
+                            &mut materials,
+                            reactor::RunningParticle,
+                            Some(particle.pos() + direction * particle.radius()),
+                            Some(direction),
+                            None,
+                        );
+                    }
+                }
+                _ => (),
             }
         }
     }
@@ -228,8 +226,8 @@ fn handle_particle_reaction(
     mut commands: Commands,
     mut particle_query: Query<(Entity, &mut Particle), With<Particle>>,
     u_particle_query: Query<&Transform, With<reactor::ControlParticle>>,
-    mut timer_query: Query<&mut reactor::ReactorTimer>,
-    mut painter_timer_query: Query<&mut reactor::PainterTimer>,
+    mut reactor_timer: ResMut<reactor::ReactorTimer>,
+    mut painter_timer: ResMut<reactor::PainterTimer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     time: Res<Time>,
@@ -240,8 +238,7 @@ fn handle_particle_reaction(
     #[cfg(not(target_arch = "wasm32"))] main_window: Query<Entity, With<PrimaryWindow>>,
     #[cfg(not(target_arch = "wasm32"))] mut screenshot_manager: ResMut<ScreenshotManager>,
 ) {
-    let mut timer = painter_timer_query.single_mut();
-    if timer.tick(time.delta()).just_finished() {
+    if painter_timer.0.tick(time.delta()).just_finished() {
         for (entity, particle) in particle_query.iter() {
             if commands.get_entity(entity).is_some() {
                 match particle.particle_type() {
@@ -259,8 +256,7 @@ fn handle_particle_reaction(
             }
         }
     }
-    let mut timer = timer_query.single_mut();
-    if timer.tick(time.delta()).just_finished() {
+    if reactor_timer.0.tick(time.delta()).just_finished() {
         let u_particle = u_particle_query.single();
         let u_pos: Vec2 = Vec2::new(u_particle.translation.x, u_particle.translation.y);
         status.update_stopping_time(u_pos);
