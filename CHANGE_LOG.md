@@ -1,3 +1,8 @@
+# v2.0.2
+
+- (game) Fix UI blocking issue.
+- (game) Refine game timer.
+
 # v2.0.1
 
 - (platform:web) Fix assets are not shown on itch page.
