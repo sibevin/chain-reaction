@@ -81,6 +81,7 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                 justify_content: JustifyContent::Center,
                 ..default()
             },
+            z_index: ZIndex::Global(-1),
             ..default()
         },))
         .with_children(|parent| {
