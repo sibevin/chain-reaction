@@ -12,6 +12,7 @@ bevy-persistent = { version = "0.4.2", features = ["bincode", "json"] }
 bevy-ui-navigation = "0.33.1"
 bevy_prototype_lyon = "0.10.0"
 chrono = "0.4.31"
+circular-queue = "0.2.6"
 dirs = "5.0.1"
 rand = "0.8.5"
 serde = { version = "1.0.193", features = ["derive"] }
