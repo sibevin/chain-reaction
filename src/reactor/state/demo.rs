@@ -57,8 +57,6 @@ fn state_action(
     mut commands: Commands,
     mut particle_query: Query<(&mut Transform, &mut Particle), With<Particle>>,
     mut reactor_timer: ResMut<reactor::ReactorTimer>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     time: Res<Time>,
     status: ResMut<status::ReactorStatus>,
 ) {
@@ -105,8 +103,6 @@ fn state_action(
                         let direction = Vec2::new(angle.cos(), angle.sin());
                         alpha::build_particle_sprite(
                             &mut commands,
-                            &mut meshes,
-                            &mut materials,
                             DemoParticle,
                             Some(particle.pos() + direction * particle.radius()),
                             Some(direction),
@@ -125,13 +121,14 @@ fn handle_particle_reaction(
     mut particle_query: Query<(Entity, &mut Particle), With<Particle>>,
     mut reactor_timer: ResMut<reactor::ReactorTimer>,
     mut painter_timer: ResMut<reactor::PainterTimer>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     time: Res<Time>,
 ) {
     if painter_timer.0.tick(time.delta()).just_finished() {
         for (_, particle) in particle_query.iter() {
             match particle.particle_type() {
+                ParticleType::Alpha => {
+                    alpha::update_particle_sprite(&mut commands, particle);
+                }
                 ParticleType::Control => {
                     control::update_particle_sprite(&mut commands, particle);
                 }
@@ -163,8 +160,6 @@ fn handle_particle_reaction(
                                     let direction = Vec2::new(angle.cos(), angle.sin());
                                     alpha::build_particle_sprite(
                                         &mut commands,
-                                        &mut meshes,
-                                        &mut materials,
                                         DemoParticle,
                                         Some(p.pos() + direction * p.radius() * 3.0),
                                         Some(direction),
@@ -174,8 +169,6 @@ fn handle_particle_reaction(
                             } else {
                                 alpha::build_particle_sprite(
                                     &mut commands,
-                                    &mut meshes,
-                                    &mut materials,
                                     DemoParticle,
                                     Some(p.pos()),
                                     None,

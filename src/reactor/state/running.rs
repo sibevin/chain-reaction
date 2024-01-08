@@ -123,8 +123,6 @@ fn state_exit(
 
 fn move_particle(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     mut particle_query: Query<(&mut Transform, &mut Particle), With<Particle>>,
     mut reactor_timer: ResMut<reactor::ReactorTimer>,
     time: Res<Time>,
@@ -158,8 +156,6 @@ fn move_particle(
                         let direction = Vec2::new(angle.cos(), angle.sin());
                         alpha::build_particle_sprite(
                             &mut commands,
-                            &mut meshes,
-                            &mut materials,
                             reactor::RunningParticle,
                             Some(particle.pos() + direction * particle.radius()),
                             Some(direction),
@@ -228,8 +224,6 @@ fn handle_particle_reaction(
     u_particle_query: Query<&Transform, With<reactor::ControlParticle>>,
     mut reactor_timer: ResMut<reactor::ReactorTimer>,
     mut painter_timer: ResMut<reactor::PainterTimer>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     time: Res<Time>,
     mut reactor_state: ResMut<NextState<reactor::ReactorState>>,
     settings: Res<Persistent<app::settings::Settings>>,
@@ -242,6 +236,12 @@ fn handle_particle_reaction(
         for (entity, particle) in particle_query.iter() {
             if commands.get_entity(entity).is_some() {
                 match particle.particle_type() {
+                    ParticleType::Uou => {
+                        uou::update_particle_sprite(&mut commands, particle);
+                    }
+                    ParticleType::Alpha => {
+                        alpha::update_particle_sprite(&mut commands, particle);
+                    }
                     ParticleType::Control => {
                         control::update_particle_sprite(&mut commands, particle);
                     }
@@ -251,7 +251,6 @@ fn handle_particle_reaction(
                     ParticleType::Trigger => {
                         trigger::update_particle_sprite(&mut commands, particle);
                     }
-                    _ => (),
                 }
             }
         }
@@ -283,8 +282,6 @@ fn handle_particle_reaction(
                                     let direction = Vec2::new(angle.cos(), angle.sin());
                                     alpha::build_particle_sprite(
                                         &mut commands,
-                                        &mut meshes,
-                                        &mut materials,
                                         reactor::RunningParticle,
                                         Some(p.pos() + direction * p.radius() * 3.0),
                                         Some(direction),
@@ -295,8 +292,6 @@ fn handle_particle_reaction(
                                 let direction = Particle::gen_random_direction();
                                 alpha::build_particle_sprite(
                                     &mut commands,
-                                    &mut meshes,
-                                    &mut materials,
                                     reactor::RunningParticle,
                                     Some(p.pos() + direction * p.radius() * 3.0),
                                     None,

@@ -26,7 +26,13 @@ pub fn detect_hit(
     }
     let mut hit_map: HashMap<Entity, HitAction> = HashMap::new();
     for (i, (e1, p1)) in particles.iter().enumerate() {
+        if !p1.borrow().is_activated() {
+            continue;
+        }
         for (j, (e2, p2)) in particles.iter().enumerate() {
+            if !p2.borrow().is_activated() {
+                continue;
+            }
             if j > i && is_hit(p1.borrow().as_ref(), p2.borrow().as_ref()) {
                 record_hit_action(
                     &mut hit_map,

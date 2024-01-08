@@ -1,5 +1,6 @@
 use crate::reactor;
 use bevy::prelude::*;
+use circular_queue::CircularQueue;
 use rand::{thread_rng, Rng};
 use std::fmt;
 
@@ -9,7 +10,6 @@ pub mod hyper;
 pub mod trigger;
 pub mod uou;
 
-const MOVING_TAILING_COUNT: usize = 3;
 const SIDE_THICKNESS: f32 = 2.0;
 
 #[derive(Component, Debug, PartialEq)]
@@ -32,9 +32,8 @@ pub struct Particle {
     level: u8,
     pos: Vec2,
     v: Vec2,
-    is_moving: bool,
-    tailings: [Vec2; MOVING_TAILING_COUNT],
     canvas_entity: Option<Entity>,
+    is_activated: bool,
 }
 
 pub trait ParticleAbility {
@@ -65,6 +64,10 @@ pub trait ParticleAbility {
             .normalize();
         v * rng.gen_range(self.min_v()..self.max_v())
     }
+    fn tailings(&self) -> Option<&CircularQueue<Vec2>> {
+        None
+    }
+    fn record_tailing(&mut self, _pos: Vec2) {}
 }
 
 impl Particle {
@@ -108,9 +111,8 @@ impl Particle {
             level,
             pos,
             v,
-            is_moving: true,
-            tailings: [pos; MOVING_TAILING_COUNT],
             canvas_entity,
+            is_activated: true,
         }
     }
     pub fn particle_type(&self) -> ParticleType {
@@ -137,20 +139,25 @@ impl Particle {
     pub fn level(&self) -> u8 {
         self.level
     }
-    pub fn tailings(&self) -> [Vec2; MOVING_TAILING_COUNT] {
-        self.tailings
+    pub fn tailings(&self) -> Option<&CircularQueue<Vec2>> {
+        self.ability.tailings()
     }
-    pub fn toggle_moving(&mut self) {
-        self.is_moving = !self.is_moving;
+    pub fn set_activation(&mut self, value: bool) {
+        self.is_activated = value;
+    }
+    pub fn is_activated(&self) -> bool {
+        self.is_activated
     }
     pub fn travel(&mut self) -> Vec2 {
         let ori_pos = self.pos;
         self.pos = Particle::next_pos(ori_pos, self.v, self.radius());
         self.v = Particle::next_v(ori_pos, self.v, self.radius());
+        self.ability.record_tailing(self.pos);
         self.pos
     }
     pub fn jump(&mut self, pos: Vec2) {
         self.pos = pos;
+        self.ability.record_tailing(self.pos);
     }
     pub fn update_level(&mut self, delta: i32) {
         let new_level = (self.level as i32 + delta).clamp(
@@ -208,6 +215,7 @@ impl Particle {
         }
         new_v
     }
+
     pub fn gen_random_direction() -> Vec2 {
         let mut rng = thread_rng();
         let angle = rng.gen_range(0.0..2.0 * std::f32::consts::PI);
@@ -222,7 +230,7 @@ impl fmt::Debug for Particle {
             .field("level", &self.level)
             .field("pos", &self.pos)
             .field("v", &self.v)
-            .field("is_moving", &self.is_moving)
+            .field("is_activated", &self.is_activated)
             .field("color", &self.color())
             .finish()
     }
