@@ -1,3 +1,7 @@
+# v2.1.0
+
+- (game) Support particle animation effect.
+
 # v2.0.2
 
 - (game) Fix UI blocking issue.
