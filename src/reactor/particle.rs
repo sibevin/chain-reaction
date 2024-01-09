@@ -1,5 +1,6 @@
 use crate::reactor;
 use bevy::prelude::*;
+use bevy_tweening::lens::*;
 use circular_queue::CircularQueue;
 use rand::{thread_rng, Rng};
 use std::fmt;
@@ -10,6 +11,8 @@ pub mod hyper;
 pub mod trigger;
 pub mod uou;
 
+pub const STARTING_DONE_EVENT: u64 = 0;
+pub const ENDING_DONE_EVENT: u64 = 1;
 const SIDE_THICKNESS: f32 = 2.0;
 
 #[derive(Component, Debug, PartialEq)]
@@ -21,6 +24,15 @@ pub enum ParticleType {
     Uou,
 }
 
+#[derive(Debug, PartialEq)]
+pub enum ParticleState {
+    Created,
+    Starting,
+    Running,
+    Ending,
+    Dead,
+}
+
 pub struct PosV {
     pub pos: Vec2,
     pub v: Vec2,
@@ -28,12 +40,15 @@ pub struct PosV {
 
 #[derive(Component)]
 pub struct Particle {
+    pub radius: f32,
+    pub color: Color,
+    pub state: ParticleState,
     ability: Box<dyn ParticleAbility + Send + Sync>,
     level: u8,
     pos: Vec2,
     v: Vec2,
-    canvas_entity: Option<Entity>,
-    is_activated: bool,
+    root_entity: Entity,
+    canvas_entity: Entity,
 }
 
 pub trait ParticleAbility {
@@ -68,6 +83,16 @@ pub trait ParticleAbility {
         None
     }
     fn record_tailing(&mut self, _pos: Vec2) {}
+    fn is_traveling(&self, _particle: &Particle) -> bool {
+        true
+    }
+    fn state_setup(&self, _commands: &mut Commands, _particle: &Particle) -> ParticleState {
+        ParticleState::Running
+    }
+    fn state_update(&self, _commands: &mut Commands, _particle: &Particle) {}
+    fn state_starting_done(&self, _commands: &mut Commands, _particle: &Particle) -> ParticleState {
+        ParticleState::Running
+    }
 }
 
 impl Particle {
@@ -76,22 +101,25 @@ impl Particle {
         pos: Vec2,
         direction: Option<Vec2>,
         level: Option<u8>,
-        canvas_entity: Option<Entity>,
+        root_entity: Entity,
+        canvas_entity: Entity,
     ) -> Self {
         match particle_type {
             ParticleType::Alpha => {
-                alpha::Ability::gen_particle(pos, direction, level, canvas_entity)
+                alpha::Ability::gen_particle(pos, direction, level, root_entity, canvas_entity)
             }
             ParticleType::Hyper => {
-                hyper::Ability::gen_particle(pos, direction, level, canvas_entity)
+                hyper::Ability::gen_particle(pos, direction, level, root_entity, canvas_entity)
             }
             ParticleType::Control => {
-                control::Ability::gen_particle(pos, direction, level, canvas_entity)
+                control::Ability::gen_particle(pos, direction, level, root_entity, canvas_entity)
             }
             ParticleType::Trigger => {
-                trigger::Ability::gen_particle(pos, direction, level, canvas_entity)
+                trigger::Ability::gen_particle(pos, direction, level, root_entity, canvas_entity)
             }
-            ParticleType::Uou => uou::Ability::gen_particle(pos, direction, level, canvas_entity),
+            ParticleType::Uou => {
+                uou::Ability::gen_particle(pos, direction, level, root_entity, canvas_entity)
+            }
         }
     }
     pub fn new(
@@ -99,30 +127,30 @@ impl Particle {
         pos: Vec2,
         direction: Option<Vec2>,
         level: Option<u8>,
-        canvas_entity: Option<Entity>,
+        root_entity: Entity,
+        canvas_entity: Entity,
     ) -> Self {
         let level = match level {
             Some(level) => level.clamp(ability.min_level(), ability.max_level()),
             None => ability.min_level(),
         };
+        let radius = ability.radius();
+        let color = ability.color();
         let v = ability.gen_random_v(direction);
         Self {
+            radius,
+            color,
             ability,
             level,
             pos,
             v,
+            root_entity,
             canvas_entity,
-            is_activated: true,
+            state: ParticleState::Created,
         }
     }
     pub fn particle_type(&self) -> ParticleType {
         self.ability.particle_type()
-    }
-    pub fn radius(&self) -> f32 {
-        self.ability.radius()
-    }
-    pub fn color(&self) -> Color {
-        self.ability.color()
     }
     pub fn pos(&self) -> Vec2 {
         self.pos
@@ -130,7 +158,10 @@ impl Particle {
     pub fn v(&self) -> Vec2 {
         self.v
     }
-    pub fn canvas_entity(&self) -> Option<Entity> {
+    pub fn root_entity(&self) -> Entity {
+        self.root_entity
+    }
+    pub fn canvas_entity(&self) -> Entity {
         self.canvas_entity
     }
     pub fn set_v(&mut self, v: Vec2) {
@@ -142,18 +173,15 @@ impl Particle {
     pub fn tailings(&self) -> Option<&CircularQueue<Vec2>> {
         self.ability.tailings()
     }
-    pub fn set_activation(&mut self, value: bool) {
-        self.is_activated = value;
-    }
-    pub fn is_activated(&self) -> bool {
-        self.is_activated
-    }
     pub fn travel(&mut self) -> Vec2 {
         let ori_pos = self.pos;
-        self.pos = Particle::next_pos(ori_pos, self.v, self.radius());
-        self.v = Particle::next_v(ori_pos, self.v, self.radius());
+        self.pos = Particle::next_pos(ori_pos, self.v, self.radius);
+        self.v = Particle::next_v(ori_pos, self.v, self.radius);
         self.ability.record_tailing(self.pos);
         self.pos
+    }
+    pub fn is_traveling(&self) -> bool {
+        self.ability.is_traveling(self)
     }
     pub fn jump(&mut self, pos: Vec2) {
         self.pos = pos;
@@ -183,6 +211,16 @@ impl Particle {
     }
     pub fn assign_random_v(&mut self, direction: Option<Vec2>) {
         self.v = self.ability.gen_random_v(direction);
+    }
+    pub fn state_setup(&mut self, commands: &mut Commands) {
+        self.state = self.ability.state_setup(commands, self);
+    }
+    pub fn state_update(&self, commands: &mut Commands) {
+        self.ability.state_update(commands, self);
+    }
+    pub fn state_starting_done(&mut self, commands: &mut Commands) {
+        self.state = self.ability.state_starting_done(commands, self);
+        self.reset_countdown();
     }
     fn next_pos(pos: Vec2, v: Vec2, r: f32) -> Vec2 {
         let field_rect = reactor::field::get_field_rect(0.0);
@@ -230,8 +268,24 @@ impl fmt::Debug for Particle {
             .field("level", &self.level)
             .field("pos", &self.pos)
             .field("v", &self.v)
-            .field("is_activated", &self.is_activated)
-            .field("color", &self.color())
+            .field("state", &self.state)
+            .field("color", &self.color)
             .finish()
+    }
+}
+
+struct ParticleAnimeLens {
+    start_radius: f32,
+    start_color_alpha: f32,
+    end_radius: f32,
+    end_color_alpha: f32,
+}
+
+impl Lens<Particle> for ParticleAnimeLens {
+    fn lerp(&mut self, target: &mut Particle, ratio: f32) {
+        target.radius = self.start_radius + (self.end_radius - self.start_radius) * ratio;
+        let color_alpha =
+            self.start_color_alpha + (self.end_color_alpha - self.start_color_alpha) * ratio;
+        target.color = target.color.with_a(color_alpha);
     }
 }

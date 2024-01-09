@@ -1,6 +1,7 @@
 use bevy::asset::AssetMetaCheck;
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
+use bevy_tweening::*;
 use bevy_ui_navigation::prelude::*;
 
 use chain_reaction::{app, page, reactor};
@@ -15,6 +16,7 @@ fn main() {
             app::init::InitPlugin,
             ShapePlugin,
             DefaultNavigationPlugins,
+            TweeningPlugin,
             app::settings::SettingsPlugin,
             app::leaderboard::LeaderboardPlugin,
             app::audio::AudioSeAssetPlugin,

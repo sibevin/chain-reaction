@@ -2,8 +2,10 @@ use crate::reactor::particle::*;
 use bevy::prelude::*;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
+use super::particle;
+
 pub fn is_hit(p1: &Particle, p2: &Particle) -> bool {
-    p1.pos().distance(p2.pos()) <= p1.radius() + p2.radius()
+    p1.pos().distance(p2.pos()) <= p1.radius + p2.radius
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -18,19 +20,19 @@ pub enum HitAction {
 type EntityParticle<'a> = (Rc<RefCell<Entity>>, Rc<RefCell<Mut<'a, Particle>>>);
 
 pub fn detect_hit(
-    particle_query: &mut Query<(Entity, &mut Particle), With<Particle>>,
+    particle_query: &mut Query<(Entity, &mut Particle, &mut Transform), With<Particle>>,
 ) -> HashMap<Entity, HitAction> {
     let mut particles: Vec<EntityParticle> = Vec::new();
-    for (e, p) in particle_query.iter_mut() {
+    for (e, p, _) in particle_query.iter_mut() {
         particles.push((Rc::new(RefCell::new(e)), Rc::new(RefCell::new(p))));
     }
     let mut hit_map: HashMap<Entity, HitAction> = HashMap::new();
     for (i, (e1, p1)) in particles.iter().enumerate() {
-        if !p1.borrow().is_activated() {
+        if p1.borrow().state != particle::ParticleState::Running {
             continue;
         }
         for (j, (e2, p2)) in particles.iter().enumerate() {
-            if !p2.borrow().is_activated() {
+            if p2.borrow().state != particle::ParticleState::Running {
                 continue;
             }
             if j > i && is_hit(p1.borrow().as_ref(), p2.borrow().as_ref()) {

@@ -7,7 +7,7 @@ const MIN_LEVEL: u8 = 1;
 const MAX_LEVEL: u8 = 5;
 const MIN_V: f32 = 0.0;
 const MAX_V: f32 = 0.0;
-const TAILING_SIZE: usize = 5;
+const TAILING_SIZE: usize = 10;
 const TAILING_WINDOW: u8 = 3;
 
 pub struct Ability {
@@ -20,7 +20,8 @@ impl Ability {
         pos: Vec2,
         direction: Option<Vec2>,
         level: Option<u8>,
-        canvas_entity: Option<Entity>,
+        root_entity: Entity,
+        canvas_entity: Entity,
     ) -> Particle {
         Particle::new(
             Box::new(Ability {
@@ -30,6 +31,7 @@ impl Ability {
             pos,
             direction,
             level,
+            root_entity,
             canvas_entity,
         )
     }
@@ -71,6 +73,15 @@ impl ParticleAbility for Ability {
             self.tailing_counter -= 1;
         }
     }
+    fn is_traveling(&self, _particle: &Particle) -> bool {
+        false
+    }
+    fn state_setup(&self, commands: &mut Commands, particle: &Particle) -> ParticleState {
+        setup_particle_running(commands, particle)
+    }
+    fn state_update(&self, commands: &mut Commands, particle: &Particle) {
+        update_particle_running(commands, particle);
+    }
 }
 
 pub fn build_particle_sprite(
@@ -84,7 +95,7 @@ pub fn build_particle_sprite(
         Some(pos) => pos,
         None => field::gen_random_pos_in_field(RADIUS * 2.0),
     };
-    let mut canvas_entity = None;
+    let mut canvas_entity: Entity = Entity::PLACEHOLDER;
     let root_entity = commands
         .spawn((
             SpriteBundle {
@@ -98,6 +109,32 @@ pub fn build_particle_sprite(
             bundle,
         ))
         .with_children(|parent| {
+            canvas_entity = parent
+                .spawn(SpriteBundle {
+                    transform: Transform::from_xyz(0.0, 0.0, 0.1),
+                    sprite: Sprite {
+                        color: COLOR,
+                        ..default()
+                    },
+                    ..default()
+                })
+                .id();
+        })
+        .id();
+    let particle = Particle::create(
+        ParticleType::Uou,
+        pos,
+        direction,
+        level,
+        root_entity,
+        canvas_entity,
+    );
+    commands.entity(root_entity).insert(particle);
+}
+
+pub fn setup_particle_running(commands: &mut Commands, particle: &Particle) -> ParticleState {
+    if let Some(mut entity_commands) = commands.get_entity(particle.root_entity()) {
+        entity_commands.with_children(|parent| {
             parent
                 .spawn(SpriteBundle {
                     transform: Transform::from_xyz(0.0, 0.0, 0.2),
@@ -120,38 +157,25 @@ pub fn build_particle_sprite(
                         Fill::color(COLOR),
                     ));
                 });
-            canvas_entity = Some(
-                parent
-                    .spawn(SpriteBundle {
-                        transform: Transform::from_xyz(0.0, 0.0, 0.1),
-                        sprite: Sprite {
-                            color: COLOR,
-                            ..default()
-                        },
-                        ..default()
-                    })
-                    .id(),
-            );
-        })
-        .id();
-    let particle = Particle::create(ParticleType::Uou, pos, direction, level, canvas_entity);
-    update_particle_sprite(commands, &particle);
-    commands.entity(root_entity).insert(particle);
+        });
+    }
+    ParticleState::Running
 }
 
-pub fn update_particle_sprite(commands: &mut Commands, particle: &Particle) {
-    if let Some(entity) = particle.canvas_entity() {
-        if let Some(mut entity_commands) = commands.get_entity(entity) {
-            entity_commands.despawn_descendants();
-            if let Some(tailings) = particle.tailings() {
-                entity_commands.with_children(|parent| {
+pub fn update_particle_running(commands: &mut Commands, particle: &Particle) {
+    if particle.state != ParticleState::Running {
+        return;
+    }
+    if let Some(mut entity_commands) = commands.get_entity(particle.canvas_entity()) {
+        entity_commands.despawn_descendants();
+        if let Some(tailings) = particle.tailings() {
+            entity_commands.with_children(|parent| {
+                let mut next_pos = Vec2::default();
+                for (i, tailing) in tailings.iter().enumerate() {
                     let mut path_builder = PathBuilder::new();
-                    let mut next_pos = Vec2::default();
-                    for tailing in tailings.iter() {
-                        path_builder.move_to(next_pos);
-                        next_pos = *tailing - particle.pos();
-                        path_builder.line_to(next_pos);
-                    }
+                    path_builder.move_to(next_pos);
+                    next_pos = *tailing - particle.pos();
+                    path_builder.line_to(next_pos);
                     parent.spawn((
                         ShapeBundle {
                             path: path_builder.build(),
@@ -161,12 +185,12 @@ pub fn update_particle_sprite(commands: &mut Commands, particle: &Particle) {
                             options: StrokeOptions::default()
                                 .with_end_cap(LineCap::Round)
                                 .with_start_cap(LineCap::Round)
-                                .with_line_width(RADIUS * 2.0),
-                            color: COLOR.with_l(0.1),
+                                .with_line_width(RADIUS * (2.0 - i as f32 * 0.2)),
+                            color: COLOR.with_l(0.3 - i as f32 * 0.03),
                         },
                     ));
-                });
-            }
+                }
+            });
         }
     }
 }

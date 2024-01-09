@@ -1,7 +1,9 @@
 use crate::reactor::{field, particle::*};
 use bevy_prototype_lyon::prelude::*;
+use bevy_tweening::*;
 use circular_queue::CircularQueue;
 use std::f32::consts::PI;
+use std::time::Duration;
 
 pub const RADIUS: f32 = 6.0;
 const MIN_LEVEL: u8 = 1;
@@ -24,7 +26,8 @@ impl Ability {
         pos: Vec2,
         direction: Option<Vec2>,
         level: Option<u8>,
-        canvas_entity: Option<Entity>,
+        root_entity: Entity,
+        canvas_entity: Entity,
     ) -> Particle {
         let level = level.unwrap_or(pick_random_alpha_level());
         let mut particle = Particle::new(
@@ -36,6 +39,7 @@ impl Ability {
             pos,
             direction,
             Some(level),
+            root_entity,
             canvas_entity,
         );
         particle.reset_countdown();
@@ -91,6 +95,16 @@ impl ParticleAbility for Ability {
             self.tailing_counter -= 1;
         }
     }
+    fn is_traveling(&self, particle: &Particle) -> bool {
+        particle.state == ParticleState::Running
+    }
+    fn state_setup(&self, commands: &mut Commands, particle: &Particle) -> ParticleState {
+        setup_particle_running(commands, particle)
+    }
+    fn state_update(&self, commands: &mut Commands, particle: &Particle) {
+        update_particle_running(commands, particle);
+        update_particle_ending(commands, particle);
+    }
 }
 
 pub fn build_particle_sprite(
@@ -104,7 +118,7 @@ pub fn build_particle_sprite(
         Some(pos) => pos,
         None => field::gen_random_pos_in_field(RADIUS * 2.0),
     };
-    let mut canvas_entity = None;
+    let mut canvas_entity: Entity = Entity::PLACEHOLDER;
     let root_entity = commands
         .spawn((
             SpriteBundle {
@@ -118,6 +132,32 @@ pub fn build_particle_sprite(
             bundle,
         ))
         .with_children(|parent| {
+            canvas_entity = parent
+                .spawn(SpriteBundle {
+                    transform: Transform::from_xyz(0.0, 0.0, 0.1),
+                    sprite: Sprite {
+                        color: COLOR,
+                        ..default()
+                    },
+                    ..default()
+                })
+                .id();
+        })
+        .id();
+    let particle = Particle::create(
+        ParticleType::Alpha,
+        pos,
+        direction,
+        level,
+        root_entity,
+        canvas_entity,
+    );
+    commands.entity(root_entity).insert(particle);
+}
+
+pub fn setup_particle_running(commands: &mut Commands, particle: &Particle) -> ParticleState {
+    if let Some(mut entity_commands) = commands.get_entity(particle.root_entity()) {
+        entity_commands.with_children(|parent| {
             parent
                 .spawn(SpriteBundle {
                     transform: Transform::from_xyz(0.0, 0.0, 0.2),
@@ -140,8 +180,7 @@ pub fn build_particle_sprite(
                         Fill::color(COLOR),
                     ));
                 });
-            let level = level.unwrap_or(pick_random_alpha_level());
-            if level > 1 {
+            if particle.level() > 1 {
                 parent
                     .spawn(SpriteBundle {
                         transform: Transform::from_xyz(0.0, 0.0, 0.3),
@@ -154,8 +193,9 @@ pub fn build_particle_sprite(
                     .with_children(|parent| {
                         let mut path_builder = PathBuilder::new();
 
-                        for i in 1..=level {
-                            let angle = PI * 2.0 * ((i - 1) as f32 + 0.25) / level as f32;
+                        for i in 1..=particle.level() {
+                            let angle =
+                                PI * 2.0 * ((i - 1) as f32 + 0.25) / particle.level() as f32;
                             path_builder.move_to(Vec2::default());
                             path_builder
                                 .line_to(Vec2::new(angle.cos(), angle.sin()) * RADIUS * 1.5);
@@ -170,54 +210,114 @@ pub fn build_particle_sprite(
                         ));
                     });
             }
-            canvas_entity = Some(
-                parent
-                    .spawn(SpriteBundle {
-                        transform: Transform::from_xyz(0.0, 0.0, 0.1),
-                        sprite: Sprite {
-                            color: COLOR,
-                            ..default()
-                        },
-                        ..default()
-                    })
-                    .id(),
-            );
-        })
-        .id();
-    let particle = Particle::create(ParticleType::Alpha, pos, direction, level, canvas_entity);
-    update_particle_sprite(commands, &particle);
-    commands.entity(root_entity).insert(particle);
+        });
+    }
+    ParticleState::Running
 }
 
-pub fn update_particle_sprite(commands: &mut Commands, particle: &Particle) {
-    if let Some(entity) = particle.canvas_entity() {
-        if let Some(mut entity_commands) = commands.get_entity(entity) {
-            entity_commands.despawn_descendants();
-            if let Some(tailings) = particle.tailings() {
-                entity_commands.with_children(|parent| {
-                    let mut path_builder = PathBuilder::new();
-                    let mut next_pos = Vec2::default();
-                    for tailing in tailings.iter() {
-                        path_builder.move_to(next_pos);
-                        next_pos = *tailing - particle.pos();
-                        path_builder.line_to(next_pos);
-                    }
+pub fn update_particle_running(commands: &mut Commands, particle: &Particle) {
+    if let Some(mut entity_commands) = commands.get_entity(particle.canvas_entity()) {
+        entity_commands.despawn_descendants();
+        if let Some(tailings) = particle.tailings() {
+            entity_commands.with_children(|parent| {
+                let mut path_builder = PathBuilder::new();
+                let mut next_pos = Vec2::default();
+                for tailing in tailings.iter() {
+                    path_builder.move_to(next_pos);
+                    next_pos = *tailing - particle.pos();
+                    path_builder.line_to(next_pos);
+                }
+                parent.spawn((
+                    ShapeBundle {
+                        path: path_builder.build(),
+                        ..default()
+                    },
+                    Stroke {
+                        options: StrokeOptions::default()
+                            .with_end_cap(LineCap::Round)
+                            .with_start_cap(LineCap::Round)
+                            .with_line_width(RADIUS * 2.0),
+                        color: COLOR.with_l(0.1),
+                    },
+                ));
+            });
+        }
+    }
+}
+
+pub fn setup_particle_ending(commands: &mut Commands, particle: &mut Particle) {
+    particle.state = ParticleState::Ending;
+    if let Some(mut entity_commands) = commands.get_entity(particle.root_entity()) {
+        entity_commands.despawn_descendants();
+        entity_commands.with_children(|parent| {
+            parent
+                .spawn(SpriteBundle {
+                    transform: Transform::from_xyz(0.0, 0.0, 0.1),
+                    sprite: Sprite {
+                        color: COLOR,
+                        ..default()
+                    },
+                    ..default()
+                })
+                .with_children(|parent| {
+                    let shape = shapes::Circle {
+                        radius: particle.radius,
+                        center: Vec2::new(0.0, 0.0),
+                    };
                     parent.spawn((
                         ShapeBundle {
-                            path: path_builder.build(),
+                            path: GeometryBuilder::build_as(&shape),
                             ..default()
                         },
-                        Stroke {
-                            options: StrokeOptions::default()
-                                .with_end_cap(LineCap::Round)
-                                .with_start_cap(LineCap::Round)
-                                .with_line_width(RADIUS * 2.0),
-                            color: COLOR.with_l(0.1),
-                        },
+                        Fill::color(particle.color),
                     ));
                 });
-            }
-        }
+        });
+        let tween = Tween::new(
+            EaseFunction::QuadraticIn,
+            Duration::from_millis(500),
+            ParticleAnimeLens {
+                start_radius: RADIUS,
+                start_color_alpha: 0.3,
+                end_radius: RADIUS * 3.0,
+                end_color_alpha: 0.0,
+            },
+        )
+        .with_completed_event(ENDING_DONE_EVENT);
+        entity_commands.insert(Animator::new(tween));
+    }
+}
+
+pub fn update_particle_ending(commands: &mut Commands, particle: &Particle) {
+    if particle.state != ParticleState::Ending {
+        return;
+    }
+    if let Some(mut entity_commands) = commands.get_entity(particle.root_entity()) {
+        entity_commands.despawn_descendants();
+        entity_commands.with_children(|parent| {
+            parent
+                .spawn(SpriteBundle {
+                    transform: Transform::from_xyz(0.0, 0.0, 0.1),
+                    sprite: Sprite {
+                        color: COLOR,
+                        ..default()
+                    },
+                    ..default()
+                })
+                .with_children(|parent| {
+                    let shape = shapes::Circle {
+                        radius: particle.radius,
+                        center: Vec2::new(0.0, 0.0),
+                    };
+                    parent.spawn((
+                        ShapeBundle {
+                            path: GeometryBuilder::build_as(&shape),
+                            ..default()
+                        },
+                        Fill::color(particle.color),
+                    ));
+                });
+        });
     }
 }
 

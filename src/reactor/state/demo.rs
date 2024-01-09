@@ -3,6 +3,8 @@ use crate::{
     reactor::{self, field, hit::*, particle::*, status},
 };
 use bevy::prelude::*;
+use bevy_tweening::*;
+use std::collections::HashSet;
 use std::f32::consts::PI;
 
 pub struct StatePlugin;
@@ -24,6 +26,7 @@ impl Plugin for StatePlugin {
                 field::update_reactor_fields,
                 field::update_target_fields,
                 handle_particle_reaction,
+                component_animator_system::<Particle>,
             )
                 .run_if(in_state(reactor::ReactorState::Demo)),
         )
@@ -63,9 +66,11 @@ fn state_action(
     if reactor_timer.0.tick(time.delta()).just_finished() {
         let alpha_count = status.fetch("alpha_count");
         for (mut transform, mut particle) in particle_query.iter_mut() {
-            let new_pos = (*particle).travel();
-            transform.translation.x = new_pos.x;
-            transform.translation.y = new_pos.y;
+            if particle.is_traveling() {
+                let new_pos = (*particle).travel();
+                transform.translation.x = new_pos.x;
+                transform.translation.y = new_pos.y;
+            }
             match particle.particle_type() {
                 ParticleType::Alpha => {
                     particle.tick_countdown();
@@ -73,7 +78,7 @@ fn state_action(
                 ParticleType::Hyper => {
                     if particle.tick_countdown() == 0 {
                         if alpha_count > 150 {
-                            let new_pos = field::gen_random_pos_in_field(particle.radius());
+                            let new_pos = field::gen_random_pos_in_field(particle.radius);
                             (*particle).jump(new_pos);
                             transform.translation.x = new_pos.x;
                             transform.translation.y = new_pos.y;
@@ -104,7 +109,7 @@ fn state_action(
                         alpha::build_particle_sprite(
                             &mut commands,
                             DemoParticle,
-                            Some(particle.pos() + direction * particle.radius()),
+                            Some(particle.pos() + direction * particle.radius),
                             Some(direction),
                             None,
                         );
@@ -118,39 +123,31 @@ fn state_action(
 
 fn handle_particle_reaction(
     mut commands: Commands,
-    mut particle_query: Query<(Entity, &mut Particle), With<Particle>>,
+    mut particle_query: Query<(Entity, &mut Particle, &mut Transform), With<Particle>>,
     mut reactor_timer: ResMut<reactor::ReactorTimer>,
     mut painter_timer: ResMut<reactor::PainterTimer>,
+    mut tween_completed_events: EventReader<TweenCompleted>,
     time: Res<Time>,
 ) {
     if painter_timer.0.tick(time.delta()).just_finished() {
-        for (_, particle) in particle_query.iter() {
-            match particle.particle_type() {
-                ParticleType::Alpha => {
-                    alpha::update_particle_sprite(&mut commands, particle);
-                }
-                ParticleType::Control => {
-                    control::update_particle_sprite(&mut commands, particle);
-                }
-                ParticleType::Hyper => {
-                    hyper::update_particle_sprite(&mut commands, particle);
-                }
-                ParticleType::Trigger => {
-                    trigger::update_particle_sprite(&mut commands, particle);
-                }
-                _ => (),
+        for (_, particle, _) in particle_query.iter() {
+            particle.state_update(&mut commands);
+        }
+        for (_, mut particle, _) in particle_query.iter_mut() {
+            if particle.state == ParticleState::Created {
+                particle.state_setup(&mut commands);
             }
         }
     }
     if reactor_timer.0.tick(time.delta()).just_finished() {
         let hit_map = detect_hit(&mut particle_query);
-        let mut killed_entities: Vec<Entity> = vec![];
-        for (e, mut p) in particle_query.iter_mut() {
+        let mut entities_to_despawn: HashSet<Entity> = HashSet::new();
+        for (e, mut p, _) in particle_query.iter_mut() {
             if let Some(action) = hit_map.get(&e) {
                 match p.particle_type() {
                     ParticleType::Alpha => match action {
                         HitAction::Kill => {
-                            killed_entities.push(e);
+                            alpha::setup_particle_ending(&mut commands, &mut p);
                         }
                         HitAction::Release(count) => {
                             p.reset_countdown();
@@ -161,7 +158,7 @@ fn handle_particle_reaction(
                                     alpha::build_particle_sprite(
                                         &mut commands,
                                         DemoParticle,
-                                        Some(p.pos() + direction * p.radius() * 3.0),
+                                        Some(p.pos() + direction * p.radius * 3.0),
                                         Some(direction),
                                         Some(1),
                                     );
@@ -175,7 +172,7 @@ fn handle_particle_reaction(
                                     None,
                                 );
                             }
-                            killed_entities.push(e);
+                            entities_to_despawn.insert(e);
                         }
                         HitAction::MoveOnly => {
                             p.reset_countdown();
@@ -187,12 +184,12 @@ fn handle_particle_reaction(
                         HitAction::AlphaHit(count) => {
                             for _ in 1..=*count {
                                 if p.tick_countdown() == 0 {
-                                    killed_entities.push(e);
+                                    control::setup_particle_ending(&mut commands, &mut p);
                                 }
                             }
                         }
                         HitAction::Kill => {
-                            killed_entities.push(e);
+                            control::setup_particle_ending(&mut commands, &mut p);
                         }
                         _ => (),
                     },
@@ -200,8 +197,22 @@ fn handle_particle_reaction(
                 }
             }
         }
-        for entity in killed_entities {
-            commands.entity(entity).despawn_recursive();
+        for tween_event in tween_completed_events.read() {
+            if tween_event.user_data == STARTING_DONE_EVENT {
+                for (e, mut p, _) in particle_query.iter_mut() {
+                    if e == tween_event.entity {
+                        p.state_starting_done(&mut commands);
+                    }
+                }
+            }
+            if tween_event.user_data == ENDING_DONE_EVENT {
+                entities_to_despawn.insert(tween_event.entity);
+            }
+        }
+        for entity in entities_to_despawn.iter() {
+            if let Some(entity_commands) = commands.get_entity(*entity) {
+                entity_commands.despawn_recursive()
+            }
         }
     }
 }
