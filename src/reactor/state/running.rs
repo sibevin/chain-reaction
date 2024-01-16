@@ -177,6 +177,7 @@ fn control_u_by_mouse(
     mut panel_query: Query<&Interaction, (With<Interaction>, With<GameControlPanel>)>,
     mut u_particle_query: Query<(&mut Particle, &mut Transform), With<reactor::ControlParticle>>,
     mut mouse_motion_events: EventReader<input::mouse::MouseMotion>,
+    keyboard_input: Res<Input<KeyCode>>,
     settings: Res<Persistent<app::settings::Settings>>,
 ) {
     for interaction in &mut panel_query {
@@ -187,7 +188,7 @@ fn control_u_by_mouse(
                 let new_pos = calculate_u_new_pos(
                     u_particle.pos(),
                     event.delta,
-                    settings.get_value("sensitivity"),
+                    current_sensitivity(&keyboard_input, &settings),
                 );
                 u_particle.jump(new_pos);
                 u_transform.translation.x = new_pos.x;
@@ -452,8 +453,23 @@ fn control_u_by_keyboard(
     {
         delta.x = KEYBOARD_DELTA_BIAS;
     }
-    let new_pos = calculate_u_new_pos(u_particle.pos(), delta, settings.get_value("sensitivity"));
+    let new_pos = calculate_u_new_pos(
+        u_particle.pos(),
+        delta,
+        current_sensitivity(&keyboard_input, &settings),
+    );
     u_particle.jump(new_pos);
     u_transform.translation.x = new_pos.x;
     u_transform.translation.y = new_pos.y;
+}
+
+fn current_sensitivity(
+    keyboard_input: &Res<Input<KeyCode>>,
+    settings: &Res<Persistent<app::settings::Settings>>,
+) -> u8 {
+    if keyboard_input.pressed(KeyCode::ShiftLeft) || keyboard_input.pressed(KeyCode::ShiftRight) {
+        settings.get_value("sensitivity_modified")
+    } else {
+        settings.get_value("sensitivity")
+    }
 }

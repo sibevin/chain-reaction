@@ -12,6 +12,7 @@ pub struct Settings {
     bgm_volume: u8,
     se_volume: u8,
     sensitivity: u8,
+    sensitivity_modified: u8,
     last_player: String,
 }
 
@@ -40,6 +41,7 @@ impl Settings {
                 "bgm" => self.bgm_volume = value as u8,
                 "se" => self.se_volume = value as u8,
                 "sensitivity" => self.sensitivity = value as u8,
+                "sensitivity_modified" => self.sensitivity_modified = value as u8,
                 _ => println!("Invalid field"),
             }
         }
@@ -49,6 +51,7 @@ impl Settings {
             "bgm" => self.bgm_volume,
             "se" => self.se_volume,
             "sensitivity" => self.sensitivity,
+            "sensitivity_modified" => self.sensitivity_modified,
             _ => 0,
         }
     }
@@ -69,6 +72,7 @@ impl Settings {
                 }
             }
             "sensitivity" => self.sensitivity,
+            "sensitivity_modified" => self.sensitivity_modified,
             _ => 0,
         }
     }
@@ -104,8 +108,11 @@ impl Plugin for SettingsPlugin {
                     se_volume: 50,
                     fullscreen_enabled: false,
                     sensitivity: 50,
+                    sensitivity_modified: 10,
                     last_player: String::from(""),
                 })
+                .revertible(true)
+                .revert_to_default_on_deserialization_errors(true)
                 .build()
                 .expect("failed to initialize variables"),
         );

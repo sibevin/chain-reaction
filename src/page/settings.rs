@@ -210,12 +210,92 @@ fn page_setup(
                                                 "Sensitivity",
                                                 "gauge-fill",
                                             );
-                                            build_slider_bar(
-                                                parent,
-                                                &asset_server,
-                                                ButtonAction::SetValue(String::from("sensitivity")),
-                                                settings.get_value("sensitivity"),
-                                            );
+                                            parent
+                                                .spawn(NodeBundle {
+                                                    style: Style {
+                                                        flex_direction: FlexDirection::Column,
+                                                        align_items: AlignItems::End,
+                                                        ..default()
+                                                    },
+                                                    ..default()
+                                                })
+                                                .with_children(|parent| {
+                                                    parent
+                                                        .spawn(NodeBundle {
+                                                            style: Style {
+                                                                align_items: AlignItems::Center,
+                                                                column_gap: app::ui::px_p(3.0),
+                                                                ..default()
+                                                            },
+                                                            ..default()
+                                                        })
+                                                        .with_children(|parent| {
+                                                            parent.spawn(TextBundle::from_section(
+                                                                "Default",
+                                                                TextStyle {
+                                                                    font: asset_server
+                                                                        .load(app::ui::FONT),
+                                                                    font_size: app::ui::FONT_SIZE,
+                                                                    color: app::ui::FG_COLOR,
+                                                                },
+                                                            ));
+                                                            build_slider_bar(
+                                                                parent,
+                                                                &asset_server,
+                                                                ButtonAction::SetValue(
+                                                                    String::from("sensitivity"),
+                                                                ),
+                                                                settings.get_value("sensitivity"),
+                                                            );
+                                                        });
+                                                    parent
+                                                        .spawn(NodeBundle {
+                                                            style: Style {
+                                                                align_items: AlignItems::Center,
+                                                                column_gap: app::ui::px_p(3.0),
+                                                                ..default()
+                                                            },
+                                                            ..default()
+                                                        })
+                                                        .with_children(|parent| {
+                                                            let icon = asset_server
+                                                        .load("images/icons/arrow-fat-up-fill.png");
+                                                            parent.spawn(ImageBundle {
+                                                                style: Style {
+                                                                    width: Val::Px(
+                                                                        app::ui::ICON_SIZE,
+                                                                    ),
+                                                                    height: Val::Px(
+                                                                        app::ui::ICON_SIZE,
+                                                                    ),
+                                                                    ..default()
+                                                                },
+                                                                image: UiImage::new(icon),
+                                                                ..default()
+                                                            });
+                                                            parent.spawn(TextBundle::from_section(
+                                                                "Shift",
+                                                                TextStyle {
+                                                                    font: asset_server
+                                                                        .load(app::ui::FONT),
+                                                                    font_size: app::ui::FONT_SIZE,
+                                                                    color: app::ui::FG_COLOR,
+                                                                },
+                                                            ));
+                                                            build_slider_bar(
+                                                                parent,
+                                                                &asset_server,
+                                                                ButtonAction::SetValue(
+                                                                    String::from(
+                                                                        "sensitivity_modified",
+                                                                    ),
+                                                                ),
+                                                                settings.get_value(
+                                                                    "sensitivity_modified",
+                                                                ),
+                                                            );
+                                                        });
+                                                });
                                             build_move_testing_panel(parent)
                                         });
                                 });
@@ -277,6 +357,7 @@ fn move_test_panel_action(
     mut panel_query: Query<(&Interaction, &Children), With<MoveTestPanel>>,
     mut ball_query: Query<&mut Style, With<MoveTestBall>>,
     mut mouse_motion_events: EventReader<input::mouse::MouseMotion>,
+    keyboard_input: Res<Input<KeyCode>>,
     settings: Res<Persistent<app::settings::Settings>>,
 ) {
     for (interaction, children) in &mut panel_query {
@@ -296,7 +377,7 @@ fn move_test_panel_action(
                 let new_pos = calculate_test_ball_pos(
                     (ori_x, ori_y),
                     event.delta,
-                    settings.get_value("sensitivity"),
+                    current_sensitivity(&keyboard_input, &settings),
                 );
                 ball_style.left = Val::Px(new_pos.0);
                 ball_style.top = Val::Px(new_pos.1);
@@ -500,6 +581,17 @@ fn calculate_test_ball_pos(current: (f32, f32), delta: Vec2, sensitivity: u8) ->
 
 const KEYBOARD_DELTA_BIAS: f32 = 1.5;
 
+fn current_sensitivity(
+    keyboard_input: &Res<Input<KeyCode>>,
+    settings: &Res<Persistent<app::settings::Settings>>,
+) -> u8 {
+    if keyboard_input.pressed(KeyCode::ShiftLeft) || keyboard_input.pressed(KeyCode::ShiftRight) {
+        settings.get_value("sensitivity_modified")
+    } else {
+        settings.get_value("sensitivity")
+    }
+}
+
 fn control_test_ball_by_keyboard(
     keyboard_input: Res<Input<KeyCode>>,
     panel_query: Query<(&Interaction, &Children), With<MoveTestPanel>>,
@@ -542,7 +634,11 @@ fn control_test_ball_by_keyboard(
         _ => 0.,
     };
 
-    let new_pos = calculate_test_ball_pos((ori_x, ori_y), delta, settings.get_value("sensitivity"));
+    let new_pos = calculate_test_ball_pos(
+        (ori_x, ori_y),
+        delta,
+        current_sensitivity(&keyboard_input, &settings),
+    );
     ball_style.left = Val::Px(new_pos.0);
     ball_style.top = Val::Px(new_pos.1);
 }
