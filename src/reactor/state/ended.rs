@@ -13,8 +13,10 @@ impl Plugin for StatePlugin {
         )
         .add_systems(
             Update,
-            handle_ui_navigation
-                .after(NavRequestSystem)
+            (
+                reactor::field_ach::update_ach_fields,
+                handle_ui_navigation.after(NavRequestSystem),
+            )
                 .run_if(in_state(reactor::ReactorState::Ended)),
         )
         .add_systems(
@@ -31,6 +33,7 @@ struct StateRootUi;
 enum ButtonAction {
     ReStart,
     Leaderboard,
+    Achievement,
     BackToMenu,
 }
 
@@ -160,6 +163,21 @@ fn state_setup(
                                 Some("Report"),
                                 Some("list-numbers"),
                             );
+                            app::ui::build_btn(
+                                parent,
+                                &asset_server,
+                                (
+                                    ButtonAction::Achievement,
+                                    app::interaction::IaButton,
+                                    Focusable::default(),
+                                ),
+                                Style {
+                                    padding: UiRect::all(app::ui::px_p(app::ui::BTN_PADDING)),
+                                    ..default()
+                                },
+                                Some("Markers"),
+                                Some("crosshair"),
+                            );
                         });
                 });
             app::ui::build_icon_btn(
@@ -197,6 +215,7 @@ fn handle_ui_navigation(
             ButtonAction::BackToMenu => game_state.set(app::GameState::Menu),
             ButtonAction::ReStart => reactor_state.set(reactor::ReactorState::Ready),
             ButtonAction::Leaderboard => game_state.set(app::GameState::Leaderboard),
+            ButtonAction::Achievement => game_state.set(app::GameState::Achievement),
         },
     );
 }

@@ -14,6 +14,7 @@ pub enum StatusChain {
 pub struct ReactorStatus {
     pub player_name: String,
     pub highlight_uid: String,
+    pub done_achievements: Vec<String>,
     current_chain: StatusChain,
     chain_length: u32,
     time: u32,
@@ -31,6 +32,8 @@ pub struct ReactorStatus {
     current_stopping_time: u32,
     total_stopping_time: u32,
     max_stopping_time: u32,
+    current_max_hyper_level: u32,
+    current_full_level_control_count: u32,
     u_pos: Vec2,
     started_at: String,
     ended_at: String,
@@ -128,6 +131,10 @@ impl ReactorStatus {
             "max_control_level" => self.max_control_level,
             "max_hyper_level" => self.max_hyper_level,
             "max_stopping_time" => self.max_stopping_time,
+            "current_stopping_time" => self.current_stopping_time,
+            "total_stopping_time" => self.total_stopping_time,
+            "current_max_hyper_level" => self.current_max_hyper_level,
+            "current_full_level_control_count" => self.current_full_level_control_count,
             _ => panic!("Invalid field"),
         }
     }
@@ -180,6 +187,12 @@ impl ReactorStatus {
         match field {
             "alpha_count" => {
                 self.alpha_count = value;
+            }
+            "current_max_hyper_level" => {
+                self.current_max_hyper_level = value;
+            }
+            "current_full_level_control_count" => {
+                self.current_full_level_control_count = value;
             }
             _ => panic!("Invalid field"),
         }

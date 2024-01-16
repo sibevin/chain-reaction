@@ -88,6 +88,53 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                             );
                         });
                     parent
+                        .spawn((
+                            ButtonBundle {
+                                style: Style {
+                                    width: Val::Px(
+                                        app::ui::MENU_ENTRY_W * 2.0 + app::ui::MENU_ENTRY_PADDING,
+                                    ),
+                                    justify_content: JustifyContent::SpaceBetween,
+                                    align_items: AlignItems::Center,
+                                    padding: UiRect::all(app::ui::px_p(4.0)),
+                                    margin: UiRect::bottom(Val::Px(app::ui::MENU_ENTRY_PADDING)),
+                                    ..default()
+                                },
+                                background_color: app::ui::BG_COLOR.into(),
+                                ..default()
+                            },
+                            ButtonAction::FirstRun,
+                            app::interaction::IaButton,
+                            Focusable::new().prioritized(),
+                        ))
+                        .with_children(|parent| {
+                            let icon = asset_server.load("images/icons/play-light.png");
+                            parent.spawn(ImageBundle {
+                                style: Style {
+                                    width: Val::Px(app::ui::ICON_SIZE * 1.6),
+                                    height: Val::Px(app::ui::ICON_SIZE * 1.6),
+                                    margin: UiRect::right(app::ui::px_p(3.0)),
+                                    ..default()
+                                },
+                                image: UiImage::new(icon),
+                                ..default()
+                            });
+                            parent.spawn(
+                                TextBundle::from_section(
+                                    "Start",
+                                    TextStyle {
+                                        font: asset_server.load(app::ui::FONT),
+                                        font_size: app::ui::FONT_SIZE * 1.6,
+                                        color: app::ui::FG_COLOR,
+                                    },
+                                )
+                                .with_style(Style {
+                                    margin: UiRect::right(app::ui::px_p(2.0)),
+                                    ..default()
+                                }),
+                            );
+                        });
+                    parent
                         .spawn(NodeBundle {
                             style: Style {
                                 align_items: AlignItems::Start,
@@ -112,17 +159,6 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         parent,
                                         &asset_server,
                                         (
-                                            ButtonAction::FirstRun,
-                                            app::interaction::IaButton,
-                                            Focusable::new().prioritized(),
-                                        ),
-                                        "Start",
-                                        "play-light",
-                                    );
-                                    app::ui::build_menu_entry(
-                                        parent,
-                                        &asset_server,
-                                        (
                                             ButtonAction::MoveToPage(app::GameState::Leaderboard),
                                             app::interaction::IaButton,
                                             Focusable::default(),
@@ -141,6 +177,17 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "Formula",
                                         "question-light",
                                     );
+                                    app::ui::build_menu_entry(
+                                        parent,
+                                        &asset_server,
+                                        (
+                                            ButtonAction::MoveToPage(app::GameState::About),
+                                            app::interaction::IaButton,
+                                            Focusable::default(),
+                                        ),
+                                        "References",
+                                        "star-light",
+                                    );
                                 });
                             parent
                                 .spawn(NodeBundle {
@@ -157,23 +204,23 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         parent,
                                         &asset_server,
                                         (
+                                            ButtonAction::MoveToPage(app::GameState::Achievement),
+                                            app::interaction::IaButton,
+                                            Focusable::default(),
+                                        ),
+                                        "Marks",
+                                        "crosshair",
+                                    );
+                                    app::ui::build_menu_entry(
+                                        parent,
+                                        &asset_server,
+                                        (
                                             ButtonAction::MoveToPage(app::GameState::Settings),
                                             app::interaction::IaButton,
                                             Focusable::default(),
                                         ),
                                         "Variables",
                                         "gear-light",
-                                    );
-                                    app::ui::build_menu_entry(
-                                        parent,
-                                        &asset_server,
-                                        (
-                                            ButtonAction::MoveToPage(app::GameState::About),
-                                            app::interaction::IaButton,
-                                            Focusable::default(),
-                                        ),
-                                        "References",
-                                        "star-light",
                                     );
                                     #[cfg(not(target_arch = "wasm32"))]
                                     {

@@ -4,12 +4,12 @@ use bevy_tweening::*;
 use std::f32::consts::TAU;
 use std::time::Duration;
 
+pub const COLOR: Color = Color::rgb(1.0, 0.39, 0.29);
 const MIN_LEVEL: u8 = 1;
 const MAX_LEVEL: u8 = 5;
 const MIN_V: f32 = 0.5;
 const MAX_V: f32 = 1.5;
 const RADIUS: f32 = 12.0;
-const COLOR: Color = Color::rgb(1.0, 0.39, 0.29);
 
 pub struct Ability {
     countdown: u32,

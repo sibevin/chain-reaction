@@ -2,7 +2,6 @@ use crate::app;
 use bevy::prelude::*;
 use bevy_ui_navigation::prelude::*;
 
-pub const MENU_W: f32 = 300.0;
 pub const FONT_SIZE: f32 = 32.0;
 pub const BTN_FS: f32 = FONT_SIZE;
 pub const SPACE_SIZE: f32 = FONT_SIZE / 10.0;
@@ -106,8 +105,8 @@ pub fn build_btn(
         .id()
 }
 
-const MENU_ENTRY_W: f32 = 280.0;
-const MENU_ENTRY_RATIO: f32 = 1.2;
+pub const MENU_ENTRY_W: f32 = 250.0;
+pub const MENU_ENTRY_RATIO: f32 = 1.2;
 
 pub fn build_menu_entry(
     parent: &mut ChildBuilder,

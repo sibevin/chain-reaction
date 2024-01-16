@@ -19,6 +19,7 @@ fn main() {
             TweeningPlugin,
             app::settings::SettingsPlugin,
             app::leaderboard::LeaderboardPlugin,
+            app::achievement::AchievementPlugin,
             app::audio::AudioSeAssetPlugin,
             app::key_binding::KeyBindingPlugin,
             reactor::ReactorPlugin,

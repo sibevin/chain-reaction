@@ -28,15 +28,21 @@ pub struct TargetValueField(String);
 #[derive(Component)]
 pub struct TargetBar(String);
 
+#[derive(Component)]
+pub struct ReactorAchRunning;
+
+#[derive(Component)]
+pub struct ReactorAchDone;
+
 type TargetRankFieldOnly = (With<TargetRankField>, Without<TargetValueField>);
 type TargetValueFieldOnly = (With<TargetValueField>, Without<TargetRankField>);
 
 pub fn get_field_rect(padding: f32) -> Rect {
     Rect::new(
         -reactor::FIELD_W / 2.0 + padding,
-        (-reactor::FIELD_H + reactor::FIELD_NAV_H) / 2.0 + padding,
+        (-reactor::FIELD_H + reactor::FIELD_NAV_H - reactor::FIELD_ACH_H) / 2.0 + padding,
         reactor::FIELD_W / 2.0 - padding,
-        (reactor::FIELD_H + reactor::FIELD_NAV_H) / 2.0 - padding,
+        (reactor::FIELD_H + reactor::FIELD_NAV_H - reactor::FIELD_ACH_H) / 2.0 - padding,
     )
 }
 
@@ -100,6 +106,29 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                 },))
                 .with_children(|parent| {
                     parent
+                        .spawn(NodeBundle {
+                            style: Style {
+                                height: Val::Px(reactor::FIELD_ACH_H),
+                                border: UiRect::bottom(app::ui::px_p(0.5)),
+                                align_items: AlignItems::Center,
+                                justify_content: JustifyContent::Start,
+                                padding: UiRect::left(app::ui::px_p(page::PAGE_PADDING)),
+                                ..default()
+                            },
+                            border_color: FIELD_COLOR.into(),
+                            ..default()
+                        })
+                        .with_children(|parent| {
+                            parent.spawn((TextBundle::from_section(
+                                "Chain Reaction",
+                                TextStyle {
+                                    font: asset_server.load(app::ui::FONT),
+                                    font_size: app::ui::FONT_SIZE * 3.0,
+                                    color: app::ui::MUTE_COLOR,
+                                },
+                            ),));
+                        });
+                    parent
                         .spawn((NodeBundle {
                             style: Style {
                                 flex_grow: 1.0,
@@ -108,8 +137,37 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                             ..default()
                         },))
                         .with_children(|parent| build_target_fields(parent, asset_server));
-
                     build_reactor_fields(parent, asset_server);
+                    parent.spawn((
+                        NodeBundle {
+                            style: Style {
+                                position_type: PositionType::Absolute,
+                                top: app::ui::px_p(page::PAGE_PADDING),
+                                right: app::ui::px_p(page::PAGE_PADDING),
+                                align_items: AlignItems::Start,
+                                justify_content: JustifyContent::Start,
+                                column_gap: app::ui::px_p(page::PAGE_PADDING),
+                                ..default()
+                            },
+                            ..default()
+                        },
+                        ReactorAchRunning,
+                    ));
+                    parent.spawn((
+                        NodeBundle {
+                            style: Style {
+                                position_type: PositionType::Absolute,
+                                top: app::ui::px_p(page::PAGE_PADDING),
+                                left: app::ui::px_p(page::PAGE_PADDING),
+                                align_items: AlignItems::Center,
+                                justify_content: JustifyContent::Start,
+                                column_gap: app::ui::px_p(3.0),
+                                ..default()
+                            },
+                            ..default()
+                        },
+                        ReactorAchDone,
+                    ));
                 });
         })
         .id()
@@ -373,6 +431,7 @@ pub fn update_reactor_fields(
     if reactor_timer.0.tick(time.delta()).just_finished() {
         let mut control_count = 0;
         let mut full_level_control_count = 0;
+        let mut current_max_hyper_level = 0;
         for particle in particle_query.iter() {
             if particle.particle_type() == reactor::particle::ParticleType::Control {
                 control_count += 1;
@@ -380,9 +439,16 @@ pub fn update_reactor_fields(
                     full_level_control_count += 1;
                 }
             }
+            if particle.particle_type() == reactor::particle::ParticleType::Hyper
+                && current_max_hyper_level < particle.level()
+            {
+                current_max_hyper_level = particle.level()
+            }
         }
         status.compare_and_update_max_field("control_count", control_count);
         status.compare_and_update_max_field("full_level_control_count", full_level_control_count);
+        status.update("current_full_level_control_count", full_level_control_count);
+        status.update("current_max_hyper_level", current_max_hyper_level.into());
         for (mut text, field) in reactor_fields_query.iter_mut() {
             match field.0.as_ref() {
                 "score" => {

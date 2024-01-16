@@ -17,6 +17,9 @@ pub struct IaSlider;
 #[derive(Component)]
 pub struct IaLink;
 
+#[derive(Component)]
+pub struct IaPanel;
+
 pub struct InteractionPlugin;
 
 impl Plugin for InteractionPlugin {
@@ -28,6 +31,7 @@ impl Plugin for InteractionPlugin {
                 update_switch_interaction,
                 update_slider_interaction,
                 update_link_interaction,
+                update_panel_interaction,
             )
                 .after(NavRequestSystem),
         );
@@ -87,6 +91,19 @@ fn update_link_interaction(mut focusables: Query<(&Focusable, &mut BorderColor),
             app::ui::FG_COLOR
         } else {
             app::ui::BG_COLOR
+        };
+        *color = new_color.into();
+    }
+}
+
+type FocusablePanel = (Changed<Focusable>, With<IaPanel>);
+
+fn update_panel_interaction(mut focusables: Query<(&Focusable, &mut BorderColor), FocusablePanel>) {
+    for (focus, mut color) in focusables.iter_mut() {
+        let new_color = if matches!(focus.state(), FocusState::Focused) {
+            app::ui::FG_COLOR
+        } else {
+            app::ui::MUTE_COLOR
         };
         *color = new_color.into();
     }

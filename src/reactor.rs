@@ -2,6 +2,7 @@ use crate::app;
 use bevy::prelude::*;
 
 pub mod field;
+pub mod field_ach;
 pub mod hit;
 pub mod particle;
 pub mod state;
@@ -66,9 +67,10 @@ pub struct RunningParticle;
 pub const U_SIZE: f32 = app::ui::SPACE_SIZE * 3.0;
 pub const U_COLOR: Color = Color::rgb(1.0, 0.84, 0.2);
 
+pub const FIELD_ACH_H: f32 = 120.0;
 pub const FIELD_NAV_H: f32 = 80.0;
 pub const FIELD_W: f32 = app::WINDOW_W;
-pub const FIELD_H: f32 = app::WINDOW_H - FIELD_NAV_H;
+pub const FIELD_H: f32 = app::WINDOW_H - FIELD_ACH_H - FIELD_NAV_H;
 
 pub fn startup(commands: &mut Commands, asset_server: &Res<AssetServer>) {
     field::build_reactor_field(commands, asset_server);

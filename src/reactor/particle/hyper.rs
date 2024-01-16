@@ -8,8 +8,8 @@ use std::f32::consts::{PI, TAU};
 use std::time::Duration;
 
 pub const COLOR: Color = Color::rgb(0.1, 0.56, 1.0);
+pub const MAX_LEVEL: u8 = 6;
 const MIN_LEVEL: u8 = 1;
-const MAX_LEVEL: u8 = 6;
 const MIN_V: f32 = 1.0;
 const MAX_V: f32 = 3.0;
 const RADIUS: f32 = 12.0;

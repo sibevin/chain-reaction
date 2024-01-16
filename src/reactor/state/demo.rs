@@ -1,6 +1,6 @@
 use crate::{
     app,
-    reactor::{self, field, hit::*, particle::*, status},
+    reactor::{self, field, field_ach, hit::*, particle::*, status},
 };
 use bevy::prelude::*;
 use bevy_tweening::*;
@@ -16,6 +16,7 @@ impl Plugin for StatePlugin {
             (
                 field::reset_reactor_fields,
                 field::reset_target_fields,
+                field_ach::reset_ach_fields,
                 state_setup,
             ),
         )

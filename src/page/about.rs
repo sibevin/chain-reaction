@@ -11,7 +11,7 @@ impl Plugin for PagePlugin {
         app.add_systems(OnEnter(app::GameState::About), page_setup)
             .add_systems(
                 Update,
-                handle_ui_navigation
+                (handle_ui_navigation, handle_hidden_button_click)
                     .after(NavRequestSystem)
                     .run_if(in_state(app::GameState::About)),
             )
@@ -26,6 +26,7 @@ struct OnPage;
 enum ButtonAction {
     BackToMainMenu,
     Link(String),
+    MoveToPage(app::GameState),
 }
 
 fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -77,7 +78,11 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                     app::ui::build_link(
                                         parent,
                                         &asset_server,
-                                        (),
+                                        (
+                                            Button,
+                                        Interaction::default(),
+                                        ButtonAction::MoveToPage(app::GameState::Dev)
+                                        ),
                                         env!("CARGO_PKG_VERSION"),
                                         None,
                                         "default",
@@ -303,6 +308,22 @@ fn handle_ui_navigation(
             ButtonAction::Link(url) => {
                 let _ = webbrowser::open(url);
             }
+            ButtonAction::MoveToPage(state) => game_state.set(*state),
         },
     );
+}
+
+type InteractionButtonCondition = (Changed<Interaction>, With<Button>);
+
+fn handle_hidden_button_click(
+    mut interaction_query: Query<(&Interaction, &ButtonAction), InteractionButtonCondition>,
+    mut game_state: ResMut<NextState<app::GameState>>,
+) {
+    for (interaction, action) in interaction_query.iter_mut() {
+        if *interaction == Interaction::Pressed {
+            if let ButtonAction::MoveToPage(state) = action {
+                game_state.set(*state)
+            };
+        }
+    }
 }

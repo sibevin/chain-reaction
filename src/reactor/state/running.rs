@@ -1,6 +1,6 @@
 use crate::{
     app,
-    reactor::{self, field, hit::*, particle::*, status},
+    reactor::{self, field, field_ach, hit::*, particle::*, status},
 };
 use bevy::{input, prelude::*};
 #[cfg(not(target_arch = "wasm32"))]
@@ -25,6 +25,7 @@ impl Plugin for StatePlugin {
                     move_particle,
                     field::update_reactor_fields,
                     field::update_target_fields,
+                    field_ach::update_ach_fields,
                     handle_particle_reaction,
                     component_animator_system::<Particle>,
                 )

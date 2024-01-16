@@ -2,7 +2,9 @@ use crate::app;
 use bevy::prelude::*;
 
 pub mod about;
+pub mod achievement;
 pub mod auto;
+pub mod dev;
 pub mod game;
 pub mod help;
 pub mod leaderboard;
@@ -21,6 +23,8 @@ impl Plugin for PagePlugin {
             help::PagePlugin,
             about::PagePlugin,
             auto::PagePlugin,
+            achievement::PagePlugin,
+            dev::PagePlugin,
         ));
     }
 }

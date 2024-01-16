@@ -98,6 +98,25 @@ fn build_result_panel(
                                 "max_hyper_chain",
                             );
                         });
+                    parent
+                        .spawn((NodeBundle {
+                            style: Style {
+                                align_items: AlignItems::Center,
+                                justify_content: JustifyContent::Center,
+                                column_gap: app::ui::px_p(2.0),
+                                ..default()
+                            },
+                            ..default()
+                        },))
+                        .with_children(|parent| {
+                            for ach_code in status.done_achievements.iter() {
+                                reactor::field_ach::build_ach_icon(
+                                    parent,
+                                    asset_server,
+                                    ach_code.as_str(),
+                                );
+                            }
+                        });
                 });
         });
 }

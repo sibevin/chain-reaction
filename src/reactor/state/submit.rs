@@ -15,6 +15,7 @@ impl Plugin for StatePlugin {
             Update,
             (
                 delay_ui_display,
+                reactor::field_ach::update_ach_fields,
                 handle_keybord_input,
                 handle_ui_navigation.after(NavRequestSystem),
             )

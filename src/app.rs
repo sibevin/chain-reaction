@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+pub mod achievement;
 pub mod audio;
 pub mod init;
 pub mod interaction;
@@ -19,6 +20,8 @@ pub enum GameState {
     Help,
     Leaderboard,
     Auto,
+    Achievement,
+    Dev,
 }
 
 pub const WINDOW_W: f32 = 1280.0;
