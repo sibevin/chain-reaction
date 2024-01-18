@@ -1,3 +1,8 @@
+# v3.0.0
+
+- (game) Support modified moving speed by holding shift.
+- (core) Implement achievement feature.
+
 # v2.1.0
 
 - (game) Support particle animation effect.
