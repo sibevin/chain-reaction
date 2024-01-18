@@ -2,13 +2,14 @@
 
 An action game to dodge chain recation particles.
 
-![Main Menu](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_01.png)
-![Gameplay](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_07.gif)
-![Gameplay](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_02.png)
-![Help](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_05.png)
-![Game Over](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_03.png)
-![Leaderboard](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_04.png)
-![Settings](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_06.png)
+![Main Menu](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_menu.png)
+![Gameplay](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_gameplay.gif)
+![Gameplay](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_gameplay.png)
+![Help](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_help.png)
+![Game Over](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_game_over.png)
+![Achievement](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_achievement.png)
+![Leaderboard](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_leaderboard.png)
+![Settings](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_settings.png)
 
 ## Links
 
