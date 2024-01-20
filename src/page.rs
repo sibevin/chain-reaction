@@ -152,7 +152,6 @@ pub fn build_sep_title(
                 width: Val::Px(SEP_W),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
-                margin: UiRect::vertical(app::ui::px_p(2.0)),
                 ..default()
             },
             ..default()

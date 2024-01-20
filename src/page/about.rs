@@ -59,6 +59,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 flex_grow: 1.0,
                                 align_items: AlignItems::Center,
                                 justify_content: JustifyContent::Center,
+                                padding: UiRect::top(app::ui::px_p(10.0)),
                                 ..default()
                             },
                             ..default()
@@ -274,6 +275,17 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                             "https://pixabay.com/sound-effects/glass-shatter-3-100155/"
                                         )),
                                         "Glass Shatter 3 - From Pixabay",
+                                        Some("globe-light"),
+                                        "default",
+                                        true
+                                    );
+                                    app::ui::build_link(
+                                        parent,
+                                        &asset_server,
+                                        ButtonAction::Link(String::from(
+                                            "https://pixabay.com/sound-effects/tada-military-3-183975/"
+                                        )),
+                                        "Tada Military 3 - By floraphonic",
                                         Some("globe-light"),
                                         "default",
                                         true

@@ -59,6 +59,8 @@ pub fn update_ach_fields(
     mut ap_dots_panels: Query<(Entity, &AchProgressDotsPanel), With<AchProgressDotsPanel>>,
     mut painter_timer: ResMut<reactor::PainterTimer>,
     time: Res<Time>,
+    settings: Res<Persistent<app::settings::Settings>>,
+    audio_se_asset: Res<app::audio::AudioSeAsset>,
 ) {
     if painter_timer.0.tick(time.delta()).just_finished() {
         for (mut text, ap_bar_text) in ap_bar_texts.iter_mut() {
@@ -106,6 +108,12 @@ pub fn update_ach_fields(
                     is_running_updated = true;
                 }
                 trigger_done_code = ach_info.push_to_done(ach_def.code());
+                app::audio::play_se(
+                    app::audio::AudioSe::Tada,
+                    &mut commands,
+                    &audio_se_asset,
+                    &settings,
+                );
             }
         }
     }
