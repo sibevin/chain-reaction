@@ -58,19 +58,10 @@ pub fn startup(
 }
 
 fn init_se_asset(audio_se_asset: &mut ResMut<AudioSeAsset>, asset_server: &Res<AssetServer>) {
-    audio_se_asset.set(AudioSe::Pop, asset_server.load("audio/se/pick-92276.ogg"));
-    audio_se_asset.set(
-        AudioSe::PowerUp,
-        asset_server.load("audio/se/item-pick-up-38258.ogg"),
-    );
-    audio_se_asset.set(
-        AudioSe::Boom,
-        asset_server.load("audio/se/heavy-cineamtic-hit-166888.ogg"),
-    );
-    audio_se_asset.set(
-        AudioSe::Hit,
-        asset_server.load("audio/se/glass-shatter-3-100155.ogg"),
-    );
+    audio_se_asset.set(AudioSe::Pop, asset_server.load("audio/se/erase.ogg"));
+    audio_se_asset.set(AudioSe::PowerUp, asset_server.load("audio/se/pick_up.ogg"));
+    audio_se_asset.set(AudioSe::Boom, asset_server.load("audio/se/game_over.ogg"));
+    audio_se_asset.set(AudioSe::Hit, asset_server.load("audio/se/break_parts.ogg"));
 }
 
 fn build_bgm(
@@ -80,9 +71,7 @@ fn build_bgm(
 ) {
     commands.spawn((
         AudioBundle {
-            source: asset_server.load(
-                "audio/bgm/synthetic-deception-loopable-epic-cyberpunk-crime-music-157454.ogg",
-            ),
+            source: asset_server.load("audio/bgm/main.ogg"),
             settings: PlaybackSettings {
                 mode: bevy::audio::PlaybackMode::Loop,
                 volume: Volume::Absolute(VolumeLevel::new(to_volume(settings.get_value("bgm")))),
