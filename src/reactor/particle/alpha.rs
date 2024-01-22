@@ -102,7 +102,6 @@ impl ParticleAbility for Ability {
         setup_particle_running(commands, particle)
     }
     fn state_update(&self, commands: &mut Commands, particle: &Particle) {
-        update_particle_running(commands, particle);
         update_particle_ending(commands, particle);
     }
 }
@@ -215,36 +214,6 @@ pub fn setup_particle_running(commands: &mut Commands, particle: &Particle) -> P
     ParticleState::Running
 }
 
-pub fn update_particle_running(commands: &mut Commands, particle: &Particle) {
-    if let Some(mut entity_commands) = commands.get_entity(particle.canvas_entity()) {
-        entity_commands.despawn_descendants();
-        if let Some(tailings) = particle.tailings() {
-            entity_commands.with_children(|parent| {
-                let mut path_builder = PathBuilder::new();
-                let mut next_pos = Vec2::default();
-                for tailing in tailings.iter() {
-                    path_builder.move_to(next_pos);
-                    next_pos = *tailing - particle.pos();
-                    path_builder.line_to(next_pos);
-                }
-                parent.spawn((
-                    ShapeBundle {
-                        path: path_builder.build(),
-                        ..default()
-                    },
-                    Stroke {
-                        options: StrokeOptions::default()
-                            .with_end_cap(LineCap::Round)
-                            .with_start_cap(LineCap::Round)
-                            .with_line_width(RADIUS * 2.0),
-                        color: COLOR.with_l(0.1),
-                    },
-                ));
-            });
-        }
-    }
-}
-
 pub fn setup_particle_ending(commands: &mut Commands, particle: &mut Particle) {
     particle.state = ParticleState::Ending;
     if let Some(mut entity_commands) = commands.get_entity(particle.root_entity()) {
@@ -279,7 +248,7 @@ pub fn setup_particle_ending(commands: &mut Commands, particle: &mut Particle) {
             ParticleAnimeLens {
                 start_radius: RADIUS,
                 start_color_alpha: 0.3,
-                end_radius: RADIUS * 3.0,
+                end_radius: RADIUS * 5.0,
                 end_color_alpha: 0.0,
             },
         )
