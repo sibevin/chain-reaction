@@ -1,3 +1,9 @@
+# v3.1.0
+
+- (game) Remove alpha tailing animation to increase running efficency.
+- (core) Add SE when an achievement is attained.
+- (core) Rename audio files to be more readable.
+
 # v3.0.0
 
 - (game) Support modified moving speed by holding shift.
