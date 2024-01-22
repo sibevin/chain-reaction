@@ -1,16 +1,31 @@
-use crate::{app, reactor};
-use bevy::prelude::*;
+use crate::{page::*, reactor};
 
-pub struct PagePlugin;
+const PAGE_CODE: &str = "game";
+const PAGE_NAME: &str = "Start";
+const PAGE_ICON: &str = "play-light";
 
-impl Plugin for PagePlugin {
+pub struct PageDef;
+
+impl PageDefBase for PageDef {
+    fn code(&self) -> &str {
+        PAGE_CODE
+    }
+    fn name(&self) -> &str {
+        PAGE_NAME
+    }
+    fn icon(&self) -> &str {
+        PAGE_ICON
+    }
+    fn state(&self) -> PageState {
+        PageState::Game
+    }
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(app::GameState::Game), page_setup)
-            .add_systems(OnExit(app::GameState::Game), page_exit);
+        app.add_systems(OnEnter(self.state()), page_enter)
+            .add_systems(OnExit(self.state()), page_exit);
     }
 }
 
-fn page_setup(mut reactor_state: ResMut<NextState<reactor::ReactorState>>) {
+fn page_enter(mut reactor_state: ResMut<NextState<reactor::ReactorState>>) {
     reactor_state.set(reactor::ReactorState::Ready);
 }
 

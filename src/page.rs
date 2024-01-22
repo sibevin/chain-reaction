@@ -11,22 +11,63 @@ pub mod leaderboard;
 pub mod menu;
 pub mod settings;
 
+#[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
+pub enum PageState {
+    #[default]
+    Menu,
+    Game,
+    Settings,
+    About,
+    Leaderboard,
+    Achievement,
+    Help,
+    Dev,
+    Auto,
+}
+
+pub trait PageDefBase {
+    fn code(&self) -> &str;
+    fn name(&self) -> &str;
+    fn icon(&self) -> &str;
+    fn state(&self) -> PageState;
+    fn build(&self, app: &mut App);
+}
+
+pub const PAGES: [&dyn PageDefBase; 9] = [
+    &menu::PageDef,
+    &game::PageDef,
+    &settings::PageDef,
+    &leaderboard::PageDef,
+    &achievement::PageDef,
+    &help::PageDef,
+    &about::PageDef,
+    &dev::PageDef,
+    &auto::PageDef,
+];
+
 pub struct PagePlugin;
 
 impl Plugin for PagePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((
-            menu::PagePlugin,
-            game::PagePlugin,
-            leaderboard::PagePlugin,
-            settings::PagePlugin,
-            help::PagePlugin,
-            about::PagePlugin,
-            auto::PagePlugin,
-            achievement::PagePlugin,
-            dev::PagePlugin,
-        ));
+        app.add_state::<PageState>();
+        for page_def in PAGES {
+            page_def.build(app);
+        }
     }
+}
+
+pub fn fetch_page_def(code: &str) -> &dyn PageDefBase {
+    for page_def in PAGES {
+        if page_def.code() == code {
+            return page_def;
+        }
+    }
+    panic!("Invalid page code")
+}
+
+pub fn fetch_page_icon_path(code: &str) -> String {
+    let page_def = fetch_page_def(code);
+    format!("images/icons/{}.png", page_def.icon())
 }
 
 pub const PAGE_PADDING: f32 = 6.0;

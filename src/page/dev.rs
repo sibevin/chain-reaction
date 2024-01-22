@@ -1,22 +1,38 @@
 use crate::{
     app::{self, ui::BG_COLOR},
-    page, reactor,
+    page::*,
+    reactor,
 };
-use bevy::prelude::*;
 use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 
-pub struct PagePlugin;
+const PAGE_CODE: &str = "dev";
+const PAGE_NAME: &str = "Dev";
+const PAGE_ICON: &str = "wrench";
 
-impl Plugin for PagePlugin {
+pub struct PageDef;
+
+impl PageDefBase for PageDef {
+    fn code(&self) -> &str {
+        PAGE_CODE
+    }
+    fn name(&self) -> &str {
+        PAGE_NAME
+    }
+    fn icon(&self) -> &str {
+        PAGE_ICON
+    }
+    fn state(&self) -> PageState {
+        PageState::Dev
+    }
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(app::GameState::Dev), page_setup)
+        app.add_systems(OnEnter(self.state()), page_enter)
             .add_systems(
                 Update,
                 handle_ui_navigation
                     .after(NavRequestSystem)
-                    .run_if(in_state(app::GameState::Dev)),
+                    .run_if(in_state(self.state())),
             )
-            .add_systems(OnExit(app::GameState::Dev), app::ui::despawn_ui::<OnPage>);
+            .add_systems(OnExit(self.state()), app::ui::despawn_ui::<OnPage>);
     }
 }
 
@@ -25,7 +41,7 @@ struct OnPage;
 
 #[derive(Component)]
 enum ButtonAction {
-    MoveToPage(app::GameState),
+    MoveToPage(PageState),
 }
 
 #[derive(Component)]
@@ -49,9 +65,9 @@ const COLORS: [Color; 9] = [
     reactor::particle::uou::COLOR,
 ];
 
-fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
-        .spawn((page::build_page_layout(), OnPage))
+        .spawn((build_page_layout(), OnPage))
         .with_children(|parent| {
             parent
                 .spawn(NodeBundle {
@@ -65,8 +81,8 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     ..default()
                 })
                 .with_children(|parent| {
-                    page::build_game_title(parent, &asset_server);
-                    page::build_page_title(parent, &asset_server, "Dev", "wrench");
+                    build_game_title(parent, &asset_server);
+                    build_page_title(parent, &asset_server, PAGE_NAME, PAGE_ICON);
                     parent
                         .spawn(NodeBundle {
                             style: Style {
@@ -80,7 +96,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                             ..default()
                         })
                         .with_children(|parent| {
-                            page::build_sep_title(parent, &asset_server, "Font", "text-aa-fill");
+                            build_sep_title(parent, &asset_server, "Font", "text-aa-fill");
                             parent.spawn(
                                 TextBundle::from_section(
                                     "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.-",
@@ -165,7 +181,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                     ..default()
                                 }),
                             );
-                            page::build_sep_title(parent, &asset_server, "Color", "palette-fill");
+                            build_sep_title(parent, &asset_server, "Color", "palette-fill");
                             parent
                                 .spawn(NodeBundle {
                                     style: Style {
@@ -244,14 +260,14 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 parent,
                 &asset_server,
                 (
-                    ButtonAction::MoveToPage(app::GameState::Menu),
+                    ButtonAction::MoveToPage(PageState::Menu),
                     app::interaction::IaButton,
                     Focusable::new().prioritized(),
                 ),
                 Style {
                     position_type: PositionType::Absolute,
-                    bottom: app::ui::px_p(page::PAGE_PADDING),
-                    left: app::ui::px_p(page::PAGE_PADDING),
+                    bottom: app::ui::px_p(PAGE_PADDING),
+                    left: app::ui::px_p(PAGE_PADDING),
                     ..default()
                 },
                 "arrow-left-light",
@@ -262,12 +278,12 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 fn handle_ui_navigation(
     mut actions: Query<&mut ButtonAction>,
     mut events: EventReader<NavEvent>,
-    mut game_state: ResMut<NextState<app::GameState>>,
+    mut page_state: ResMut<NextState<PageState>>,
 ) {
     events.nav_iter().activated_in_query_foreach_mut(
         &mut actions,
         |mut action| match &mut *action {
-            ButtonAction::MoveToPage(state) => game_state.set(*state),
+            ButtonAction::MoveToPage(state) => page_state.set(*state),
         },
     );
 }

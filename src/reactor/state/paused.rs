@@ -1,4 +1,4 @@
-use crate::{app, reactor};
+use crate::{app, page, reactor};
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::app::AppExit;
 use bevy::prelude::*;
@@ -146,7 +146,7 @@ fn state_exit(to_despawn: Query<Entity, With<StateRootUi>>, commands: Commands) 
 fn handle_ui_navigation(
     mut actions: Query<&mut ButtonAction>,
     mut events: EventReader<NavEvent>,
-    mut game_state: ResMut<NextState<app::GameState>>,
+    mut page_state: ResMut<NextState<page::PageState>>,
     mut reactor_state: ResMut<NextState<reactor::ReactorState>>,
     #[cfg(not(target_arch = "wasm32"))] mut app_exit_events: EventWriter<AppExit>,
 ) {
@@ -155,7 +155,7 @@ fn handle_ui_navigation(
         |mut action| match &mut *action {
             ButtonAction::Resume => reactor_state.set(reactor::ReactorState::Running),
             ButtonAction::ReStart => reactor_state.set(reactor::ReactorState::Ready),
-            ButtonAction::Abort => game_state.set(app::GameState::Menu),
+            ButtonAction::Abort => page_state.set(page::PageState::Menu),
             #[cfg(not(target_arch = "wasm32"))]
             ButtonAction::Quit => app_exit_events.send(AppExit),
         },

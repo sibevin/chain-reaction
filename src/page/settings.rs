@@ -1,14 +1,29 @@
-use bevy::{input, prelude::*, window::WindowMode};
+use crate::{app, page::*, reactor};
+use bevy::{input, window::WindowMode};
 use bevy_persistent::prelude::*;
 use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 
-use crate::{app, page, reactor};
+const PAGE_CODE: &str = "settings";
+const PAGE_NAME: &str = "Variables";
+const PAGE_ICON: &str = "gear-light";
 
-pub struct PagePlugin;
+pub struct PageDef;
 
-impl Plugin for PagePlugin {
+impl PageDefBase for PageDef {
+    fn code(&self) -> &str {
+        PAGE_CODE
+    }
+    fn name(&self) -> &str {
+        PAGE_NAME
+    }
+    fn icon(&self) -> &str {
+        PAGE_ICON
+    }
+    fn state(&self) -> PageState {
+        PageState::Settings
+    }
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(app::GameState::Settings), page_setup)
+        app.add_systems(OnEnter(self.state()), page_enter)
             .add_systems(
                 Update,
                 (
@@ -21,12 +36,9 @@ impl Plugin for PagePlugin {
                     )
                         .after(NavRequestSystem),
                 )
-                    .run_if(in_state(app::GameState::Settings)),
+                    .run_if(in_state(self.state())),
             )
-            .add_systems(
-                OnExit(app::GameState::Settings),
-                app::ui::despawn_ui::<OnPage>,
-            );
+            .add_systems(OnExit(self.state()), app::ui::despawn_ui::<OnPage>);
     }
 }
 
@@ -62,13 +74,13 @@ enum ButtonAction {
 type RangeBgBarOnly = (With<RangeBgBar>, Without<RangeValueBar>);
 type RangeValueBarOnly = (With<RangeValueBar>, Without<RangeBgBar>);
 
-fn page_setup(
+fn page_enter(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     settings: Res<Persistent<app::settings::Settings>>,
 ) {
     commands
-        .spawn((page::build_page_layout(), OnPage))
+        .spawn((build_page_layout(), OnPage))
         .with_children(|parent| {
             parent
                 .spawn(NodeBundle {
@@ -82,8 +94,8 @@ fn page_setup(
                     ..default()
                 })
                 .with_children(|parent| {
-                    page::build_game_title(parent, &asset_server);
-                    page::build_page_title(parent, &asset_server, "Variables", "gear-light");
+                    build_game_title(parent, &asset_server);
+                    build_page_title(parent, &asset_server, PAGE_NAME, PAGE_ICON);
                     parent
                         .spawn(NodeBundle {
                             style: Style {
@@ -118,7 +130,7 @@ fn page_setup(
                                             ..default()
                                         })
                                         .with_children(|parent| {
-                                            page::build_sep_title(
+                                            build_sep_title(
                                                 parent,
                                                 &asset_server,
                                                 "BGM",
@@ -136,7 +148,7 @@ fn page_setup(
                                                 ButtonAction::SetValue(String::from("bgm")),
                                                 settings.get_value("bgm"),
                                             );
-                                            page::build_sep_title(
+                                            build_sep_title(
                                                 parent,
                                                 &asset_server,
                                                 "SE",
@@ -178,7 +190,7 @@ fn page_setup(
                                                 });
                                             #[cfg(not(target_arch = "wasm32"))]
                                             {
-                                                page::build_sep_title(
+                                                build_sep_title(
                                                     parent,
                                                     &asset_server,
                                                     "Fullscreen",
@@ -204,7 +216,7 @@ fn page_setup(
                                             ..default()
                                         })
                                         .with_children(|parent| {
-                                            page::build_sep_title(
+                                            build_sep_title(
                                                 parent,
                                                 &asset_server,
                                                 "Sensitivity",
@@ -753,7 +765,7 @@ fn handle_ui_navigation(
     mut action_query: Query<(&mut ButtonAction, &Children), Without<app::interaction::IaSlider>>,
     mut events: EventReader<NavEvent>,
     mut commands: Commands,
-    mut game_state: ResMut<NextState<app::GameState>>,
+    mut page_state: ResMut<NextState<PageState>>,
     mut settings: ResMut<Persistent<app::settings::Settings>>,
     mut window_query: Query<&mut Window>,
     mut switch_icon_query: Query<(Entity, &mut UiImage), With<SwitchButtonIcon>>,
@@ -815,7 +827,7 @@ fn handle_ui_navigation(
                     settings.as_ref(),
                 );
             }
-            ButtonAction::BackToMainMenu => game_state.set(app::GameState::Menu),
+            ButtonAction::BackToMainMenu => page_state.set(PageState::Menu),
             _ => (),
         },
     );

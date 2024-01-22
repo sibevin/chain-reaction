@@ -1,20 +1,34 @@
-use bevy::prelude::*;
+use crate::{app, page::*};
 use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 
-use crate::{app, page};
+const PAGE_CODE: &str = "auto";
+const PAGE_NAME: &str = "Auto";
+const PAGE_ICON: &str = "arrow-left-light";
 
-pub struct PagePlugin;
+pub struct PageDef;
 
-impl Plugin for PagePlugin {
+impl PageDefBase for PageDef {
+    fn code(&self) -> &str {
+        PAGE_CODE
+    }
+    fn name(&self) -> &str {
+        PAGE_NAME
+    }
+    fn icon(&self) -> &str {
+        PAGE_ICON
+    }
+    fn state(&self) -> PageState {
+        PageState::Auto
+    }
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(app::GameState::Auto), page_setup)
+        app.add_systems(OnEnter(self.state()), page_enter)
             .add_systems(
                 Update,
                 handle_ui_navigation
                     .after(NavRequestSystem)
-                    .run_if(in_state(app::GameState::Auto)),
+                    .run_if(in_state(self.state())),
             )
-            .add_systems(OnExit(app::GameState::Auto), app::ui::despawn_ui::<OnPage>);
+            .add_systems(OnExit(self.state()), app::ui::despawn_ui::<OnPage>);
     }
 }
 
@@ -26,14 +40,14 @@ enum ButtonAction {
     BackToMainMenu,
 }
 
-fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn((
             NodeBundle {
                 style: Style {
                     width: Val::Percent(100.0),
                     height: Val::Percent(100.0),
-                    padding: UiRect::all(app::ui::px_p(page::PAGE_PADDING)),
+                    padding: UiRect::all(app::ui::px_p(PAGE_PADDING)),
                     ..default()
                 },
                 ..default()
@@ -51,8 +65,8 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 ),
                 Style {
                     position_type: PositionType::Absolute,
-                    bottom: app::ui::px_p(page::PAGE_PADDING),
-                    left: app::ui::px_p(page::PAGE_PADDING),
+                    bottom: app::ui::px_p(PAGE_PADDING),
+                    left: app::ui::px_p(PAGE_PADDING),
                     ..default()
                 },
                 "arrow-left-light",
@@ -63,12 +77,12 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 fn handle_ui_navigation(
     mut actions: Query<&mut ButtonAction>,
     mut events: EventReader<NavEvent>,
-    mut game_state: ResMut<NextState<app::GameState>>,
+    mut page_state: ResMut<NextState<PageState>>,
 ) {
     events.nav_iter().activated_in_query_foreach_mut(
         &mut actions,
         |mut action| match &mut *action {
-            ButtonAction::BackToMainMenu => game_state.set(app::GameState::Menu),
+            ButtonAction::BackToMainMenu => page_state.set(PageState::Menu),
         },
     );
 }

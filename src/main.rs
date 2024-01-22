@@ -10,7 +10,6 @@ fn main() {
     App::new()
         .insert_resource(ClearColor(app::ui::BG_COLOR))
         .insert_resource(AssetMetaCheck::Never)
-        .add_state::<app::GameState>()
         .add_systems(Startup, app::init::startup)
         .add_plugins((
             app::init::InitPlugin,

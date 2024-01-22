@@ -1,26 +1,35 @@
-use crate::{app, page, reactor};
-use bevy::prelude::*;
+use crate::{app, page::*};
 use bevy_persistent::prelude::*;
 use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 
-pub struct PagePlugin;
+pub const PAGE_CODE: &str = "achievement";
+pub const PAGE_NAME: &str = "Marks";
+pub const PAGE_ICON: &str = "crosshair";
 
-impl Plugin for PagePlugin {
+pub struct PageDef;
+
+impl PageDefBase for PageDef {
+    fn code(&self) -> &str {
+        PAGE_CODE
+    }
+    fn name(&self) -> &str {
+        PAGE_NAME
+    }
+    fn icon(&self) -> &str {
+        PAGE_ICON
+    }
+    fn state(&self) -> PageState {
+        PageState::Achievement
+    }
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(app::GameState::Achievement), page_setup)
+        app.add_systems(OnEnter(self.state()), page_enter)
             .add_systems(
                 Update,
                 handle_ui_navigation
                     .after(NavRequestSystem)
-                    .run_if(in_state(app::GameState::Achievement)),
+                    .run_if(in_state(self.state())),
             )
-            .add_systems(
-                OnExit(app::GameState::Achievement),
-                (
-                    reactor::field_ach::reset_ach_fields,
-                    app::ui::despawn_ui::<OnPage>,
-                ),
-            );
+            .add_systems(OnExit(self.state()), (app::ui::despawn_ui::<OnPage>,));
     }
 }
 
@@ -45,13 +54,13 @@ struct ScreenshotImage;
 #[derive(Component)]
 struct AchPanelIcon(String);
 
-fn page_setup(
+fn page_enter(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     achievement: Res<Persistent<app::achievement::AchievementStore>>,
 ) {
     commands
-        .spawn((page::build_page_layout(), OnPage))
+        .spawn((build_page_layout(), OnPage))
         .with_children(|parent| {
             parent
                 .spawn(NodeBundle {
@@ -65,8 +74,8 @@ fn page_setup(
                     ..default()
                 })
                 .with_children(|parent| {
-                    page::build_game_title(parent, &asset_server);
-                    page::build_page_title(parent, &asset_server, "Marks", "crosshair");
+                    build_game_title(parent, &asset_server);
+                    build_page_title(parent, &asset_server, "Marks", "crosshair");
                     parent
                         .spawn(NodeBundle {
                             style: Style {
@@ -119,8 +128,8 @@ fn page_setup(
                 ),
                 Style {
                     position_type: PositionType::Absolute,
-                    bottom: app::ui::px_p(page::PAGE_PADDING),
-                    left: app::ui::px_p(page::PAGE_PADDING),
+                    bottom: app::ui::px_p(PAGE_PADDING),
+                    left: app::ui::px_p(PAGE_PADDING),
                     ..default()
                 },
                 "arrow-left-light",
@@ -131,7 +140,7 @@ fn page_setup(
 fn handle_ui_navigation(
     mut actions: Query<&mut ButtonAction>,
     mut events: EventReader<NavEvent>,
-    mut game_state: ResMut<NextState<app::GameState>>,
+    mut page_state: ResMut<NextState<PageState>>,
     mut achievement: ResMut<Persistent<app::achievement::AchievementStore>>,
     mut ach_icon_query: Query<(&AchPanelIcon, &mut UiImage), With<AchPanelIcon>>,
     asset_server: Res<AssetServer>,
@@ -139,7 +148,7 @@ fn handle_ui_navigation(
     events.nav_iter().activated_in_query_foreach_mut(
         &mut actions,
         |mut action| match &mut *action {
-            ButtonAction::BackToMainMenu => game_state.set(app::GameState::Menu),
+            ButtonAction::BackToMainMenu => page_state.set(PageState::Menu),
             ButtonAction::TogglePin(code) => {
                 achievement
                     .update(|achievement| {

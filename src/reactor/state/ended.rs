@@ -1,4 +1,4 @@
-use crate::{app, reactor};
+use crate::{app, page, reactor};
 use bevy::prelude::*;
 use bevy_persistent::prelude::*;
 use bevy_ui_navigation::{prelude::*, NavRequestSystem};
@@ -206,16 +206,16 @@ fn state_exit(to_despawn: Query<Entity, With<StateRootUi>>, commands: Commands) 
 fn handle_ui_navigation(
     mut actions: Query<&mut ButtonAction>,
     mut events: EventReader<NavEvent>,
-    mut game_state: ResMut<NextState<app::GameState>>,
+    mut page_state: ResMut<NextState<page::PageState>>,
     mut reactor_state: ResMut<NextState<reactor::ReactorState>>,
 ) {
     events.nav_iter().activated_in_query_foreach_mut(
         &mut actions,
         |mut action| match &mut *action {
-            ButtonAction::BackToMenu => game_state.set(app::GameState::Menu),
+            ButtonAction::BackToMenu => page_state.set(page::PageState::Menu),
             ButtonAction::ReStart => reactor_state.set(reactor::ReactorState::Ready),
-            ButtonAction::Leaderboard => game_state.set(app::GameState::Leaderboard),
-            ButtonAction::Achievement => game_state.set(app::GameState::Achievement),
+            ButtonAction::Leaderboard => page_state.set(page::PageState::Leaderboard),
+            ButtonAction::Achievement => page_state.set(page::PageState::Achievement),
         },
     );
 }

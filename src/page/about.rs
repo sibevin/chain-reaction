@@ -1,21 +1,35 @@
-use bevy::prelude::*;
+use crate::{app, page::*};
 use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 use webbrowser;
 
-use crate::{app, page};
+const PAGE_CODE: &str = "about";
+const PAGE_NAME: &str = "References";
+const PAGE_ICON: &str = "star-light";
 
-pub struct PagePlugin;
+pub struct PageDef;
 
-impl Plugin for PagePlugin {
+impl PageDefBase for PageDef {
+    fn code(&self) -> &str {
+        PAGE_CODE
+    }
+    fn name(&self) -> &str {
+        PAGE_NAME
+    }
+    fn icon(&self) -> &str {
+        PAGE_ICON
+    }
+    fn state(&self) -> PageState {
+        PageState::About
+    }
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(app::GameState::About), page_setup)
+        app.add_systems(OnEnter(self.state()), page_enter)
             .add_systems(
                 Update,
                 (handle_ui_navigation, handle_hidden_button_click)
                     .after(NavRequestSystem)
-                    .run_if(in_state(app::GameState::About)),
+                    .run_if(in_state(self.state())),
             )
-            .add_systems(OnExit(app::GameState::About), app::ui::despawn_ui::<OnPage>);
+            .add_systems(OnExit(self.state()), app::ui::despawn_ui::<OnPage>);
     }
 }
 
@@ -24,14 +38,13 @@ struct OnPage;
 
 #[derive(Component)]
 enum ButtonAction {
-    BackToMainMenu,
     Link(String),
-    MoveToPage(app::GameState),
+    MoveToPage(PageState),
 }
 
-fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
-        .spawn((page::build_page_layout(), OnPage))
+        .spawn((build_page_layout(), OnPage))
         .with_children(|parent| {
             parent
                 .spawn(NodeBundle {
@@ -45,13 +58,8 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     ..default()
                 })
                 .with_children(|parent| {
-                    page::build_game_title(parent, &asset_server);
-                    page::build_page_title(
-                        parent,
-                        &asset_server,
-                        "References",
-                        "star-light",
-                    );
+                    build_game_title(parent, &asset_server);
+                    build_page_title(parent, &asset_server, PAGE_NAME, PAGE_ICON);
                     parent
                         .spawn(NodeBundle {
                             style: Style {
@@ -82,14 +90,14 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         (
                                             Button,
                                         Interaction::default(),
-                                        ButtonAction::MoveToPage(app::GameState::Dev)
+                                        ButtonAction::MoveToPage(PageState::Dev)
                                         ),
                                         env!("CARGO_PKG_VERSION"),
                                         None,
                                         "default",
                                         false
                                     );
-                                    page::build_sep_title(
+                                    build_sep_title(
                                         parent,
                                         &asset_server,
                                         "Link",
@@ -113,7 +121,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "default",
                                         true
                                     );
-                                    page::build_sep_title(
+                                    build_sep_title(
                                         parent,
                                         &asset_server,
                                         "Design",
@@ -128,7 +136,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "default",
                                         false
                                     );
-                                    page::build_sep_title(
+                                    build_sep_title(
                                         parent,
                                         &asset_server,
                                         "Programming",
@@ -143,7 +151,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "default",
                                         false
                                     );
-                                    page::build_sep_title(
+                                    build_sep_title(
                                         parent,
                                         &asset_server,
                                         "Art",
@@ -169,7 +177,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                     ..default()
                                 })
                                 .with_children(|parent| {
-                                    page::build_sep_title(
+                                    build_sep_title(
                                         parent,
                                         &asset_server,
                                         "Icon",
@@ -184,7 +192,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "default",
                                         true
                                     );
-                                    page::build_sep_title(
+                                    build_sep_title(
                                         parent,
                                         &asset_server,
                                         "Font",
@@ -217,7 +225,7 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         "hw",
                                         true
                                     );
-                                    page::build_sep_title(
+                                    build_sep_title(
                                         parent,
                                         &asset_server,
                                         "Audio",
@@ -296,11 +304,11 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 app::ui::build_icon_btn(
                     parent,
                     &asset_server,
-                    (ButtonAction::BackToMainMenu, app::interaction::IaButton,Focusable::new().prioritized()),
+                    (ButtonAction::MoveToPage(PageState::Menu), app::interaction::IaButton,Focusable::new().prioritized()),
                     Style {
                         position_type: PositionType::Absolute,
-                        bottom: app::ui::px_p(page::PAGE_PADDING),
-                        left: app::ui::px_p(page::PAGE_PADDING),
+                        bottom: app::ui::px_p(PAGE_PADDING),
+                        left: app::ui::px_p(PAGE_PADDING),
                         ..default()
                     },
                     "arrow-left-light",
@@ -311,16 +319,15 @@ fn page_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 fn handle_ui_navigation(
     mut actions: Query<&mut ButtonAction>,
     mut events: EventReader<NavEvent>,
-    mut game_state: ResMut<NextState<app::GameState>>,
+    mut page_state: ResMut<NextState<PageState>>,
 ) {
     events.nav_iter().activated_in_query_foreach_mut(
         &mut actions,
         |mut action| match &mut *action {
-            ButtonAction::BackToMainMenu => game_state.set(app::GameState::Menu),
             ButtonAction::Link(url) => {
                 let _ = webbrowser::open(url);
             }
-            ButtonAction::MoveToPage(state) => game_state.set(*state),
+            ButtonAction::MoveToPage(state) => page_state.set(*state),
         },
     );
 }
@@ -329,12 +336,12 @@ type InteractionButtonCondition = (Changed<Interaction>, With<Button>);
 
 fn handle_hidden_button_click(
     mut interaction_query: Query<(&Interaction, &ButtonAction), InteractionButtonCondition>,
-    mut game_state: ResMut<NextState<app::GameState>>,
+    mut page_state: ResMut<NextState<PageState>>,
 ) {
     for (interaction, action) in interaction_query.iter_mut() {
         if *interaction == Interaction::Pressed {
             if let ButtonAction::MoveToPage(state) = action {
-                game_state.set(*state)
+                page_state.set(*state)
             };
         }
     }

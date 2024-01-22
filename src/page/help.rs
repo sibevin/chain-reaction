@@ -1,21 +1,35 @@
-use bevy::prelude::*;
+use crate::{app, page::*};
 use bevy_persistent::prelude::*;
 use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 
-use crate::{app, page};
+const PAGE_CODE: &str = "help";
+const PAGE_NAME: &str = "Formula";
+const PAGE_ICON: &str = "question-light";
 
-pub struct PagePlugin;
+pub struct PageDef;
 
-impl Plugin for PagePlugin {
+impl PageDefBase for PageDef {
+    fn code(&self) -> &str {
+        PAGE_CODE
+    }
+    fn name(&self) -> &str {
+        PAGE_NAME
+    }
+    fn icon(&self) -> &str {
+        PAGE_ICON
+    }
+    fn state(&self) -> PageState {
+        PageState::Help
+    }
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(app::GameState::Help), page_setup)
+        app.add_systems(OnEnter(self.state()), page_enter)
             .add_systems(
                 Update,
                 handle_ui_navigation
                     .after(NavRequestSystem)
-                    .run_if(in_state(app::GameState::Help)),
+                    .run_if(in_state(self.state())),
             )
-            .add_systems(OnExit(app::GameState::Help), app::ui::despawn_ui::<OnPage>);
+            .add_systems(OnExit(self.state()), app::ui::despawn_ui::<OnPage>);
     }
 }
 
@@ -36,7 +50,7 @@ enum ButtonAction {
     Start,
 }
 
-fn page_setup(
+fn page_enter(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut settings: ResMut<Persistent<app::settings::Settings>>,
@@ -49,7 +63,7 @@ fn page_setup(
             .expect("failed to update first run in help");
     }
     commands
-        .spawn((page::build_page_layout(), OnPage))
+        .spawn((build_page_layout(), OnPage))
         .with_children(|parent| {
             parent
                 .spawn(NodeBundle {
@@ -63,8 +77,8 @@ fn page_setup(
                     ..default()
                 })
                 .with_children(|parent| {
-                    page::build_game_title(parent, &asset_server);
-                    page::build_page_title(parent, &asset_server, "Formula", "question-light");
+                    build_game_title(parent, &asset_server);
+                    build_page_title(parent, &asset_server, PAGE_NAME, PAGE_ICON);
                     parent
                         .spawn(NodeBundle {
                             style: Style {
@@ -127,8 +141,8 @@ fn page_setup(
                 ),
                 Style {
                     position_type: PositionType::Absolute,
-                    bottom: app::ui::px_p(page::PAGE_PADDING),
-                    left: app::ui::px_p(page::PAGE_PADDING),
+                    bottom: app::ui::px_p(PAGE_PADDING),
+                    left: app::ui::px_p(PAGE_PADDING),
                     ..default()
                 },
                 "arrow-left-light",
@@ -143,8 +157,8 @@ fn page_setup(
                 ),
                 Style {
                     position_type: PositionType::Absolute,
-                    bottom: app::ui::px_p(page::PAGE_PADDING),
-                    right: app::ui::px_p(page::PAGE_PADDING),
+                    bottom: app::ui::px_p(PAGE_PADDING),
+                    right: app::ui::px_p(PAGE_PADDING),
                     padding: UiRect::all(app::ui::px_p(app::ui::BTN_PADDING)),
                     ..default()
                 },
@@ -157,7 +171,7 @@ fn page_setup(
 fn handle_ui_navigation(
     mut actions: Query<&mut ButtonAction>,
     mut events: EventReader<NavEvent>,
-    mut game_state: ResMut<NextState<app::GameState>>,
+    mut page_state: ResMut<NextState<PageState>>,
     mut help_panel_query: Query<(&mut HelpPanel, &mut UiImage), With<HelpPanel>>,
     mut help_dot_query: Query<(&HelpDot, &mut BackgroundColor), With<HelpDot>>,
     asset_server: Res<AssetServer>,
@@ -165,7 +179,7 @@ fn handle_ui_navigation(
     events.nav_iter().activated_in_query_foreach_mut(
         &mut actions,
         |mut action| match &mut *action {
-            ButtonAction::BackToMainMenu => game_state.set(app::GameState::Menu),
+            ButtonAction::BackToMainMenu => page_state.set(PageState::Menu),
             ButtonAction::PrevHelp => {
                 let (mut help_panel, mut image) = help_panel_query.single_mut();
                 let prev_help = (help_panel.0 + HELP_COUNT - 1) % HELP_COUNT;
@@ -196,7 +210,7 @@ fn handle_ui_navigation(
                     }
                 }
             }
-            ButtonAction::Start => game_state.set(app::GameState::Game),
+            ButtonAction::Start => page_state.set(PageState::Game),
         },
     );
 }
