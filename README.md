@@ -2,8 +2,9 @@
 
 An action game to dodge chain recation particles.
 
-![Main Menu](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_menu.png)
+![Cover](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_cover_1280x720.png)
 ![Gameplay](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_gameplay.gif)
+![Main Menu](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_menu.png)
 ![Gameplay](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_gameplay.png)
 ![Help](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_help.png)
 ![Game Over](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_game_over.png)
