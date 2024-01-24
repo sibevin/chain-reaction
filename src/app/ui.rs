@@ -9,6 +9,7 @@ pub const BORDER_W: f32 = SPACE_SIZE * 1.0;
 pub const ICON_SIZE: f32 = FONT_SIZE * 0.8;
 pub const BTN_PADDING: f32 = 5.0;
 pub const MENU_ENTRY_PADDING: f32 = 16.0;
+pub const PAGE_PADDING: f32 = 6.0;
 
 pub const BG_COLOR: Color = Color::BLACK;
 pub const FG_COLOR: Color = Color::rgb(0.9, 0.9, 0.9);

@@ -47,7 +47,7 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                 style: Style {
                     width: Val::Percent(100.0),
                     height: Val::Percent(100.0),
-                    padding: UiRect::all(app::ui::px_p(PAGE_PADDING)),
+                    padding: UiRect::all(app::ui::px_p(app::ui::PAGE_PADDING)),
                     ..default()
                 },
                 ..default()
@@ -65,8 +65,8 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                 ),
                 Style {
                     position_type: PositionType::Absolute,
-                    bottom: app::ui::px_p(PAGE_PADDING),
-                    left: app::ui::px_p(PAGE_PADDING),
+                    bottom: app::ui::px_p(app::ui::PAGE_PADDING),
+                    left: app::ui::px_p(app::ui::PAGE_PADDING),
                     ..default()
                 },
                 "arrow-left-light",

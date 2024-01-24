@@ -307,8 +307,8 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                     (ButtonAction::MoveToPage(PageState::Menu), app::interaction::IaButton,Focusable::new().prioritized()),
                     Style {
                         position_type: PositionType::Absolute,
-                        bottom: app::ui::px_p(PAGE_PADDING),
-                        left: app::ui::px_p(PAGE_PADDING),
+                        bottom: app::ui::px_p(app::ui::PAGE_PADDING),
+                        left: app::ui::px_p(app::ui::PAGE_PADDING),
                         ..default()
                     },
                     "arrow-left-light",

@@ -1,4 +1,4 @@
-use crate::{app, page, reactor};
+use crate::{app, reactor};
 use bevy::prelude::*;
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::{render::view::window::screenshot::ScreenshotManager, window::PrimaryWindow};
@@ -112,7 +112,7 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                                 border: UiRect::bottom(app::ui::px_p(0.5)),
                                 align_items: AlignItems::Center,
                                 justify_content: JustifyContent::Start,
-                                padding: UiRect::left(app::ui::px_p(page::PAGE_PADDING)),
+                                padding: UiRect::left(app::ui::px_p(app::ui::PAGE_PADDING)),
                                 ..default()
                             },
                             border_color: FIELD_COLOR.into(),
@@ -142,11 +142,11 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                         NodeBundle {
                             style: Style {
                                 position_type: PositionType::Absolute,
-                                top: app::ui::px_p(page::PAGE_PADDING),
-                                right: app::ui::px_p(page::PAGE_PADDING),
+                                top: app::ui::px_p(app::ui::PAGE_PADDING),
+                                right: app::ui::px_p(app::ui::PAGE_PADDING),
                                 align_items: AlignItems::Start,
                                 justify_content: JustifyContent::Start,
-                                column_gap: app::ui::px_p(page::PAGE_PADDING),
+                                column_gap: app::ui::px_p(app::ui::PAGE_PADDING),
                                 ..default()
                             },
                             ..default()
@@ -157,8 +157,8 @@ pub fn build_reactor_field(commands: &mut Commands, asset_server: &Res<AssetServ
                         NodeBundle {
                             style: Style {
                                 position_type: PositionType::Absolute,
-                                top: app::ui::px_p(page::PAGE_PADDING),
-                                left: app::ui::px_p(page::PAGE_PADDING),
+                                top: app::ui::px_p(app::ui::PAGE_PADDING),
+                                left: app::ui::px_p(app::ui::PAGE_PADDING),
                                 align_items: AlignItems::Center,
                                 justify_content: JustifyContent::Start,
                                 column_gap: app::ui::px_p(3.0),
@@ -178,8 +178,8 @@ fn build_target_fields(parent: &mut ChildBuilder, asset_server: &Res<AssetServer
         .spawn(NodeBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                left: app::ui::px_p(page::PAGE_PADDING),
-                right: app::ui::px_p(page::PAGE_PADDING),
+                left: app::ui::px_p(app::ui::PAGE_PADDING),
+                right: app::ui::px_p(app::ui::PAGE_PADDING),
                 bottom: Val::Px(0.0),
                 padding: UiRect::bottom(app::ui::px_p(4.0)),
                 align_items: AlignItems::Center,

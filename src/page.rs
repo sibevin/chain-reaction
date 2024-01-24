@@ -70,7 +70,6 @@ pub fn fetch_page_icon_path(code: &str) -> String {
     format!("images/icons/{}.png", page_def.icon())
 }
 
-pub const PAGE_PADDING: f32 = 6.0;
 const PAGE_TITLE_RATIO: f32 = 1.2;
 const SEP_W: f32 = 500.0;
 
@@ -79,7 +78,7 @@ pub fn build_page_layout() -> NodeBundle {
         style: Style {
             width: Val::Percent(100.0),
             height: Val::Percent(100.0),
-            padding: UiRect::all(app::ui::px_p(PAGE_PADDING)),
+            padding: UiRect::all(app::ui::px_p(app::ui::PAGE_PADDING)),
             ..default()
         },
         background_color: app::ui::COVER_COLOR.into(),
