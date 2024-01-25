@@ -1,3 +1,8 @@
+# v3.2.0
+
+- (game) Implement animation effect to show more cool animations.
+- (core) Refine code base. Change GameState to PageState, it makes more sense.
+
 # v3.1.0
 
 - (game) Remove alpha tailing animation to increase running efficency.
