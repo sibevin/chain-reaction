@@ -181,6 +181,7 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                                     page_def.icon(),
                                 );
                             }
+                            #[cfg(not(target_arch = "wasm32"))]
                             app::ui::build_menu_entry(
                                 parent,
                                 &asset_server,
