@@ -1,6 +1,7 @@
 use crate::app;
 use bevy::prelude::*;
 
+pub mod anime_effect;
 pub mod field;
 pub mod field_ach;
 pub mod hit;

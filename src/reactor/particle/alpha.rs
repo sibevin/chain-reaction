@@ -290,7 +290,7 @@ pub fn update_particle_ending(commands: &mut Commands, particle: &Particle) {
     }
 }
 
-fn pick_random_alpha_level() -> u8 {
+pub fn pick_random_alpha_level() -> u8 {
     let mut rng = thread_rng();
     let pick = rng.gen_range(0.0..100.0);
     if (0.0..=50.0).contains(&pick) {

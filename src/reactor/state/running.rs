@@ -1,6 +1,6 @@
 use crate::{
     app,
-    reactor::{self, field, field_ach, hit::*, particle::*, status},
+    reactor::{self, anime_effect::*, field, field_ach, hit::*, particle::*, status},
 };
 use bevy::{input, prelude::*};
 #[cfg(not(target_arch = "wasm32"))]
@@ -28,6 +28,7 @@ impl Plugin for StatePlugin {
                     field_ach::update_ach_fields,
                     handle_particle_reaction,
                     component_animator_system::<Particle>,
+                    component_animator_system::<AnimeEffect>,
                 )
                     .run_if(in_state(reactor::ReactorState::Running)),
             )
@@ -157,13 +158,21 @@ fn move_particle(
                             let (_, _, angle) = transform.rotation.to_euler(EulerRot::XYZ);
                             let angle = angle + std::f32::consts::PI * 0.5;
                             let direction = Vec2::new(angle.cos(), angle.sin());
+                            let level = alpha::pick_random_alpha_level();
                             alpha::build_particle_sprite(
                                 &mut commands,
                                 reactor::RunningParticle,
                                 Some(particle.pos() + direction * particle.radius),
                                 Some(direction),
-                                None,
+                                Some(level),
                             );
+                            if level > 2 {
+                                insert_anime_effect(
+                                    &mut commands,
+                                    AnimeEffectType::Triangle,
+                                    particle.pos(),
+                                );
+                            }
                         }
                     }
                     _ => (),
@@ -226,6 +235,7 @@ const CONTROL_HIT_SCORE: u32 = 100;
 fn handle_particle_reaction(
     mut commands: Commands,
     mut particle_query: Query<(Entity, &mut Particle, &mut Transform), With<Particle>>,
+    ae_query: Query<(Entity, &mut AnimeEffect), With<AnimeEffect>>,
     mut tween_completed_events: EventReader<TweenCompleted>,
     mut reactor_timer: ResMut<reactor::ReactorTimer>,
     mut painter_timer: ResMut<reactor::PainterTimer>,
@@ -245,6 +255,9 @@ fn handle_particle_reaction(
             if particle.state == ParticleState::Created {
                 particle.state_setup(&mut commands);
             }
+        }
+        for (_, ae) in ae_query.iter() {
+            update_anime_effect(&mut commands, ae);
         }
     }
     if reactor_timer.0.tick(time.delta()).just_finished() {
@@ -294,6 +307,13 @@ fn handle_particle_reaction(
                                     None,
                                 );
                             }
+                            if *count > 3 {
+                                insert_anime_effect(
+                                    &mut commands,
+                                    AnimeEffectType::Circle,
+                                    p.pos(),
+                                );
+                            }
                             app::audio::play_se(
                                 app::audio::AudioSe::Hit,
                                 &mut commands,
@@ -320,6 +340,7 @@ fn handle_particle_reaction(
                             control::setup_particle_ending(&mut commands, &mut p);
                         }
                         HitAction::UouHit => {
+                            insert_anime_effect(&mut commands, AnimeEffectType::Square, p.pos());
                             let current_level = p.level();
                             let new_c_pos = field::gen_random_pos_in_field(p.radius);
                             control::build_particle_sprite(
@@ -351,6 +372,7 @@ fn handle_particle_reaction(
                     },
                     ParticleType::Hyper => {
                         if let HitAction::UouHit = action {
+                            insert_anime_effect(&mut commands, AnimeEffectType::Hexagon, p.pos());
                             let new_c_pos = field::gen_random_pos_in_field(p.radius);
                             control::build_particle_sprite(
                                 &mut commands,
@@ -408,7 +430,9 @@ fn handle_particle_reaction(
                     }
                 }
             }
-            if tween_event.user_data == ENDING_DONE_EVENT {
+            if tween_event.user_data == ENDING_DONE_EVENT
+                || tween_event.user_data == ANIME_EFFECT_DONE_EVENT
+            {
                 entities_to_despawn.insert(tween_event.entity);
             }
         }
