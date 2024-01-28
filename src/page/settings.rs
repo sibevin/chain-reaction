@@ -27,8 +27,10 @@ impl PageDefBase for PageDef {
             .add_systems(
                 Update,
                 (
-                    move_test_panel_action,
+                    detect_sensitivity_modification,
+                    control_test_ball_by_mouse,
                     control_test_ball_by_keyboard,
+                    control_test_ball_by_gamepad,
                     (
                         handle_slider_mouse_interaction,
                         handle_ui_navigation,
@@ -365,34 +367,18 @@ fn handle_slider_mouse_interaction(
     }
 }
 
-fn move_test_panel_action(
+fn control_test_ball_by_mouse(
     mut panel_query: Query<(&Interaction, &Children), With<MoveTestPanel>>,
     mut ball_query: Query<&mut Style, With<MoveTestBall>>,
     mut mouse_motion_events: EventReader<input::mouse::MouseMotion>,
-    keyboard_input: Res<Input<KeyCode>>,
     settings: Res<Persistent<app::settings::Settings>>,
+    status: Res<reactor::status::ReactorStatus>,
 ) {
     for (interaction, children) in &mut panel_query {
         if *interaction == Interaction::Pressed {
             let events = mouse_motion_events.read().collect::<Vec<_>>();
             if let Some(event) = events.iter().rev().take(3).next() {
-                let mut ball_style = ball_query.get_mut(children[0]).unwrap();
-                let ori_x: f32 = match ball_style.left {
-                    Val::Px(value) => value,
-                    _ => 0.,
-                };
-                let ori_y: f32 = match ball_style.top {
-                    Val::Px(value) => value,
-                    _ => 0.,
-                };
-
-                let new_pos = calculate_test_ball_pos(
-                    (ori_x, ori_y),
-                    event.delta,
-                    current_sensitivity(&keyboard_input, &settings),
-                );
-                ball_style.left = Val::Px(new_pos.0);
-                ball_style.top = Val::Px(new_pos.1);
+                move_test_ball(event.delta, children, &mut ball_query, &status, &settings);
             }
         }
     }
@@ -593,22 +579,12 @@ fn calculate_test_ball_pos(current: (f32, f32), delta: Vec2, sensitivity: u8) ->
 
 const KEYBOARD_DELTA_BIAS: f32 = 1.5;
 
-fn current_sensitivity(
-    keyboard_input: &Res<Input<KeyCode>>,
-    settings: &Res<Persistent<app::settings::Settings>>,
-) -> u8 {
-    if keyboard_input.pressed(KeyCode::ShiftLeft) || keyboard_input.pressed(KeyCode::ShiftRight) {
-        settings.get_value("sensitivity_modified")
-    } else {
-        settings.get_value("sensitivity")
-    }
-}
-
 fn control_test_ball_by_keyboard(
     keyboard_input: Res<Input<KeyCode>>,
     panel_query: Query<(&Interaction, &Children), With<MoveTestPanel>>,
     mut ball_query: Query<&mut Style, With<MoveTestBall>>,
     settings: Res<Persistent<app::settings::Settings>>,
+    status: Res<reactor::status::ReactorStatus>,
 ) {
     let mut delta: Vec2 = Vec2::default();
     if keyboard_input.pressed(KeyCode::W)
@@ -636,7 +612,82 @@ fn control_test_ball_by_keyboard(
         delta.x = KEYBOARD_DELTA_BIAS;
     }
     let (_, children) = panel_query.single();
-    let mut ball_style = ball_query.get_mut(children[0]).unwrap();
+    move_test_ball(delta, children, &mut ball_query, &status, &settings);
+}
+
+const GAEMPAD_DELTA_BIAS: f32 = 2.0;
+const GAEMPAD_MIN_THRESHOLD: f32 = 0.25;
+
+fn control_test_ball_by_gamepad(
+    mut events: EventReader<input::gamepad::GamepadEvent>,
+    panel_query: Query<(&Interaction, &Children), With<MoveTestPanel>>,
+    mut ball_query: Query<&mut Style, With<MoveTestBall>>,
+    mut last_delta: Local<Vec2>,
+    settings: Res<Persistent<app::settings::Settings>>,
+    status: Res<reactor::status::ReactorStatus>,
+) {
+    for event in events.read() {
+        dbg!(event);
+        if let input::gamepad::GamepadEvent::Axis(axis_event) = event {
+            let mut delta: Vec2 = Vec2::default();
+            if axis_event.axis_type == input::gamepad::GamepadAxisType::LeftStickX
+                || axis_event.axis_type == input::gamepad::GamepadAxisType::RightStickX
+            {
+                delta.x = GAEMPAD_DELTA_BIAS * axis_event.value;
+                if axis_event.value.abs() > GAEMPAD_MIN_THRESHOLD {
+                    last_delta.x = delta.x;
+                } else {
+                    last_delta.x = 0.0;
+                }
+            }
+            if axis_event.axis_type == input::gamepad::GamepadAxisType::LeftStickY
+                || axis_event.axis_type == input::gamepad::GamepadAxisType::RightStickY
+            {
+                delta.y = GAEMPAD_DELTA_BIAS * axis_event.value * -1.0;
+                if axis_event.value.abs() > GAEMPAD_MIN_THRESHOLD {
+                    last_delta.y = delta.y;
+                } else {
+                    last_delta.y = 0.0;
+                }
+            }
+        }
+    }
+    let (_, children) = panel_query.single();
+    move_test_ball(*last_delta, children, &mut ball_query, &status, &settings);
+}
+
+fn detect_sensitivity_modification(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut button_changed_events: EventReader<input::gamepad::GamepadButtonChangedEvent>,
+    mut status: ResMut<reactor::status::ReactorStatus>,
+) {
+    for btn_event in button_changed_events.read() {
+        if btn_event.button_type == input::gamepad::GamepadButtonType::RightTrigger
+            || btn_event.button_type == input::gamepad::GamepadButtonType::LeftTrigger
+        {
+            status.in_modified_sensitivity = btn_event.value == 1.0;
+        }
+    }
+    if keyboard_input.just_pressed(KeyCode::ShiftLeft)
+        || keyboard_input.just_pressed(KeyCode::ShiftRight)
+    {
+        status.in_modified_sensitivity = true;
+    }
+    if keyboard_input.just_released(KeyCode::ShiftLeft)
+        || keyboard_input.just_released(KeyCode::ShiftRight)
+    {
+        status.in_modified_sensitivity = false;
+    }
+}
+
+fn move_test_ball(
+    delta: Vec2,
+    panel_children: &Children,
+    ball_query: &mut Query<&mut Style, With<MoveTestBall>>,
+    status: &Res<reactor::status::ReactorStatus>,
+    settings: &Res<Persistent<app::settings::Settings>>,
+) {
+    let mut ball_style = ball_query.get_mut(panel_children[0]).unwrap();
     let ori_x: f32 = match ball_style.left {
         Val::Px(value) => value,
         _ => 0.,
@@ -649,7 +700,11 @@ fn control_test_ball_by_keyboard(
     let new_pos = calculate_test_ball_pos(
         (ori_x, ori_y),
         delta,
-        current_sensitivity(&keyboard_input, &settings),
+        if status.in_modified_sensitivity {
+            settings.get_value("sensitivity_modified")
+        } else {
+            settings.get_value("sensitivity")
+        },
     );
     ball_style.left = Val::Px(new_pos.0);
     ball_style.top = Val::Px(new_pos.1);

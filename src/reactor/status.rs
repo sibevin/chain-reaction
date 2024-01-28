@@ -15,6 +15,7 @@ pub struct ReactorStatus {
     pub player_name: String,
     pub highlight_uid: String,
     pub done_achievements: Vec<String>,
+    pub in_modified_sensitivity: bool,
     current_chain: StatusChain,
     chain_length: u32,
     time: u32,

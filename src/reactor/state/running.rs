@@ -19,8 +19,10 @@ impl Plugin for StatePlugin {
             .add_systems(
                 Update,
                 (
+                    detect_sensitivity_modification,
                     control_u_by_mouse,
                     control_u_by_keyboard,
+                    control_u_by_gamepad,
                     handle_pause_btn.after(NavRequestSystem),
                     move_particle,
                     field::update_reactor_fields,
@@ -182,31 +184,6 @@ fn move_particle(
     }
 }
 
-fn control_u_by_mouse(
-    mut panel_query: Query<&Interaction, (With<Interaction>, With<GameControlPanel>)>,
-    mut u_particle_query: Query<(&mut Particle, &mut Transform), With<reactor::ControlParticle>>,
-    mut mouse_motion_events: EventReader<input::mouse::MouseMotion>,
-    keyboard_input: Res<Input<KeyCode>>,
-    settings: Res<Persistent<app::settings::Settings>>,
-) {
-    for interaction in &mut panel_query {
-        if *interaction == Interaction::Pressed {
-            let events = mouse_motion_events.read().collect::<Vec<_>>();
-            for event in events.iter().rev().take(3) {
-                let (mut u_particle, mut u_transform) = u_particle_query.get_single_mut().unwrap();
-                let new_pos = calculate_u_new_pos(
-                    u_particle.pos(),
-                    event.delta,
-                    current_sensitivity(&keyboard_input, &settings),
-                );
-                u_particle.jump(new_pos);
-                u_transform.translation.x = new_pos.x;
-                u_transform.translation.y = new_pos.y;
-            }
-        }
-    }
-}
-
 fn handle_pause_btn(
     mut actions: Query<&mut ButtonAction>,
     mut events: EventReader<NavEvent>,
@@ -218,14 +195,6 @@ fn handle_pause_btn(
             ButtonAction::Pause => reactor_state.set(reactor::ReactorState::Paused),
         },
     );
-}
-
-fn calculate_u_new_pos(current: Vec2, delta: Vec2, sensitivity: u8) -> Vec2 {
-    let delta_ratio = 0.5 + sensitivity as f32 / 100.0 * 5.0;
-    let field_rect = field::get_field_rect(uou::RADIUS + 3.0);
-    let new_x = (current.x + delta.x * delta_ratio).clamp(field_rect.min.x, field_rect.max.x);
-    let new_y = (current.y - delta.y * delta_ratio).clamp(field_rect.min.y, field_rect.max.y);
-    Vec2::new(new_x, new_y)
 }
 
 const HYPER_HIT_BASE_SCORE: u32 = 100;
@@ -444,14 +413,31 @@ fn handle_particle_reaction(
     }
 }
 
+fn control_u_by_mouse(
+    mut panel_query: Query<&Interaction, (With<Interaction>, With<GameControlPanel>)>,
+    mut u_particle_query: Query<(&mut Particle, &mut Transform), With<reactor::ControlParticle>>,
+    mut mouse_motion_events: EventReader<input::mouse::MouseMotion>,
+    settings: Res<Persistent<app::settings::Settings>>,
+    status: Res<reactor::status::ReactorStatus>,
+) {
+    for interaction in &mut panel_query {
+        if *interaction == Interaction::Pressed {
+            let events = mouse_motion_events.read().collect::<Vec<_>>();
+            for event in events.iter().rev().take(3) {
+                move_u(event.delta, &mut u_particle_query, &status, &settings);
+            }
+        }
+    }
+}
+
 const KEYBOARD_DELTA_BIAS: f32 = 1.5;
 
 fn control_u_by_keyboard(
     keyboard_input: Res<Input<KeyCode>>,
     mut u_particle_query: Query<(&mut Particle, &mut Transform), With<reactor::ControlParticle>>,
     settings: Res<Persistent<app::settings::Settings>>,
+    status: Res<reactor::status::ReactorStatus>,
 ) {
-    let (mut u_particle, mut u_transform) = u_particle_query.get_single_mut().unwrap();
     let mut delta: Vec2 = Vec2::default();
     if keyboard_input.pressed(KeyCode::W)
         || keyboard_input.pressed(KeyCode::Up)
@@ -477,23 +463,97 @@ fn control_u_by_keyboard(
     {
         delta.x = KEYBOARD_DELTA_BIAS;
     }
+    move_u(delta, &mut u_particle_query, &status, &settings);
+}
+
+const GAEMPAD_DELTA_BIAS: f32 = 2.0;
+const GAEMPAD_MIN_THRESHOLD: f32 = 0.25;
+
+fn control_u_by_gamepad(
+    mut events: EventReader<input::gamepad::GamepadEvent>,
+    mut u_particle_query: Query<(&mut Particle, &mut Transform), With<reactor::ControlParticle>>,
+    mut last_delta: Local<Vec2>,
+    settings: Res<Persistent<app::settings::Settings>>,
+    status: Res<reactor::status::ReactorStatus>,
+) {
+    for event in events.read() {
+        dbg!(event);
+        if let input::gamepad::GamepadEvent::Axis(axis_event) = event {
+            let mut delta: Vec2 = Vec2::default();
+            if axis_event.axis_type == input::gamepad::GamepadAxisType::LeftStickX
+                || axis_event.axis_type == input::gamepad::GamepadAxisType::RightStickX
+            {
+                delta.x = GAEMPAD_DELTA_BIAS * axis_event.value;
+                if axis_event.value.abs() > GAEMPAD_MIN_THRESHOLD {
+                    last_delta.x = delta.x;
+                } else {
+                    last_delta.x = 0.0;
+                }
+            }
+            if axis_event.axis_type == input::gamepad::GamepadAxisType::LeftStickY
+                || axis_event.axis_type == input::gamepad::GamepadAxisType::RightStickY
+            {
+                delta.y = GAEMPAD_DELTA_BIAS * axis_event.value * -1.0;
+                if axis_event.value.abs() > GAEMPAD_MIN_THRESHOLD {
+                    last_delta.y = delta.y;
+                } else {
+                    last_delta.y = 0.0;
+                }
+            }
+        }
+    }
+    move_u(*last_delta, &mut u_particle_query, &status, &settings);
+}
+
+fn move_u(
+    delta: Vec2,
+    u_particle_query: &mut Query<(&mut Particle, &mut Transform), With<reactor::ControlParticle>>,
+    status: &Res<reactor::status::ReactorStatus>,
+    settings: &Res<Persistent<app::settings::Settings>>,
+) {
+    let (mut u_particle, mut u_transform) = u_particle_query.get_single_mut().unwrap();
     let new_pos = calculate_u_new_pos(
         u_particle.pos(),
         delta,
-        current_sensitivity(&keyboard_input, &settings),
+        if status.in_modified_sensitivity {
+            settings.get_value("sensitivity_modified")
+        } else {
+            settings.get_value("sensitivity")
+        },
     );
     u_particle.jump(new_pos);
     u_transform.translation.x = new_pos.x;
     u_transform.translation.y = new_pos.y;
 }
 
-fn current_sensitivity(
-    keyboard_input: &Res<Input<KeyCode>>,
-    settings: &Res<Persistent<app::settings::Settings>>,
-) -> u8 {
-    if keyboard_input.pressed(KeyCode::ShiftLeft) || keyboard_input.pressed(KeyCode::ShiftRight) {
-        settings.get_value("sensitivity_modified")
-    } else {
-        settings.get_value("sensitivity")
+fn calculate_u_new_pos(current: Vec2, delta: Vec2, sensitivity: u8) -> Vec2 {
+    let delta_ratio = 0.5 + sensitivity as f32 / 100.0 * 5.0;
+    let field_rect = field::get_field_rect(uou::RADIUS + 3.0);
+    let new_x = (current.x + delta.x * delta_ratio).clamp(field_rect.min.x, field_rect.max.x);
+    let new_y = (current.y - delta.y * delta_ratio).clamp(field_rect.min.y, field_rect.max.y);
+    Vec2::new(new_x, new_y)
+}
+
+fn detect_sensitivity_modification(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut button_changed_events: EventReader<input::gamepad::GamepadButtonChangedEvent>,
+    mut status: ResMut<reactor::status::ReactorStatus>,
+) {
+    for btn_event in button_changed_events.read() {
+        if btn_event.button_type == input::gamepad::GamepadButtonType::RightTrigger
+            || btn_event.button_type == input::gamepad::GamepadButtonType::LeftTrigger
+        {
+            status.in_modified_sensitivity = btn_event.value == 1.0;
+        }
+    }
+    if keyboard_input.just_pressed(KeyCode::ShiftLeft)
+        || keyboard_input.just_pressed(KeyCode::ShiftRight)
+    {
+        status.in_modified_sensitivity = true;
+    }
+    if keyboard_input.just_released(KeyCode::ShiftLeft)
+        || keyboard_input.just_released(KeyCode::ShiftRight)
+    {
+        status.in_modified_sensitivity = false;
     }
 }
