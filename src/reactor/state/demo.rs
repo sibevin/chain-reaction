@@ -17,6 +17,7 @@ impl Plugin for StatePlugin {
                 field::reset_reactor_fields,
                 field::reset_target_fields,
                 field_ach::reset_ach_fields,
+                clear_anime_effect,
                 state_setup,
             ),
         )

@@ -15,26 +15,29 @@ pub struct StatePlugin;
 
 impl Plugin for StatePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(reactor::ReactorState::Running), (state_setup,))
-            .add_systems(
-                Update,
-                (
-                    detect_sensitivity_modification,
-                    control_u_by_mouse,
-                    control_u_by_keyboard,
-                    control_u_by_gamepad,
-                    handle_pause_btn.after(NavRequestSystem),
-                    move_particle,
-                    field::update_reactor_fields,
-                    field::update_target_fields,
-                    field_ach::update_ach_fields,
-                    handle_particle_reaction,
-                    component_animator_system::<Particle>,
-                    component_animator_system::<AnimeEffect>,
-                )
-                    .run_if(in_state(reactor::ReactorState::Running)),
+        app.add_systems(
+            OnEnter(reactor::ReactorState::Running),
+            (clear_anime_effect, state_setup),
+        )
+        .add_systems(
+            Update,
+            (
+                detect_sensitivity_modification,
+                control_u_by_mouse,
+                control_u_by_keyboard,
+                control_u_by_gamepad,
+                handle_pause_btn.after(NavRequestSystem),
+                move_particle,
+                field::update_reactor_fields,
+                field::update_target_fields,
+                field_ach::update_ach_fields,
+                handle_particle_reaction,
+                component_animator_system::<Particle>,
+                component_animator_system::<AnimeEffect>,
             )
-            .add_systems(OnExit(reactor::ReactorState::Running), state_exit);
+                .run_if(in_state(reactor::ReactorState::Running)),
+        )
+        .add_systems(OnExit(reactor::ReactorState::Running), state_exit);
     }
 }
 
