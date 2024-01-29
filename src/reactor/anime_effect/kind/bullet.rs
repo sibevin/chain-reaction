@@ -35,14 +35,10 @@ impl AnimeEffectKindBase for AnimeEffectKindBullet {
             EaseFunction::CubicIn,
             Duration::from_millis(500),
             lens::AnimeEffectLens::new(
-                BULLET_RADIUS,
-                0.3,
-                0.0,
-                param.start_pos,
-                BULLET_RADIUS,
-                0.3,
-                0.0,
-                param.end_pos,
+                (BULLET_RADIUS, BULLET_RADIUS),
+                (0.3, 0.3),
+                (0.0, 0.0),
+                (param.start_pos, param.end_pos),
             ),
         )
         .with_completed_event(ANIME_EFFECT_DONE_EVENT);

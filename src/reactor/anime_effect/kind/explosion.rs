@@ -42,14 +42,10 @@ impl AnimeEffectKindBase for AnimeEffectKindExplosion {
             EaseFunction::CubicIn,
             Duration::from_millis(2500),
             lens::AnimeEffectLens::new(
-                0.0,
-                0.1,
-                EXPLOSION_BORDER * 2.0,
-                param.start_pos,
-                WINDOW_W,
-                0.0,
-                EXPLOSION_BORDER,
-                param.end_pos,
+                (0.0, WINDOW_W),
+                (0.1, 0.0),
+                (EXPLOSION_BORDER * 2.0, EXPLOSION_BORDER),
+                (param.start_pos, param.end_pos),
             ),
         )
         .with_completed_event(ANIME_EFFECT_DONE_EVENT);

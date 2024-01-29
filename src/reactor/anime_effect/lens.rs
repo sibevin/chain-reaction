@@ -2,49 +2,36 @@ use crate::reactor::anime_effect::*;
 
 #[derive(Default)]
 pub struct AnimeEffectLens {
-    start_radius: f32,
-    start_color_alpha: f32,
-    start_border: f32,
-    start_pos: Vec2,
-    end_radius: f32,
-    end_color_alpha: f32,
-    end_border: f32,
-    end_pos: Vec2,
+    radius: (f32, f32),
+    color_alpha: (f32, f32),
+    border: (f32, f32),
+    position: (Vec2, Vec2),
 }
 
 impl AnimeEffectLens {
     pub fn new(
-        start_radius: f32,
-        start_color_alpha: f32,
-        start_border: f32,
-        start_pos: Vec2,
-        end_radius: f32,
-        end_color_alpha: f32,
-        end_border: f32,
-        end_pos: Vec2,
+        radius: (f32, f32),
+        color_alpha: (f32, f32),
+        border: (f32, f32),
+        position: (Vec2, Vec2),
     ) -> Self {
         Self {
-            start_radius,
-            start_color_alpha,
-            start_border,
-            start_pos,
-            end_radius,
-            end_color_alpha,
-            end_border,
-            end_pos,
+            radius,
+            color_alpha,
+            border,
+            position,
         }
     }
 }
 
 impl Lens<AnimeEffect> for AnimeEffectLens {
     fn lerp(&mut self, target: &mut AnimeEffect, ratio: f32) {
-        target.radius = self.start_radius + (self.end_radius - self.start_radius) * ratio;
-        target.current_pos.x = self.start_pos.x + (self.end_pos.x - self.start_pos.x) * ratio;
-        target.current_pos.y = self.start_pos.y + (self.end_pos.y - self.start_pos.y) * ratio;
-        let color_alpha =
-            self.start_color_alpha + (self.end_color_alpha - self.start_color_alpha) * ratio;
+        target.radius = self.radius.0 + (self.radius.1 - self.radius.0) * ratio;
+        target.current_pos.x = self.position.0.x + (self.position.1.x - self.position.0.x) * ratio;
+        target.current_pos.y = self.position.0.y + (self.position.1.y - self.position.0.y) * ratio;
+        let color_alpha = self.color_alpha.0 + (self.color_alpha.1 - self.color_alpha.0) * ratio;
         target.color.set_a(color_alpha);
-        target.border = self.start_border + (self.end_border - self.start_border) * ratio;
+        target.border = self.border.0 + (self.border.1 - self.border.0) * ratio;
         target.rotation += target.rotation_delta;
     }
 }

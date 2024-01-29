@@ -164,11 +164,7 @@ impl ReactorStatus {
         if self.current_chain != chain {
             return None;
         }
-        if let Some(pos) = &self.prev_chain_pos {
-            Some(*pos)
-        } else {
-            None
-        }
+        self.prev_chain_pos.as_ref().copied()
     }
 
     pub fn increase(&mut self, field: &str, amount: u32) -> u32 {
