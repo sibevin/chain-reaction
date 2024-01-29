@@ -32,7 +32,7 @@ impl AnimeEffectKindBase for AnimeEffectKindBullet {
             root_entity,
         };
         let tween = Tween::new(
-            EaseFunction::CubicIn,
+            EaseFunction::CubicOut,
             Duration::from_millis(500),
             lens::AnimeEffectLens::new(
                 (BULLET_RADIUS, BULLET_RADIUS),
