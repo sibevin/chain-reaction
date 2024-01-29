@@ -1,6 +1,6 @@
 # Chain Reaction
 
-An action game to dodge chain recation particles.
+An action game to dodge chain reaction particles, at the same time you have to create your own chain.
 
 ![Cover](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_cover_1280x720.png)
 ![Gameplay](https://raw.githubusercontent.com/sibevin/chain-reaction/main/screenshots/cr_gameplay.gif)
