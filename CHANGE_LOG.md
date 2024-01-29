@@ -1,3 +1,8 @@
+# v3.3.0
+
+- (game) Refine animation effect, implement C/H chain animations.
+- (game) Support gamepad.
+
 # v3.2.0
 
 - (game) Implement animation effect to show more cool animations.
