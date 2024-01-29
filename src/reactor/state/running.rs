@@ -174,8 +174,12 @@ fn move_particle(
                             if level > 2 {
                                 insert_anime_effect(
                                     &mut commands,
-                                    AnimeEffectType::Triangle,
-                                    particle.pos(),
+                                    AnimeEffectParam {
+                                        kind: AnimeEffectKind::Explosion,
+                                        shape: AnimeEffectShape::Triangle,
+                                        start_pos: particle.pos(),
+                                        end_pos: particle.pos(),
+                                    },
                                 );
                             }
                         }
@@ -282,8 +286,12 @@ fn handle_particle_reaction(
                             if *count > 3 {
                                 insert_anime_effect(
                                     &mut commands,
-                                    AnimeEffectType::Circle,
-                                    p.pos(),
+                                    AnimeEffectParam {
+                                        kind: AnimeEffectKind::Explosion,
+                                        shape: AnimeEffectShape::Circle,
+                                        start_pos: p.pos(),
+                                        end_pos: p.pos(),
+                                    },
                                 );
                             }
                             app::audio::play_se(
@@ -312,7 +320,26 @@ fn handle_particle_reaction(
                             control::setup_particle_ending(&mut commands, &mut p);
                         }
                         HitAction::UouHit => {
-                            insert_anime_effect(&mut commands, AnimeEffectType::Square, p.pos());
+                            insert_anime_effect(
+                                &mut commands,
+                                AnimeEffectParam {
+                                    kind: AnimeEffectKind::Explosion,
+                                    shape: AnimeEffectShape::Square,
+                                    start_pos: p.pos(),
+                                    end_pos: p.pos(),
+                                },
+                            );
+                            if let Some(pos) = status.prev_chain_pos(status::StatusChain::Control) {
+                                insert_anime_effect(
+                                    &mut commands,
+                                    AnimeEffectParam {
+                                        kind: AnimeEffectKind::Bullet,
+                                        shape: AnimeEffectShape::Square,
+                                        start_pos: pos,
+                                        end_pos: p.pos(),
+                                    },
+                                );
+                            };
                             let current_level = p.level();
                             let new_c_pos = field::gen_random_pos_in_field(p.radius);
                             control::build_particle_sprite(
@@ -337,14 +364,33 @@ fn handle_particle_reaction(
                                 &settings,
                             );
                             status.increase("score", CONTROL_HIT_SCORE);
-                            status.update_chain(status::StatusChain::Control);
+                            status.update_chain(status::StatusChain::Control, u_pos);
                             p.state = hyper::setup_particle_starting(&mut commands, &p);
                         }
                         _ => (),
                     },
                     ParticleType::Hyper => {
                         if let HitAction::UouHit = action {
-                            insert_anime_effect(&mut commands, AnimeEffectType::Hexagon, p.pos());
+                            insert_anime_effect(
+                                &mut commands,
+                                AnimeEffectParam {
+                                    kind: AnimeEffectKind::Explosion,
+                                    shape: AnimeEffectShape::Hexagon,
+                                    start_pos: p.pos(),
+                                    end_pos: p.pos(),
+                                },
+                            );
+                            if let Some(pos) = status.prev_chain_pos(status::StatusChain::Hyper) {
+                                insert_anime_effect(
+                                    &mut commands,
+                                    AnimeEffectParam {
+                                        kind: AnimeEffectKind::Bullet,
+                                        shape: AnimeEffectShape::Hexagon,
+                                        start_pos: pos,
+                                        end_pos: p.pos(),
+                                    },
+                                );
+                            };
                             let new_c_pos = field::gen_random_pos_in_field(p.radius);
                             control::build_particle_sprite(
                                 &mut commands,
@@ -369,7 +415,7 @@ fn handle_particle_reaction(
                                 &settings,
                             );
                             status.increase("score", HYPER_HIT_BASE_SCORE * p.level() as u32);
-                            status.update_chain(status::StatusChain::Hyper);
+                            status.update_chain(status::StatusChain::Hyper, u_pos);
                             p.state = hyper::setup_particle_starting(&mut commands, &p);
                         }
                     }

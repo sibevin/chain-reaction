@@ -120,8 +120,12 @@ fn state_action(
                         if level > 2 {
                             insert_anime_effect(
                                 &mut commands,
-                                AnimeEffectType::Triangle,
-                                particle.pos(),
+                                AnimeEffectParam {
+                                    kind: AnimeEffectKind::Explosion,
+                                    shape: AnimeEffectShape::Triangle,
+                                    start_pos: particle.pos(),
+                                    end_pos: particle.pos(),
+                                },
                             );
                         }
                     }
@@ -190,8 +194,12 @@ fn handle_particle_reaction(
                             if *count > 3 {
                                 insert_anime_effect(
                                     &mut commands,
-                                    AnimeEffectType::Circle,
-                                    p.pos(),
+                                    AnimeEffectParam {
+                                        kind: AnimeEffectKind::Explosion,
+                                        shape: AnimeEffectShape::Circle,
+                                        start_pos: p.pos(),
+                                        end_pos: p.pos(),
+                                    },
                                 );
                             }
                             entities_to_despawn.insert(e);

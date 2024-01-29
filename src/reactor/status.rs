@@ -18,6 +18,7 @@ pub struct ReactorStatus {
     pub in_modified_sensitivity: bool,
     current_chain: StatusChain,
     chain_length: u32,
+    prev_chain_pos: Option<Vec2>,
     time: u32,
     score: u32,
     alpha_count: u32,
@@ -45,7 +46,7 @@ impl ReactorStatus {
         &self.started_at
     }
 
-    pub fn update_chain(&mut self, chain: StatusChain) {
+    pub fn update_chain(&mut self, chain: StatusChain, position: Vec2) {
         if self.current_chain == chain {
             match chain {
                 StatusChain::Control => {
@@ -74,6 +75,7 @@ impl ReactorStatus {
             }
             self.current_chain = chain;
         }
+        self.prev_chain_pos = Some(position);
     }
 
     pub fn export(&self) -> LeaderboardRecord {
@@ -156,6 +158,17 @@ impl ReactorStatus {
 
     pub fn current_chain(&self) -> &StatusChain {
         &self.current_chain
+    }
+
+    pub fn prev_chain_pos(&self, chain: StatusChain) -> Option<Vec2> {
+        if self.current_chain != chain {
+            return None;
+        }
+        if let Some(pos) = &self.prev_chain_pos {
+            Some(*pos)
+        } else {
+            None
+        }
     }
 
     pub fn increase(&mut self, field: &str, amount: u32) -> u32 {
