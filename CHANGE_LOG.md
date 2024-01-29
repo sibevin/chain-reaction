@@ -1,3 +1,7 @@
+# v3.4.0
+
+- (platform:web) Implement static loading screen.
+
 # v3.3.0
 
 - (game) Refine animation effect, implement C/H chain animations.
