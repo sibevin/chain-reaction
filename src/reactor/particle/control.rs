@@ -1,5 +1,5 @@
 use crate::{
-    app,
+    app::theme,
     reactor::{field, particle::*},
 };
 use bevy_prototype_lyon::prelude::*;
@@ -240,7 +240,7 @@ pub fn setup_particle_running(commands: &mut Commands, particle: &Particle) -> P
                             path: GeometryBuilder::build_as(&shape),
                             ..default()
                         },
-                        Fill::color(app::ui::BG_COLOR),
+                        Fill::color(theme::BG_COLOR),
                     ));
                 });
             parent

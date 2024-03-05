@@ -17,7 +17,7 @@ impl AchievementDefBase for AchievementDef {
     fn description(&self) -> String {
         format!("C-Chain length >= {}", TARGET_CHAIN_LENGTH)
     }
-    fn check_done(&self, status: &ResMut<status::ReactorStatus>) -> (u32, u32, bool) {
+    fn check_done(&self, status: &ResMut<status::AppStatus>) -> (u32, u32, bool) {
         let current = match status.current_chain() {
             status::StatusChain::Control => status.fetch("chain_length"),
             _ => 0,

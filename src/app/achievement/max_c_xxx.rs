@@ -17,7 +17,7 @@ impl AchievementDefBase for AchievementDef {
     fn description(&self) -> String {
         format!("# of max-level C >= {}", TARGET_C_COUNT)
     }
-    fn check_done(&self, status: &ResMut<status::ReactorStatus>) -> (u32, u32, bool) {
+    fn check_done(&self, status: &ResMut<status::AppStatus>) -> (u32, u32, bool) {
         let current = status.fetch("current_full_level_control_count");
         let is_done = current >= TARGET_C_COUNT;
         (current, TARGET_C_COUNT, is_done)

@@ -4,12 +4,16 @@ version = "3.4.0"
 edition = "2021"
 license = "GPL-3.0-or-later"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 bevy = "0.12.1"
 bevy-persistent = { version = "0.4.2", features = ["bincode", "json"] }
 bevy-ui-navigation = "0.33.1"
+bevy_mod_picking = { version = "0.17.0", default-features = false, features = [
+  "backend_bevy_ui",
+  "backend_raycast",
+  "backend_sprite",
+  "selection",
+] }
 bevy_prototype_lyon = "0.10.0"
 bevy_tweening = "0.9.0"
 chrono = "0.4.31"
@@ -25,4 +29,3 @@ opt-level = 1
 
 [profile.dev.package."*"]
 opt-level = 3
-

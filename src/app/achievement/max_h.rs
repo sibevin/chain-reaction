@@ -15,7 +15,7 @@ impl AchievementDefBase for AchievementDef {
     fn description(&self) -> String {
         String::from("Get a max-level H")
     }
-    fn check_done(&self, status: &ResMut<status::ReactorStatus>) -> (u32, u32, bool) {
+    fn check_done(&self, status: &ResMut<status::AppStatus>) -> (u32, u32, bool) {
         let current = status.fetch("current_max_hyper_level");
         let total = particle::hyper::MAX_LEVEL as u32;
         let is_done = current >= total;

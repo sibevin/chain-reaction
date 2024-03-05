@@ -1,3 +1,4 @@
+use crate::app;
 use bevy::prelude::*;
 use bevy_persistent::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -92,14 +93,14 @@ pub struct SettingsPlugin;
 impl Plugin for SettingsPlugin {
     fn build(&self, app: &mut App) {
         let config_dir = dirs::config_dir()
-            .map(|native_config_dir| native_config_dir.join("chain-reaction"))
+            .map(|native_config_dir| native_config_dir.join(app::APP_CODE))
             .unwrap_or(Path::new("local").join("configuration"));
 
         app.insert_resource(
             Persistent::<Settings>::builder()
-                .name("variables")
+                .name("settings")
                 .format(StorageFormat::Json)
-                .path(config_dir.join("variables.json"))
+                .path(config_dir.join("settings.json"))
                 .default(Settings {
                     first_run: true,
                     bgm_enabled: true,

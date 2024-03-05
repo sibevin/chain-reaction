@@ -17,7 +17,7 @@ impl AchievementDefBase for AchievementDef {
     fn description(&self) -> String {
         format!("# of alpha >= {}", TARGET_ALPHA_COUNT)
     }
-    fn check_done(&self, status: &ResMut<status::ReactorStatus>) -> (u32, u32, bool) {
+    fn check_done(&self, status: &ResMut<status::AppStatus>) -> (u32, u32, bool) {
         let current = status.fetch("alpha_count");
         let is_done = current >= TARGET_ALPHA_COUNT;
         (current, TARGET_ALPHA_COUNT, is_done)

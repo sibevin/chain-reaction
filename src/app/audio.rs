@@ -106,8 +106,10 @@ pub fn roll_bgm_volume_back(
     }
 }
 
+const VOLUME_RATIO: f32 = 0.01;
+
 pub fn to_volume(settings_value: u8) -> f32 {
-    settings_value as f32 * 0.02
+    settings_value as f32 * VOLUME_RATIO
 }
 
 pub fn play_se(

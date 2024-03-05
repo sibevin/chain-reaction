@@ -1,4 +1,4 @@
-use crate::reactor::status;
+use crate::app::status;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use bevy_persistent::prelude::*;
@@ -19,12 +19,12 @@ pub mod time_xxx_s;
 pub const ACHIEVEMENTS: [&dyn AchievementDefBase; 9] = [
     &max_h::AchievementDef,
     &max_c_xxx::AchievementDef,
-    &not_moving_xxx_s::AchievementDef,
-    &alpha_xxx::AchievementDef,
-    &score_xxx::AchievementDef,
-    &time_xxx_s::AchievementDef,
     &h_chain_xxx::AchievementDef,
     &c_chain_xxx::AchievementDef,
+    &alpha_xxx::AchievementDef,
+    &time_xxx_s::AchievementDef,
+    &not_moving_xxx_s::AchievementDef,
+    &score_xxx::AchievementDef,
     &achievement_xxx::AchievementDef,
 ];
 
@@ -190,7 +190,7 @@ pub trait AchievementDefBase {
         self.code()
     }
     fn description(&self) -> String;
-    fn check_done(&self, status: &ResMut<status::ReactorStatus>) -> (u32, u32, bool);
+    fn check_done(&self, status: &ResMut<status::AppStatus>) -> (u32, u32, bool);
     fn build_empty_record(&self) -> AchievementRecord {
         AchievementRecord {
             code: String::from(self.code()),

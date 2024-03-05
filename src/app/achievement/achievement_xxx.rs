@@ -17,7 +17,7 @@ impl AchievementDefBase for AchievementDef {
     fn description(&self) -> String {
         format!("Get {} marks in a game", TARGET_ACH_COUNT)
     }
-    fn check_done(&self, status: &ResMut<status::ReactorStatus>) -> (u32, u32, bool) {
+    fn check_done(&self, status: &ResMut<status::AppStatus>) -> (u32, u32, bool) {
         let current = status.done_achievements.len() as u32;
         let is_done = current >= TARGET_ACH_COUNT;
         (current, TARGET_ACH_COUNT, is_done)

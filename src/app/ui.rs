@@ -1,47 +1,58 @@
-use crate::app;
+use crate::{app, app::theme::*};
 use bevy::prelude::*;
+use bevy_prototype_lyon::prelude::*;
 use bevy_ui_navigation::prelude::*;
 
-pub const FONT_SIZE: f32 = 32.0;
+mod kind;
+mod plugin;
+mod switch_btn;
+mod timer;
+
+pub use kind::apply_ui_lock;
+pub use kind::build_ui;
+pub use kind::clear_ui_canvas;
+pub use kind::create_ui_canvas;
+pub use kind::handle_ui_gamepad_axis_changing;
+pub use kind::handle_ui_gamepad_dpad_changing;
+pub use kind::handle_ui_gamepad_lock;
+pub use kind::handle_ui_gamepad_modifier;
+pub use kind::handle_ui_keyboard_changing;
+pub use kind::handle_ui_keyboard_lock;
+pub use kind::handle_ui_keyboard_modifier;
+pub use kind::handle_ui_mouse_clicking;
+pub use kind::handle_ui_mouse_dragging;
+pub use kind::handle_ui_mouse_unlock;
+pub use kind::refresh_ui_canvas;
+pub use kind::update_ui_value;
+pub use kind::AppUiAction;
+pub use kind::AppUiCanvasEntityMap;
+pub use kind::AppUiData;
+pub use kind::AppUiEvent;
+pub use kind::AppUiInitParams;
+pub use kind::AppUiTargetValuePair;
+pub use plugin::AppUiPlugin;
+pub use switch_btn::build_switch_btn;
+pub use switch_btn::update_switch_btn_display;
+pub use switch_btn::update_switch_btn_value;
+pub use switch_btn::SwitchButton;
+
+pub const FONT_SIZE: f32 = 36.0;
 pub const BTN_FS: f32 = FONT_SIZE;
 pub const SPACE_SIZE: f32 = FONT_SIZE / 10.0;
 pub const BORDER_W: f32 = SPACE_SIZE * 1.0;
 pub const ICON_SIZE: f32 = FONT_SIZE * 0.8;
 pub const BTN_PADDING: f32 = 5.0;
-pub const MENU_ENTRY_PADDING: f32 = 16.0;
-pub const PAGE_PADDING: f32 = 6.0;
-
-pub const BG_COLOR: Color = Color::BLACK;
-pub const FG_COLOR: Color = Color::rgb(0.9, 0.9, 0.9);
-pub const SECONDARY_COLOR: Color = Color::rgb(0.5, 0.5, 0.5);
-pub const MUTE_COLOR: Color = Color::rgb(0.2, 0.2, 0.2);
-pub const COVER_COLOR: Color = Color::rgba(0.0, 0.0, 0.0, 0.9);
-pub const BTN_BG: Color = Color::rgb(0.15, 0.15, 0.15);
-pub const BTN_HOVERED_BG: Color = Color::rgb(0.25, 0.25, 0.25);
-pub const BTN_PRESSED_BG: Color = Color::rgb(0.45, 0.45, 0.45);
-
-pub const FONT: &str = "fonts/SYNNova-Regular.otf";
-pub const FONT_DIGIT: &str = "fonts/telegrama_raw.otf";
-pub const FONT_HW: &str = "fonts/VAG-HandWritten.otf";
+pub const MENU_ENTRY_W: f32 = FONT_SIZE * 8.0;
+pub const MENU_ENTRY_RATIO: f32 = 1.2;
+pub const MENU_ENTRY_PADDING: f32 = 3.0;
+pub const PAGE_PADDING: f32 = 3.0;
 
 pub fn px_p(size: f32) -> Val {
     Val::Px(SPACE_SIZE * size)
 }
 
-pub fn build_icon_btn(
-    parent: &mut ChildBuilder,
-    asset_server: &Res<AssetServer>,
-    bundle: impl Bundle,
-    style: Style,
-    icon: &str,
-) -> Entity {
-    let icon_style = Style {
-        width: Val::Auto,
-        height: Val::Auto,
-        padding: UiRect::all(px_p(BTN_PADDING * 0.6)),
-        ..style
-    };
-    build_btn(parent, asset_server, bundle, icon_style, None, Some(icon))
+pub fn fs_x(scale: f32) -> f32 {
+    FONT_SIZE * scale
 }
 
 pub fn despawn_ui<T: Component>(to_despawn: Query<Entity, With<T>>, mut commands: Commands) {
@@ -106,8 +117,44 @@ pub fn build_btn(
         .id()
 }
 
-pub const MENU_ENTRY_W: f32 = 250.0;
-pub const MENU_ENTRY_RATIO: f32 = 1.2;
+pub fn build_icon_btn(
+    parent: &mut ChildBuilder,
+    asset_server: &Res<AssetServer>,
+    bundle: impl Bundle,
+    style: Style,
+    icon: &str,
+) -> Entity {
+    parent
+        .spawn((
+            ButtonBundle {
+                style: Style {
+                    width: Val::Auto,
+                    height: Val::Auto,
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    padding: UiRect::all(px_p(BTN_PADDING * 0.6)),
+                    ..style
+                },
+                background_color: BTN_BG.into(),
+                ..default()
+            },
+            bundle,
+        ))
+        .with_children(|parent| {
+            let icon_path = format!("images/icons/{}.png", icon);
+            let icon = asset_server.load(icon_path);
+            parent.spawn(ImageBundle {
+                style: Style {
+                    width: Val::Px(ICON_SIZE * 1.5),
+                    height: Val::Px(ICON_SIZE * 1.5),
+                    ..default()
+                },
+                image: UiImage::new(icon),
+                ..default()
+            });
+        })
+        .id()
+}
 
 pub fn build_menu_entry(
     parent: &mut ChildBuilder,
@@ -121,12 +168,13 @@ pub fn build_menu_entry(
             ButtonBundle {
                 style: Style {
                     width: Val::Px(MENU_ENTRY_W),
-                    justify_content: JustifyContent::SpaceBetween,
+                    justify_content: JustifyContent::Start,
                     align_items: AlignItems::Center,
+                    column_gap: px_p(4.0),
                     padding: UiRect::all(px_p(4.0)),
                     ..default()
                 },
-                background_color: BG_COLOR.into(),
+                background_color: BTN_BG.into(),
                 ..default()
             },
             bundle,
@@ -176,12 +224,11 @@ pub fn build_link(
             style: Style {
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
+                margin: UiRect::vertical(px_p(1.0)),
                 padding: UiRect::all(px_p(1.0)),
-                border: UiRect::bottom(px_p(1.0)),
                 ..default()
             },
-            background_color: BG_COLOR.into(),
-            border_color: BG_COLOR.into(),
+            background_color: LINK_BG.into(),
             ..default()
         },
         bundle,
@@ -201,12 +248,14 @@ pub fn build_link(
                 ..default()
             });
         }
-        let font = if font == "default" {
+        let font = if font == "main" {
             FONT
         } else if font == "digit" {
             FONT_DIGIT
-        } else {
+        } else if font == "hw" {
             FONT_HW
+        } else {
+            FONT
         };
         parent.spawn(
             TextBundle::from_section(
@@ -228,9 +277,6 @@ pub fn build_link(
     };
     entity.id()
 }
-
-#[derive(Component)]
-pub struct SwitchButton;
 
 #[derive(Component)]
 pub struct RangeButton;

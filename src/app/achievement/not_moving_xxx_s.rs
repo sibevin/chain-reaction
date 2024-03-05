@@ -17,7 +17,7 @@ impl AchievementDefBase for AchievementDef {
     fn description(&self) -> String {
         format!("Not moving {}s", TARGET_NOT_MOVING_SECS)
     }
-    fn check_done(&self, status: &ResMut<status::ReactorStatus>) -> (u32, u32, bool) {
+    fn check_done(&self, status: &ResMut<status::AppStatus>) -> (u32, u32, bool) {
         let current = status.fetch("total_stopping_time");
         let is_done = current >= TARGET_NOT_MOVING_SECS * 100;
         (current, TARGET_NOT_MOVING_SECS * 100, is_done)
@@ -26,6 +26,6 @@ impl AchievementDefBase for AchievementDef {
         AchievementProgressUi::Bar
     }
     fn format_value(&self, value: u32) -> String {
-        reactor::field::format_field_text("time", value)
+        reactor::format_text("time", value)
     }
 }

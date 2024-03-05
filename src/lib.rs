@@ -1,3 +1,4 @@
 pub mod app;
-pub mod page;
+pub mod book;
 pub mod reactor;
+pub mod studio;
