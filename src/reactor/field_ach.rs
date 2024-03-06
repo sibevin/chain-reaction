@@ -7,6 +7,8 @@ use std::time::Duration;
 const ACH_ICON_SIZE: f32 = app::ui::FONT_SIZE * 2.5;
 const ACH_STATUS_SIZE: f32 = app::ui::FONT_SIZE * 1.0;
 const ACH_PANEL_W: f32 = app::ui::FONT_SIZE * 12.0;
+const ACH_DONE_PANEL_W: f32 = app::ui::FONT_SIZE * 11.0;
+const ACH_DONE_ICON_SIZE: f32 = app::ui::FONT_SIZE * 2.0;
 const ACH_DESC_FS: f32 = app::ui::FONT_SIZE * 0.8;
 const ACH_NAME_FS: f32 = app::ui::FONT_SIZE * 1.2;
 const ACH_COLOR_ALPHA: f32 = 1.0;
@@ -381,7 +383,7 @@ fn build_ach_done_ui(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>,
     let color = ach_def.color();
     let tween = Tween::new(
         EaseFunction::CubicOut,
-        Duration::from_millis(500),
+        Duration::from_millis(8000),
         AchDoneAnimeLens {
             start_right: 36.0,
             end_right: 0.0,
@@ -395,10 +397,9 @@ fn build_ach_done_ui(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>,
                     position_type: PositionType::Relative,
                     top: Val::Px(0.0),
                     right: Val::Px(12.0),
-                    width: Val::Px(ACH_PANEL_W),
+                    width: Val::Px(ACH_DONE_PANEL_W),
                     justify_content: JustifyContent::SpaceBetween,
                     align_items: AlignItems::Center,
-                    padding: UiRect::all(app::ui::px_p(1.0)),
                     border: UiRect::all(app::ui::px_p(1.0)),
                     ..default()
                 },
@@ -412,9 +413,9 @@ fn build_ach_done_ui(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>,
             let icon = asset_server.load(ach_def.icon_path());
             parent.spawn(ImageBundle {
                 style: Style {
-                    width: Val::Px(ACH_ICON_SIZE),
-                    height: Val::Px(ACH_ICON_SIZE),
-                    margin: UiRect::all(app::ui::px_p(3.0)),
+                    width: Val::Px(ACH_DONE_ICON_SIZE),
+                    height: Val::Px(ACH_DONE_ICON_SIZE),
+                    margin: UiRect::all(app::ui::px_p(1.8)),
                     ..default()
                 },
                 image: UiImage::new(icon),
