@@ -1,3 +1,9 @@
+# v3.5.0
+
+- (game) Use designed trademark title.
+- (game) Refine achievement UI, add SE when UI is focused.
+- (game) Refine helps, make them easier to understand.
+
 # v3.4.0
 
 - (platform:web) Implement static loading screen.

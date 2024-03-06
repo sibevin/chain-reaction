@@ -1,6 +1,6 @@
 [package]
 name = "chain-reaction"
-version = "3.4.0"
+version = "3.5.0"
 edition = "2021"
 license = "GPL-3.0-or-later"
 
@@ -24,4 +24,3 @@ opt-level = 1
 
 [profile.dev.package."*"]
 opt-level = 3
-
