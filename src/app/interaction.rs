@@ -1,5 +1,6 @@
 use crate::app;
 use bevy::prelude::*;
+use bevy_persistent::prelude::*;
 use bevy_ui_navigation::{
     prelude::{FocusState, Focusable},
     NavRequestSystem,
@@ -42,9 +43,18 @@ type FocusableButton = (Changed<Focusable>, With<IaButton>);
 
 fn update_button_interaction(
     mut focusables: Query<(&Focusable, &mut BackgroundColor), FocusableButton>,
+    mut commands: Commands,
+    audio_se_asset: Res<app::audio::AudioSeAsset>,
+    settings: Res<Persistent<app::settings::Settings>>,
 ) {
     for (focus, mut color) in focusables.iter_mut() {
         let new_color = if matches!(focus.state(), FocusState::Focused) {
+            app::audio::play_se(
+                app::audio::AudioSe::Focus,
+                &mut commands,
+                &audio_se_asset,
+                settings.as_ref(),
+            );
             app::ui::BTN_HOVERED_BG
         } else {
             app::ui::BTN_BG
@@ -57,9 +67,18 @@ type FocusableSwitch = (Changed<Focusable>, With<IaSwitch>);
 
 fn update_switch_interaction(
     mut focusables: Query<(&Focusable, &mut BorderColor), FocusableSwitch>,
+    mut commands: Commands,
+    audio_se_asset: Res<app::audio::AudioSeAsset>,
+    settings: Res<Persistent<app::settings::Settings>>,
 ) {
     for (focus, mut color) in focusables.iter_mut() {
         let new_color = if matches!(focus.state(), FocusState::Focused) {
+            app::audio::play_se(
+                app::audio::AudioSe::Focus,
+                &mut commands,
+                &audio_se_asset,
+                settings.as_ref(),
+            );
             app::ui::SECONDARY_COLOR
         } else {
             app::ui::BG_COLOR
@@ -72,9 +91,18 @@ type FocusableSlider = (Changed<Focusable>, With<IaSlider>);
 
 fn update_slider_interaction(
     mut focusables: Query<(&Focusable, &mut BorderColor), FocusableSlider>,
+    mut commands: Commands,
+    audio_se_asset: Res<app::audio::AudioSeAsset>,
+    settings: Res<Persistent<app::settings::Settings>>,
 ) {
     for (focus, mut color) in focusables.iter_mut() {
         let new_color = if matches!(focus.state(), FocusState::Focused) {
+            app::audio::play_se(
+                app::audio::AudioSe::Focus,
+                &mut commands,
+                &audio_se_asset,
+                settings.as_ref(),
+            );
             app::ui::SECONDARY_COLOR
         } else {
             app::ui::BG_COLOR
@@ -85,9 +113,20 @@ fn update_slider_interaction(
 
 type FocusableLink = (Changed<Focusable>, With<IaLink>);
 
-fn update_link_interaction(mut focusables: Query<(&Focusable, &mut BorderColor), FocusableLink>) {
+fn update_link_interaction(
+    mut focusables: Query<(&Focusable, &mut BorderColor), FocusableLink>,
+    mut commands: Commands,
+    audio_se_asset: Res<app::audio::AudioSeAsset>,
+    settings: Res<Persistent<app::settings::Settings>>,
+) {
     for (focus, mut color) in focusables.iter_mut() {
         let new_color = if matches!(focus.state(), FocusState::Focused) {
+            app::audio::play_se(
+                app::audio::AudioSe::Focus,
+                &mut commands,
+                &audio_se_asset,
+                settings.as_ref(),
+            );
             app::ui::FG_COLOR
         } else {
             app::ui::BG_COLOR

@@ -11,6 +11,7 @@ pub enum AudioSe {
     Boom,
     Hit,
     Tada,
+    Focus,
 }
 
 #[derive(Resource, Default)]
@@ -20,6 +21,7 @@ pub struct AudioSeAsset {
     boom: Option<Handle<AudioSource>>,
     hit: Option<Handle<AudioSource>>,
     tada: Option<Handle<AudioSource>>,
+    focus: Option<Handle<AudioSource>>,
 }
 
 impl AudioSeAsset {
@@ -30,6 +32,7 @@ impl AudioSeAsset {
             AudioSe::Boom => &self.boom,
             AudioSe::Hit => &self.hit,
             AudioSe::Tada => &self.tada,
+            AudioSe::Focus => &self.focus,
         }
     }
     pub fn set(&mut self, se_type: AudioSe, handle: Handle<AudioSource>) {
@@ -39,6 +42,7 @@ impl AudioSeAsset {
             AudioSe::Boom => self.boom = Some(handle),
             AudioSe::Hit => self.hit = Some(handle),
             AudioSe::Tada => self.tada = Some(handle),
+            AudioSe::Focus => self.focus = Some(handle),
         }
     }
 }
@@ -67,6 +71,7 @@ fn init_se_asset(audio_se_asset: &mut ResMut<AudioSeAsset>, asset_server: &Res<A
     audio_se_asset.set(AudioSe::Boom, asset_server.load("audio/se/game_over.ogg"));
     audio_se_asset.set(AudioSe::Hit, asset_server.load("audio/se/break_parts.ogg"));
     audio_se_asset.set(AudioSe::Tada, asset_server.load("audio/se/tada.ogg"));
+    audio_se_asset.set(AudioSe::Focus, asset_server.load("audio/se/ui_focus.ogg"));
 }
 
 fn build_bgm(
