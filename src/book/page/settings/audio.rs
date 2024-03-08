@@ -241,11 +241,13 @@ fn handle_ui_navigation(
                                         &asset_server,
                                         is_enabled,
                                     );
-                                    if let Ok(sink) = audio_bgm_query.get_single() {
-                                        if is_enabled {
-                                            sink.play();
-                                        } else {
-                                            sink.pause();
+                                    if target == "bgm" {
+                                        if let Ok(sink) = audio_bgm_query.get_single() {
+                                            if is_enabled {
+                                                sink.play();
+                                            } else {
+                                                sink.pause();
+                                            }
                                         }
                                     }
                                 }
