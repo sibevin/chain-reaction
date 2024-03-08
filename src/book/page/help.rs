@@ -223,7 +223,7 @@ fn handle_ui_navigation(
 }
 
 const HELP_PANEL_SIZE: f32 = 480.0;
-const HELP_COUNT: u8 = 14;
+const HELP_COUNT: u8 = 13;
 
 fn build_help_panel(parent: &mut ChildBuilder, asset_server: &Res<AssetServer>) {
     parent
