@@ -49,7 +49,6 @@ impl PluginGroup for AppSubPlugins {
             .add(settings::SettingsPlugin)
             .add(leaderboard::LeaderboardPlugin)
             .add(achievement::AchievementPlugin)
-            .add(audio::AudioSeAssetPlugin)
             .add(key_binding::KeyBindingPlugin)
             .add(interaction::InteractionPlugin)
             .add(anime_effect::AnimeEffectPlugin)

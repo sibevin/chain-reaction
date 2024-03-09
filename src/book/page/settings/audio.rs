@@ -178,7 +178,7 @@ fn page_enter(
 fn handle_ui_events(
     mut events: EventReader<ui::AppUiEvent>,
     mut settings: ResMut<Persistent<app::settings::Settings>>,
-    audio_bgm_query: Query<&AudioSink, With<app::audio::AudioBgm>>,
+    audio_bgm_query: app::audio::QueryAudioBgm,
     mut ui_query: Query<(Entity, &mut ui::AppUiData), With<ui::AppUiData>>,
     mut nav_requests: EventWriter<NavRequest>,
 ) {
@@ -191,9 +191,7 @@ fn handle_ui_events(
                     })
                     .expect("failed to update slider");
                 if data.target == "bgm" {
-                    if let Ok(sink) = audio_bgm_query.get_single() {
-                        sink.set_volume(app::audio::to_volume(data.value));
-                    }
+                    app::audio::set_bgm_volume(settings.get_value("bgm"), &audio_bgm_query);
                 }
                 ui::update_ui_value(&mut ui_query, data.clone());
             }
@@ -217,8 +215,7 @@ fn handle_ui_navigation(
     mut page_state: ResMut<NextState<PageState>>,
     mut settings: ResMut<Persistent<app::settings::Settings>>,
     mut ui_query: Query<(Entity, &mut ui::AppUiData), With<ui::AppUiData>>,
-    audio_bgm_query: Query<&AudioSink, With<app::audio::AudioBgm>>,
-    audio_se_asset: Res<app::audio::AudioSeAsset>,
+    audio_bgm_query: app::audio::QueryAudioBgm,
     asset_server: Res<AssetServer>,
 ) {
     for event in nav_events.read() {
@@ -253,9 +250,9 @@ fn handle_ui_navigation(
                                 }
                                 ButtonAction::PlaySe => {
                                     app::audio::play_se(
-                                        app::audio::AudioSe::Boom,
+                                        "game_over",
                                         &mut commands,
-                                        &audio_se_asset,
+                                        &asset_server,
                                         settings.as_ref(),
                                     );
                                 }

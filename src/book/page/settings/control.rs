@@ -570,7 +570,6 @@ fn draw_demo_circle(commands: &mut Commands, circle_entity: Entity, thumb_pos: (
 fn handle_ui_events(
     mut events: EventReader<ui::AppUiEvent>,
     mut settings: ResMut<Persistent<app::settings::Settings>>,
-    audio_bgm_query: Query<&AudioSink, With<app::audio::AudioBgm>>,
     mut ui_query: Query<(Entity, &mut ui::AppUiData), With<ui::AppUiData>>,
     mut nav_requests: EventWriter<NavRequest>,
 ) {
@@ -582,11 +581,6 @@ fn handle_ui_events(
                         settings.set_value(data.target.as_str(), data.value as i8);
                     })
                     .expect("failed to update slider");
-                if data.target == "bgm" {
-                    if let Ok(sink) = audio_bgm_query.get_single() {
-                        sink.set_volume(app::audio::to_volume(data.value));
-                    }
-                }
                 ui::update_ui_value(&mut ui_query, data.clone());
             }
             ui::AppUiEvent::Lock { entity: _ } => {
@@ -600,17 +594,13 @@ fn handle_ui_events(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 fn handle_ui_navigation(
-    mut commands: Commands,
     action_query: Query<(Entity, &mut ButtonAction), With<ButtonAction>>,
     mut switch_btn_query: Query<(&Parent, &mut UiImage, &mut ui::SwitchButton)>,
     mut nav_events: EventReader<NavEvent>,
     mut page_state: ResMut<NextState<PageState>>,
     mut settings: ResMut<Persistent<app::settings::Settings>>,
     mut ui_query: Query<(Entity, &mut ui::AppUiData), With<ui::AppUiData>>,
-    audio_bgm_query: Query<&AudioSink, With<app::audio::AudioBgm>>,
-    audio_se_asset: Res<app::audio::AudioSeAsset>,
     asset_server: Res<AssetServer>,
 ) {
     for event in nav_events.read() {
@@ -632,21 +622,6 @@ fn handle_ui_navigation(
                                         &mut switch_btn_query,
                                         &asset_server,
                                         is_enabled,
-                                    );
-                                    if let Ok(sink) = audio_bgm_query.get_single() {
-                                        if is_enabled {
-                                            sink.play();
-                                        } else {
-                                            sink.pause();
-                                        }
-                                    }
-                                }
-                                ButtonAction::PlaySe => {
-                                    app::audio::play_se(
-                                        app::audio::AudioSe::Boom,
-                                        &mut commands,
-                                        &audio_se_asset,
-                                        settings.as_ref(),
                                     );
                                 }
                                 ButtonAction::MoveToPage(state) => page_state.set(*state),
