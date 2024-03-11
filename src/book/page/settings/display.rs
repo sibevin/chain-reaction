@@ -26,11 +26,7 @@ impl PageBase for Page {
     fn build(&self, app: &mut App) {
         app.add_systems(
             OnEnter(self.state()),
-            (
-                interaction::reset_default_focus,
-                ui::clear_ui_canvas,
-                page_enter,
-            ),
+            (interaction::reset_default_focus, page_enter),
         )
         .add_systems(
             Update,

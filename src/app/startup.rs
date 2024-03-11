@@ -16,6 +16,9 @@ pub fn startup(
         window.mode = WindowMode::Windowed
     }
 
+    // element
+    element::startup(&mut commands);
+
     // audio
     audio::startup(&mut commands, &asset_server, &settings);
 

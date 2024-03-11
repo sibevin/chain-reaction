@@ -1,35 +1,11 @@
 use crate::{app, app::theme::*};
 use bevy::prelude::*;
-use bevy_prototype_lyon::prelude::*;
 use bevy_ui_navigation::prelude::*;
 
-mod kind;
 mod plugin;
 mod switch_btn;
 mod timer;
 
-pub use kind::apply_ui_lock;
-pub use kind::build_ui;
-pub use kind::clear_ui_canvas;
-pub use kind::create_ui_canvas;
-pub use kind::handle_ui_gamepad_axis_changing;
-pub use kind::handle_ui_gamepad_dpad_changing;
-pub use kind::handle_ui_gamepad_lock;
-pub use kind::handle_ui_gamepad_modifier;
-pub use kind::handle_ui_keyboard_changing;
-pub use kind::handle_ui_keyboard_lock;
-pub use kind::handle_ui_keyboard_modifier;
-pub use kind::handle_ui_mouse_clicking;
-pub use kind::handle_ui_mouse_dragging;
-pub use kind::handle_ui_mouse_unlock;
-pub use kind::refresh_ui_canvas;
-pub use kind::update_ui_value;
-pub use kind::AppUiAction;
-pub use kind::AppUiCanvasEntityMap;
-pub use kind::AppUiData;
-pub use kind::AppUiEvent;
-pub use kind::AppUiInitParams;
-pub use kind::AppUiTargetValuePair;
 pub use plugin::AppUiPlugin;
 pub use switch_btn::build_switch_btn;
 pub use switch_btn::update_switch_btn_display;

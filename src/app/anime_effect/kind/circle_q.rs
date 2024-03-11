@@ -7,7 +7,7 @@ impl AnimeEffectKindBase for AnimeEffectKindCircleQ {
     fn create(&self, commands: &mut Commands, param: AnimeEffectParam) -> Entity {
         let root_entity = commands
             .spawn((SpatialBundle {
-                transform: Transform::from_xyz(0.0, 0.0, ANIME_EFFECT_CANVAS_Z_INDEX),
+                transform: Transform::from_xyz(0.0, 0.0, ANIME_EFFECT_Z_INDEX),
                 ..default()
             },))
             .id();
@@ -49,7 +49,7 @@ impl AnimeEffectKindBase for AnimeEffectKindCircleQ {
                                 transform: Transform::from_xyz(
                                     0.0,
                                     0.0,
-                                    ANIME_EFFECT_CANVAS_Z_INDEX + ae.layer as f32 * 0.001 + 0.0001,
+                                    ae.layer as f32 * 0.001 + 0.0001,
                                 ),
                                 ..default()
                             },))
@@ -99,9 +99,7 @@ impl AnimeEffectKindBase for AnimeEffectKindCircleQ {
                                     transform: Transform::from_xyz(
                                         ae.pos_1.x,
                                         ae.pos_1.y,
-                                        ANIME_EFFECT_CANVAS_Z_INDEX
-                                            + ae.layer as f32 * 0.001
-                                            + 0.0002,
+                                        ae.layer as f32 * 0.001 + 0.0002,
                                     )
                                     .with_rotation(
                                         Quat::from_rotation_z(start_angle - angle * 2.0),
@@ -125,9 +123,7 @@ impl AnimeEffectKindBase for AnimeEffectKindCircleQ {
                                         transform: Transform::from_xyz(
                                             0.0,
                                             0.0,
-                                            ANIME_EFFECT_CANVAS_Z_INDEX
-                                                + ae.layer as f32 * 0.001
-                                                + 0.0002,
+                                            ae.layer as f32 * 0.001 + 0.0002,
                                         ),
                                         ..default()
                                     },

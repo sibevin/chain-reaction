@@ -1,5 +1,5 @@
 use crate::app::anime_effect::*;
-use crate::app::layer::ANIME_EFFECT_CANVAS_Z_INDEX;
+use crate::app::layer::ANIME_EFFECT_Z_INDEX;
 
 pub mod circle_q;
 pub mod circle_shoot;

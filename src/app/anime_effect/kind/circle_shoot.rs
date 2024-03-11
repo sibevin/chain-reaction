@@ -7,7 +7,7 @@ impl AnimeEffectKindBase for AnimeEffectKindCircleShoot {
     fn create(&self, commands: &mut Commands, param: AnimeEffectParam) -> Entity {
         let root_entity = commands
             .spawn((SpatialBundle {
-                transform: Transform::from_xyz(0.0, 0.0, ANIME_EFFECT_CANVAS_Z_INDEX),
+                transform: Transform::from_xyz(0.0, 0.0, ANIME_EFFECT_Z_INDEX),
                 ..default()
             },))
             .id();
@@ -44,11 +44,7 @@ impl AnimeEffectKindBase for AnimeEffectKindCircleShoot {
             entity_commands.with_children(|parent| {
                 parent
                     .spawn((SpatialBundle {
-                        transform: Transform::from_xyz(
-                            0.0,
-                            0.0,
-                            ANIME_EFFECT_CANVAS_Z_INDEX + 0.0001,
-                        ),
+                        transform: Transform::from_xyz(0.0, 0.0, 0.0001),
                         ..default()
                     },))
                     .with_children(|parent| {
@@ -81,12 +77,8 @@ impl AnimeEffectKindBase for AnimeEffectKindCircleShoot {
                     ShapeBundle {
                         path: path_builder.build(),
                         spatial: SpatialBundle {
-                            transform: Transform::from_xyz(
-                                ae.pos_1.x,
-                                ae.pos_1.y,
-                                ANIME_EFFECT_CANVAS_Z_INDEX + 0.0002,
-                            )
-                            .with_rotation(Quat::from_rotation_z(start_angle - angle * 2.0)),
+                            transform: Transform::from_xyz(ae.pos_1.x, ae.pos_1.y, 0.0002)
+                                .with_rotation(Quat::from_rotation_z(start_angle - angle * 2.0)),
                             ..default()
                         },
                         ..default()
@@ -103,11 +95,7 @@ impl AnimeEffectKindBase for AnimeEffectKindCircleShoot {
                     ShapeBundle {
                         path: geo_builder.build(),
                         spatial: SpatialBundle {
-                            transform: Transform::from_xyz(
-                                ae.pos_1.x,
-                                ae.pos_1.y,
-                                ANIME_EFFECT_CANVAS_Z_INDEX + 0.0003,
-                            ),
+                            transform: Transform::from_xyz(ae.pos_1.x, ae.pos_1.y, 0.0003),
                             ..default()
                         },
                         ..default()

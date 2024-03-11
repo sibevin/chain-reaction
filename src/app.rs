@@ -3,6 +3,7 @@ pub mod anime_effect;
 pub mod audio;
 pub mod cursor;
 pub mod cursor_icon;
+pub mod element;
 pub mod interaction;
 pub mod key_binding;
 pub mod layer;

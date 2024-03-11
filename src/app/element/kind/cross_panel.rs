@@ -1,20 +1,19 @@
-use super::{round_to_five, AppUiData, AppUiTargetValuePair};
-use crate::app::ui::*;
+use super::*;
+use crate::app::{cursor, interaction, theme, ui};
 use bevy::input;
 
-const X_PANEL_SIZE: f32 = FONT_SIZE * 7.0;
-const X_PANEL_P: f32 = FONT_SIZE * 0.5;
+const X_PANEL_SIZE: f32 = ui::FONT_SIZE * 7.0;
+const X_PANEL_P: f32 = ui::FONT_SIZE * 0.5;
 const X_PANEL_CONTROL_SIZE: f32 = X_PANEL_SIZE - X_PANEL_P * 2.0;
-const X_PANEL_W: f32 = FONT_SIZE * 0.5;
-const X_PANEL_B: f32 = FONT_SIZE * 0.1;
+const X_PANEL_W: f32 = ui::FONT_SIZE * 0.5;
+const X_PANEL_B: f32 = ui::FONT_SIZE * 0.1;
 const MARK_COUNT: u8 = 10;
 
-pub fn build_cross_panel_ui(
-    canvas_em: AppUiCanvasEntityMap,
+pub fn build_cross_panel_element(
     parent: &mut ChildBuilder,
     bundle: impl Bundle,
-    x: AppUiTargetValuePair,
-    y: AppUiTargetValuePair,
+    x: ElementTargetValuePair,
+    y: ElementTargetValuePair,
 ) -> Entity {
     parent
         .spawn((
@@ -26,15 +25,14 @@ pub fn build_cross_panel_ui(
                     align_items: AlignItems::Center,
                     ..default()
                 },
-                background_color: BTN_BG.into(),
+                background_color: theme::BTN_BG.into(),
                 ..default()
             },
             bundle,
-            app::interaction::IaCrossPanel,
-            AppUiData::CrossPanel {
+            interaction::IaCrossPanel,
+            ElementData::CrossPanel {
                 x,
                 y,
-                canvas_em,
                 is_modifier_on: false,
                 is_locked: false,
             },
@@ -43,14 +41,13 @@ pub fn build_cross_panel_ui(
         .id()
 }
 
-pub fn init_ui_display(
+pub fn init_display(
     commands: &mut Commands,
     window: &Query<&Window>,
     g_trans: &GlobalTransform,
-    canvas_em: &AppUiCanvasEntityMap,
+    fg_entity: Entity,
 ) {
-    if let Some(mut entity_commands) = commands.get_entity(canvas_em.bg) {
-        entity_commands.despawn_descendants();
+    if let Some(mut entity_commands) = commands.get_entity(fg_entity) {
         entity_commands.with_children(|parent| {
             let center_pos = fetch_center_pos(&window, &g_trans);
             let half_control_size = X_PANEL_CONTROL_SIZE / 2.0;
@@ -82,8 +79,8 @@ pub fn init_ui_display(
                     path: path_builder.build(),
                     ..default()
                 },
-                Stroke::new(SECONDARY_COLOR, X_PANEL_W),
-                Fill::color(SECONDARY_COLOR),
+                Stroke::new(theme::SECONDARY_COLOR, X_PANEL_W),
+                Fill::color(theme::SECONDARY_COLOR),
             ));
             for corner in corners {
                 let circle = shapes::Circle {
@@ -96,7 +93,7 @@ pub fn init_ui_display(
                         path: geo_builder.build(),
                         ..default()
                     },
-                    Fill::color(SECONDARY_COLOR),
+                    Fill::color(theme::SECONDARY_COLOR),
                 ));
             }
         });
@@ -105,18 +102,17 @@ pub fn init_ui_display(
 
 const DOT_SIZE: f32 = X_PANEL_CONTROL_SIZE * 0.0022;
 
-pub fn update_ui_display(
+pub fn update_display(
     commands: &mut Commands,
     window: &Query<&Window>,
     g_trans: &GlobalTransform,
-    canvas_em: &AppUiCanvasEntityMap,
-    x: &AppUiTargetValuePair,
-    y: &AppUiTargetValuePair,
+    dyn_entity: Entity,
+    x: &ElementTargetValuePair,
+    y: &ElementTargetValuePair,
     is_modifier_on: &bool,
     is_locked: &bool,
 ) {
-    if let Some(mut entity_commands) = commands.get_entity(canvas_em.fg) {
-        entity_commands.despawn_descendants();
+    if let Some(mut entity_commands) = commands.get_entity(dyn_entity) {
         entity_commands.with_children(|parent| {
             let center_pos = fetch_center_pos(&window, &g_trans);
             let thumb_pos = center_pos
@@ -134,7 +130,7 @@ pub fn update_ui_display(
                     path: geo_builder.build(),
                     ..default()
                 },
-                Fill::color(FG_COLOR),
+                Fill::color(theme::FG_COLOR),
             ));
             if *is_modifier_on || *is_locked {
                 let start_pos = center_pos - Vec2::ONE * X_PANEL_CONTROL_SIZE * 0.5;
@@ -152,7 +148,7 @@ pub fn update_ui_display(
                         path: path_builder.build(),
                         ..default()
                     },
-                    Stroke::new(FG_COLOR, DOT_SIZE * 3.0),
+                    Stroke::new(theme::FG_COLOR, DOT_SIZE * 3.0),
                 ));
             }
 
@@ -173,7 +169,7 @@ pub fn update_ui_display(
                                 path: geo_builder.build(),
                                 ..default()
                             },
-                            Fill::color(FG_COLOR),
+                            Fill::color(theme::FG_COLOR),
                         ));
                         if i > 0 && j > 0 {
                             let mark_pos = start_pos
@@ -191,7 +187,7 @@ pub fn update_ui_display(
                                     path: geo_builder.build(),
                                     ..default()
                                 },
-                                Fill::color(FG_COLOR),
+                                Fill::color(theme::FG_COLOR),
                             ));
                         }
                         if j > 0 {
@@ -210,7 +206,7 @@ pub fn update_ui_display(
                                     path: geo_builder.build(),
                                     ..default()
                                 },
-                                Fill::color(FG_COLOR),
+                                Fill::color(theme::FG_COLOR),
                             ));
                         }
                         if i > 0 {
@@ -229,7 +225,7 @@ pub fn update_ui_display(
                                     path: geo_builder.build(),
                                     ..default()
                                 },
-                                Fill::color(FG_COLOR),
+                                Fill::color(theme::FG_COLOR),
                             ));
                         }
                     }
@@ -242,9 +238,9 @@ pub fn update_ui_display(
 pub fn handle_mouse_clicking(
     window: &Query<&Window>,
     g_trans: &GlobalTransform,
-    cursor_data: &Res<app::cursor::AppCursorData>,
-    x: &mut AppUiTargetValuePair,
-    y: &mut AppUiTargetValuePair,
+    cursor_data: &Res<cursor::AppCursorData>,
+    x: &mut ElementTargetValuePair,
+    y: &mut ElementTargetValuePair,
     is_modifier_on: &bool,
 ) {
     let center_pos = fetch_center_pos(&window, &g_trans);
@@ -257,8 +253,8 @@ pub fn handle_mouse_clicking(
 
 pub fn handle_mouse_dragging(
     motion_events: &mut EventReader<input::mouse::MouseMotion>,
-    x: &mut AppUiTargetValuePair,
-    y: &mut AppUiTargetValuePair,
+    x: &mut ElementTargetValuePair,
+    y: &mut ElementTargetValuePair,
     is_modifier_on: &bool,
 ) {
     let dragging_moving_ratio: f32 = if *is_modifier_on { 2.0 } else { 1.0 };

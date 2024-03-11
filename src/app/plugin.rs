@@ -46,6 +46,7 @@ impl PluginGroup for AppSubPlugins {
         PluginGroupBuilder::start::<Self>()
             .add(timer::TimerPlugin)
             .add(ui::AppUiPlugin)
+            .add(element::ElementPlugin)
             .add(settings::SettingsPlugin)
             .add(leaderboard::LeaderboardPlugin)
             .add(achievement::AchievementPlugin)

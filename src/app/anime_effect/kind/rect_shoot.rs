@@ -9,7 +9,7 @@ impl AnimeEffectKindBase for AnimeEffectKindRectShoot {
     fn create(&self, commands: &mut Commands, param: AnimeEffectParam) -> Entity {
         let root_entity = commands
             .spawn((SpatialBundle {
-                transform: Transform::from_xyz(0.0, 0.0, ANIME_EFFECT_CANVAS_Z_INDEX),
+                transform: Transform::from_xyz(0.0, 0.0, ANIME_EFFECT_Z_INDEX),
                 ..default()
             },))
             .id();
@@ -49,11 +49,7 @@ impl AnimeEffectKindBase for AnimeEffectKindRectShoot {
                 let h = ae.pos_1.y - ae.pos_2.y;
                 parent
                     .spawn((SpatialBundle {
-                        transform: Transform::from_xyz(
-                            center_pos.x,
-                            center_pos.y,
-                            ANIME_EFFECT_CANVAS_Z_INDEX + 0.0001,
-                        ),
+                        transform: Transform::from_xyz(center_pos.x, center_pos.y, 0.0001),
                         ..default()
                     },))
                     .with_children(|parent| {
@@ -72,11 +68,7 @@ impl AnimeEffectKindBase for AnimeEffectKindRectShoot {
                     });
                 parent
                     .spawn((SpatialBundle {
-                        transform: Transform::from_xyz(
-                            0.0,
-                            0.0,
-                            ANIME_EFFECT_CANVAS_Z_INDEX + 0.0002,
-                        ),
+                        transform: Transform::from_xyz(0.0, 0.0, 0.0002),
                         ..default()
                     },))
                     .with_children(|parent| {
@@ -95,11 +87,7 @@ impl AnimeEffectKindBase for AnimeEffectKindRectShoot {
                     });
                 parent
                     .spawn((SpatialBundle {
-                        transform: Transform::from_xyz(
-                            0.0,
-                            0.0,
-                            ANIME_EFFECT_CANVAS_Z_INDEX + 0.0003,
-                        ),
+                        transform: Transform::from_xyz(0.0, 0.0, 0.0003),
                         ..default()
                     },))
                     .with_children(|parent| {

@@ -1,5 +1,5 @@
 use super::*;
-use crate::{app::anime_effect, app::interaction, app::ui};
+use crate::app::{anime_effect, element, interaction, ui};
 use bevy_persistent::prelude::*;
 use bevy_ui_navigation::NavRequestSystem;
 
@@ -25,29 +25,25 @@ impl PageBase for Page {
     fn build(&self, app: &mut App) {
         app.add_systems(
             OnEnter(self.state()),
-            (
-                interaction::reset_default_focus,
-                ui::clear_ui_canvas,
-                page_enter,
-            ),
+            (interaction::reset_default_focus, page_enter),
         )
         .add_systems(
             Update,
             ((
                 handle_ui_navigation,
-                ui::handle_ui_mouse_unlock,
-                ui::handle_ui_mouse_clicking,
-                ui::handle_ui_mouse_dragging,
-                ui::handle_ui_keyboard_lock,
-                ui::handle_ui_keyboard_changing,
-                ui::handle_ui_gamepad_lock,
-                ui::handle_ui_gamepad_dpad_changing,
-                ui::handle_ui_gamepad_axis_changing,
+                element::handle_element_mouse_unlock,
+                element::handle_element_mouse_clicking,
+                element::handle_element_mouse_dragging,
+                element::handle_element_keyboard_lock,
+                element::handle_element_keyboard_changing,
+                element::handle_element_gamepad_lock,
+                element::handle_element_gamepad_dpad_changing,
+                element::handle_element_gamepad_axis_changing,
                 interaction::handle_default_focus,
-                ui::handle_ui_gamepad_modifier,
-                ui::handle_ui_keyboard_modifier,
-                ui::refresh_ui_canvas,
-                handle_ui_events,
+                element::handle_element_gamepad_modifier,
+                element::handle_element_keyboard_modifier,
+                element::refresh_elements,
+                handle_element_events,
             )
                 .after(NavRequestSystem),)
                 .run_if(in_state(self.state())),
@@ -56,7 +52,7 @@ impl PageBase for Page {
             OnExit(self.state()),
             (
                 anime_effect::clear_anime_effect,
-                ui::clear_ui_canvas,
+                element::clear_elements,
                 ui::despawn_ui::<OnPage>,
             ),
         );
@@ -74,8 +70,6 @@ fn page_enter(
     asset_server: Res<AssetServer>,
     settings: Res<Persistent<app::settings::Settings>>,
 ) {
-    let se_slider_canvas = ui::create_ui_canvas(&mut commands);
-    let bgm_slider_canvas = ui::create_ui_canvas(&mut commands);
     commands
         .spawn((build_page_layout(), OnPage))
         .with_children(|parent| {
@@ -112,13 +106,12 @@ fn page_enter(
                                 ButtonAction::Toggle(String::from("bgm")),
                                 settings.is_enabled("bgm"),
                             );
-                            ui::build_ui(
+                            element::build_element(
                                 parent,
                                 &asset_server,
                                 ButtonAction::AppUiNav,
-                                bgm_slider_canvas,
-                                ui::AppUiInitParams::Slider {
-                                    data: ui::AppUiTargetValuePair {
+                                element::ElementInitParams::Slider {
+                                    data: element::ElementTargetValuePair {
                                         target: String::from("bgm"),
                                         value: settings.get_value("bgm"),
                                     },
@@ -141,13 +134,12 @@ fn page_enter(
                                     ..default()
                                 })
                                 .with_children(|parent| {
-                                    ui::build_ui(
+                                    element::build_element(
                                         parent,
                                         &asset_server,
                                         ButtonAction::AppUiNav,
-                                        se_slider_canvas,
-                                        ui::AppUiInitParams::Slider {
-                                            data: ui::AppUiTargetValuePair {
+                                        element::ElementInitParams::Slider {
+                                            data: element::ElementTargetValuePair {
                                                 target: String::from("se"),
                                                 value: settings.get_value("se"),
                                             },
@@ -175,16 +167,16 @@ fn page_enter(
         });
 }
 
-fn handle_ui_events(
-    mut events: EventReader<ui::AppUiEvent>,
+fn handle_element_events(
+    mut events: EventReader<element::ElementEvent>,
     mut settings: ResMut<Persistent<app::settings::Settings>>,
     audio_bgm_query: app::audio::QueryAudioBgm,
-    mut ui_query: Query<(Entity, &mut ui::AppUiData), With<ui::AppUiData>>,
+    mut ele_query: Query<(Entity, &mut element::ElementData), With<element::ElementData>>,
     mut nav_requests: EventWriter<NavRequest>,
 ) {
     for event in events.read() {
         match event {
-            ui::AppUiEvent::DataChanged { data } => {
+            element::ElementEvent::DataChanged { data } => {
                 settings
                     .update(|settings| {
                         settings.set_value(data.target.as_str(), data.value as i8);
@@ -193,12 +185,12 @@ fn handle_ui_events(
                 if data.target == "bgm" {
                     app::audio::set_bgm_volume(settings.get_value("bgm"), &audio_bgm_query);
                 }
-                ui::update_ui_value(&mut ui_query, data.clone());
+                element::update_element_value(&mut ele_query, data.clone());
             }
-            ui::AppUiEvent::Lock { entity: _ } => {
+            element::ElementEvent::Lock { entity: _ } => {
                 nav_requests.send(NavRequest::Lock);
             }
-            ui::AppUiEvent::Unlock => {
+            element::ElementEvent::Unlock => {
                 nav_requests.send(NavRequest::Unlock);
             }
             _ => (),
@@ -214,7 +206,7 @@ fn handle_ui_navigation(
     mut nav_events: EventReader<NavEvent>,
     mut page_state: ResMut<NextState<PageState>>,
     mut settings: ResMut<Persistent<app::settings::Settings>>,
-    mut ui_query: Query<(Entity, &mut ui::AppUiData), With<ui::AppUiData>>,
+    mut ele_query: Query<(Entity, &mut element::ElementData), With<element::ElementData>>,
     audio_bgm_query: app::audio::QueryAudioBgm,
     asset_server: Res<AssetServer>,
 ) {
@@ -263,7 +255,7 @@ fn handle_ui_navigation(
                     }
                 }
                 NavRequest::Unlock => {
-                    ui::apply_ui_lock(None, &mut ui_query);
+                    element::apply_element_lock(None, &mut ele_query);
                 }
                 _ => (),
             },

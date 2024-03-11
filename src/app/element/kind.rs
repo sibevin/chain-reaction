@@ -1,130 +1,82 @@
-use crate::app::{layer::UI_CANVAS_Z_INDEX, ui::*};
+use super::*;
+use crate::app::cursor;
 use bevy::input;
 
 pub mod cross_panel;
 pub mod slider;
 
 #[derive(Clone, Debug)]
-pub struct AppUiTargetValuePair {
+pub struct ElementTargetValuePair {
     pub target: String,
     pub value: u8,
 }
 
-pub enum AppUiInitParams {
+pub enum ElementInitParams {
     Slider {
-        data: AppUiTargetValuePair,
+        data: ElementTargetValuePair,
     },
     CrossPanel {
-        x: AppUiTargetValuePair,
-        y: AppUiTargetValuePair,
+        x: ElementTargetValuePair,
+        y: ElementTargetValuePair,
     },
 }
 
 #[derive(Component, Debug)]
-pub enum AppUiData {
+pub enum ElementData {
     Slider {
-        data: AppUiTargetValuePair,
-        canvas_em: AppUiCanvasEntityMap,
+        data: ElementTargetValuePair,
         is_modifier_on: bool,
         is_locked: bool,
     },
     CrossPanel {
-        x: AppUiTargetValuePair,
-        y: AppUiTargetValuePair,
-        canvas_em: AppUiCanvasEntityMap,
+        x: ElementTargetValuePair,
+        y: ElementTargetValuePair,
         is_modifier_on: bool,
         is_locked: bool,
     },
 }
 
 #[derive(PartialEq)]
-pub enum AppUiAction {
+pub enum ElementAction {
     Confirm,
     Cancel,
 }
 
 #[derive(Event, Debug)]
-pub enum AppUiEvent {
-    DataChanged { data: AppUiTargetValuePair },
+pub enum ElementEvent {
+    DataChanged { data: ElementTargetValuePair },
     Focused { entity: Entity },
     Lock { entity: Entity },
     Unlock,
 }
 
 #[derive(Component)]
-pub struct AppUiText;
+pub struct ElementText;
 
-#[derive(Debug)]
-pub struct AppUiCanvasEntityMap {
-    pub root: Entity,
-    pub fg: Entity,
-    pub bg: Entity,
-}
-
-#[derive(Component)]
-pub struct AppUiCanvas;
-
-pub fn create_ui_canvas(commands: &mut Commands) -> AppUiCanvasEntityMap {
-    let root_entity = commands
-        .spawn((
-            SpatialBundle {
-                transform: Transform::from_xyz(0.0, 0.0, UI_CANVAS_Z_INDEX),
-                ..default()
-            },
-            AppUiCanvas,
-        ))
-        .id();
-    let mut bg_entity = Entity::PLACEHOLDER;
-    let mut fg_entity = Entity::PLACEHOLDER;
-    if let Some(mut entity_commands) = commands.get_entity(root_entity) {
-        entity_commands.with_children(|parent| {
-            bg_entity = parent
-                .spawn(SpatialBundle {
-                    transform: Transform::from_xyz(0.0, 0.0, UI_CANVAS_Z_INDEX + 0.1),
-                    ..default()
-                })
-                .id();
-            fg_entity = parent
-                .spawn(SpatialBundle {
-                    transform: Transform::from_xyz(0.0, 0.0, UI_CANVAS_Z_INDEX + 0.2),
-                    ..default()
-                })
-                .id();
-        });
-    }
-    AppUiCanvasEntityMap {
-        root: root_entity,
-        bg: bg_entity,
-        fg: fg_entity,
-    }
-}
-
-pub fn build_ui(
+pub fn build_element(
     parent: &mut ChildBuilder,
     asset_server: &Res<AssetServer>,
     bundle: impl Bundle,
-    canvas_em: AppUiCanvasEntityMap,
-    params: AppUiInitParams,
+    params: ElementInitParams,
 ) {
     match params {
-        AppUiInitParams::Slider { data } => {
-            slider::build_slider_ui(canvas_em, parent, asset_server, bundle, data);
+        ElementInitParams::Slider { data } => {
+            slider::build_slider_element(parent, asset_server, bundle, data);
         }
-        AppUiInitParams::CrossPanel { x, y } => {
-            cross_panel::build_cross_panel_ui(canvas_em, parent, bundle, x, y);
+        ElementInitParams::CrossPanel { x, y } => {
+            cross_panel::build_cross_panel_element(parent, bundle, x, y);
         }
     }
 }
 
-pub fn update_ui_value(
-    ui_query: &mut Query<(Entity, &mut AppUiData), With<AppUiData>>,
-    target_value: AppUiTargetValuePair,
+pub fn update_element_value(
+    ele_query: &mut Query<(Entity, &mut ElementData), With<ElementData>>,
+    target_value: ElementTargetValuePair,
 ) {
-    for (_, mut data) in ui_query.iter_mut() {
+    for (_, mut data) in ele_query.iter_mut() {
         match *data {
-            AppUiData::Slider {
+            ElementData::Slider {
                 ref mut data,
-                canvas_em: _,
                 is_modifier_on: _,
                 is_locked: _,
             } => {
@@ -132,10 +84,9 @@ pub fn update_ui_value(
                     data.value = target_value.value;
                 }
             }
-            AppUiData::CrossPanel {
+            ElementData::CrossPanel {
                 ref mut x,
                 ref mut y,
-                canvas_em: _,
                 is_modifier_on: _,
                 is_locked: _,
             } => {
@@ -150,75 +101,80 @@ pub fn update_ui_value(
     }
 }
 
-pub fn refresh_ui_canvas(
+pub fn refresh_elements(
     mut commands: Commands,
-    ui_query: Query<(&GlobalTransform, Entity, &mut AppUiData), With<AppUiData>>,
-    mut ui_text_query: Query<(&Parent, &mut Text), With<AppUiText>>,
+    ele_query: Query<(&GlobalTransform, Entity, &mut ElementData), With<ElementData>>,
+    fg_query: Query<Entity, With<AppElementFg>>,
+    dyn_query: Query<Entity, With<AppElementDyn>>,
+    mut ui_text_query: Query<(&Parent, &mut Text), With<ElementText>>,
     window: Query<&Window>,
-    mut delay_timer: ResMut<timer::AppUiBuildTimer>,
-    mut refresh_timer: ResMut<timer::AppUiRefreshTimer>,
+    mut delay_timer: ResMut<timer::ElementBuildTimer>,
+    mut refresh_timer: ResMut<timer::ElementRefreshTimer>,
     time: Res<Time>,
 ) {
+    let fg_entity = fg_query.get_single().unwrap();
+    let dyn_entity = dyn_query.get_single().unwrap();
     if delay_timer.0.tick(time.delta()).just_finished() {
-        for (g_trans, _, data) in ui_query.iter() {
+        if let Some(mut entity_commands) = commands.get_entity(fg_entity) {
+            entity_commands.despawn_descendants();
+        }
+        for (g_trans, _, data) in ele_query.iter() {
             match data {
-                AppUiData::Slider {
+                ElementData::Slider {
                     data: _,
-                    canvas_em,
                     is_modifier_on: _,
                     is_locked: _,
-                } => slider::init_ui_display(&mut commands, &window, &g_trans, &canvas_em),
-                AppUiData::CrossPanel {
+                } => slider::init_display(&mut commands, &window, &g_trans, fg_entity),
+                ElementData::CrossPanel {
                     x: _,
                     y: _,
-                    canvas_em,
                     is_modifier_on: _,
                     is_locked: _,
-                } => cross_panel::init_ui_display(&mut commands, &window, &g_trans, &canvas_em),
+                } => cross_panel::init_display(&mut commands, &window, &g_trans, fg_entity),
             }
         }
     }
     if refresh_timer.0.tick(time.delta()).just_finished() {
-        for (g_trans, entity, data) in ui_query.iter() {
+        if let Some(mut entity_commands) = commands.get_entity(dyn_entity) {
+            entity_commands.despawn_descendants();
+        }
+        for (g_trans, entity, data) in ele_query.iter() {
             for (parent, mut ui_text) in ui_text_query.iter_mut() {
                 if parent.get() == entity {
                     match data {
-                        AppUiData::Slider {
+                        ElementData::Slider {
                             data,
-                            canvas_em: _,
                             is_modifier_on: _,
                             is_locked: _,
-                        } => slider::update_ui_text(&mut ui_text, &data),
+                        } => slider::update_text(&mut ui_text, &data),
                         _ => (),
                     }
                 }
             }
             match data {
-                AppUiData::Slider {
+                ElementData::Slider {
                     data,
-                    canvas_em,
                     is_modifier_on,
                     is_locked,
-                } => slider::update_ui_display(
+                } => slider::update_display(
                     &mut commands,
                     &window,
                     &g_trans,
-                    &canvas_em,
+                    dyn_entity,
                     &data,
                     &is_modifier_on,
                     &is_locked,
                 ),
-                AppUiData::CrossPanel {
+                ElementData::CrossPanel {
                     x,
                     y,
-                    canvas_em,
                     is_modifier_on,
                     is_locked,
-                } => cross_panel::update_ui_display(
+                } => cross_panel::update_display(
                     &mut commands,
                     &window,
                     &g_trans,
-                    &canvas_em,
+                    dyn_entity,
                     &x,
                     &y,
                     &is_modifier_on,
@@ -229,36 +185,48 @@ pub fn refresh_ui_canvas(
     }
 }
 
-pub fn clear_ui_canvas(
+pub fn clear_elements(
     mut commands: Commands,
-    ae_query: Query<Entity, With<AppUiCanvas>>,
-    mut build_timer: ResMut<timer::AppUiBuildTimer>,
-    mut refresh_timer: ResMut<timer::AppUiRefreshTimer>,
+    bg_query: Query<Entity, With<AppElementBg>>,
+    fg_query: Query<Entity, With<AppElementFg>>,
+    dyn_query: Query<Entity, With<AppElementDyn>>,
+    mut build_timer: ResMut<timer::ElementBuildTimer>,
+    mut refresh_timer: ResMut<timer::ElementRefreshTimer>,
 ) {
-    for ae_entity in ae_query.iter() {
-        if let Some(entity_commands) = commands.get_entity(ae_entity) {
-            entity_commands.despawn_recursive()
-        }
+    let bg_entity = bg_query.get_single().unwrap();
+    let fg_entity = fg_query.get_single().unwrap();
+    let dyn_entity = dyn_query.get_single().unwrap();
+    if let Some(mut entity_commands) = commands.get_entity(bg_entity) {
+        entity_commands.despawn_descendants();
+    }
+    if let Some(mut entity_commands) = commands.get_entity(fg_entity) {
+        entity_commands.despawn_descendants();
+    }
+    if let Some(mut entity_commands) = commands.get_entity(dyn_entity) {
+        entity_commands.despawn_descendants();
     }
     build_timer.0.reset();
     refresh_timer.0.reset();
 }
 
-pub fn handle_ui_mouse_clicking(
+pub fn reset_elements(mut build_timer: ResMut<timer::ElementBuildTimer>) {
+    build_timer.0.reset();
+}
+
+pub fn handle_element_mouse_clicking(
     mut ui_clicking_query: Query<
-        (&Interaction, &GlobalTransform, &mut AppUiData),
+        (&Interaction, &GlobalTransform, &mut ElementData),
         Changed<Interaction>,
     >,
     window: Query<&Window>,
-    cursor_data: Res<app::cursor::AppCursorData>,
-    mut event_writer: EventWriter<AppUiEvent>,
+    cursor_data: Res<cursor::AppCursorData>,
+    mut event_writer: EventWriter<ElementEvent>,
 ) {
     for (interaction, &g_trans, mut data) in ui_clicking_query.iter_mut() {
         if *interaction == Interaction::Pressed {
             match &mut data.as_mut() {
-                AppUiData::Slider {
+                ElementData::Slider {
                     ref mut data,
-                    canvas_em: _,
                     is_modifier_on,
                     is_locked: _,
                 } => {
@@ -269,12 +237,11 @@ pub fn handle_ui_mouse_clicking(
                         data,
                         is_modifier_on,
                     );
-                    event_writer.send(AppUiEvent::DataChanged { data: data.clone() });
+                    event_writer.send(ElementEvent::DataChanged { data: data.clone() });
                 }
-                AppUiData::CrossPanel {
+                ElementData::CrossPanel {
                     ref mut x,
                     ref mut y,
-                    canvas_em: _,
                     is_modifier_on,
                     is_locked: _,
                 } => {
@@ -286,36 +253,34 @@ pub fn handle_ui_mouse_clicking(
                         y,
                         is_modifier_on,
                     );
-                    event_writer.send(AppUiEvent::DataChanged { data: x.clone() });
-                    event_writer.send(AppUiEvent::DataChanged { data: y.clone() });
+                    event_writer.send(ElementEvent::DataChanged { data: x.clone() });
+                    event_writer.send(ElementEvent::DataChanged { data: y.clone() });
                 }
             }
         }
     }
 }
 
-pub fn handle_ui_mouse_unlock(
-    mut ui_query: Query<&mut AppUiData, With<AppUiData>>,
-    mut event_writer: EventWriter<AppUiEvent>,
+pub fn handle_element_mouse_unlock(
+    mut ele_query: Query<&mut ElementData, With<ElementData>>,
+    mut event_writer: EventWriter<ElementEvent>,
     mouse_input: Res<Input<MouseButton>>,
 ) {
     if mouse_input.get_just_pressed().next().is_some() {
-        for mut data in ui_query.iter_mut() {
+        for mut data in ele_query.iter_mut() {
             let is_ui_locked;
             let data = data.as_mut();
             match data {
-                AppUiData::Slider {
+                ElementData::Slider {
                     data: _,
-                    canvas_em: _,
                     is_modifier_on: _,
                     ref mut is_locked,
                 } => {
                     is_ui_locked = is_locked;
                 }
-                AppUiData::CrossPanel {
+                ElementData::CrossPanel {
                     x: _,
                     y: _,
-                    canvas_em: _,
                     is_modifier_on: _,
                     ref mut is_locked,
                 } => {
@@ -324,36 +289,34 @@ pub fn handle_ui_mouse_unlock(
             };
             if *is_ui_locked {
                 *is_ui_locked = false;
-                event_writer.send(AppUiEvent::Unlock);
+                event_writer.send(ElementEvent::Unlock);
             }
         }
     }
 }
 
-pub fn handle_ui_mouse_dragging(
-    mut ui_query: Query<(&Interaction, &mut AppUiData), With<AppUiData>>,
+pub fn handle_element_mouse_dragging(
+    mut ele_query: Query<(&Interaction, &mut ElementData), With<ElementData>>,
     mut motion_events: EventReader<input::mouse::MouseMotion>,
-    mut event_writer: EventWriter<AppUiEvent>,
+    mut event_writer: EventWriter<ElementEvent>,
 ) {
-    for (interaction, mut data) in ui_query.iter_mut() {
+    for (interaction, mut data) in ele_query.iter_mut() {
         if *interaction == Interaction::Pressed {
             match &mut data.as_mut() {
-                AppUiData::Slider {
+                ElementData::Slider {
                     ref mut data,
-                    canvas_em: _,
                     is_modifier_on,
                     is_locked: _,
                 } => {
                     let ori_value = data.value;
                     slider::handle_mouse_dragging(&mut motion_events, data, is_modifier_on);
                     if ori_value != data.value {
-                        event_writer.send(AppUiEvent::DataChanged { data: data.clone() });
+                        event_writer.send(ElementEvent::DataChanged { data: data.clone() });
                     }
                 }
-                AppUiData::CrossPanel {
+                ElementData::CrossPanel {
                     ref mut x,
                     ref mut y,
-                    canvas_em: _,
                     is_modifier_on,
                     is_locked: _,
                 } => {
@@ -361,10 +324,10 @@ pub fn handle_ui_mouse_dragging(
                     let ori_y = y.value;
                     cross_panel::handle_mouse_dragging(&mut motion_events, x, y, is_modifier_on);
                     if ori_x != x.value {
-                        event_writer.send(AppUiEvent::DataChanged { data: x.clone() });
+                        event_writer.send(ElementEvent::DataChanged { data: x.clone() });
                     }
                     if ori_y != y.value {
-                        event_writer.send(AppUiEvent::DataChanged { data: y.clone() });
+                        event_writer.send(ElementEvent::DataChanged { data: y.clone() });
                     }
                 }
             }
@@ -372,11 +335,11 @@ pub fn handle_ui_mouse_dragging(
     }
 }
 
-pub fn handle_ui_gamepad_lock(
+pub fn handle_element_gamepad_lock(
     gamepads: Res<Gamepads>,
     input: Res<Input<GamepadButton>>,
-    mut ui_focusables: Query<(Entity, &Focusable, &mut AppUiData), With<AppUiData>>,
-    mut event_writer: EventWriter<AppUiEvent>,
+    mut ui_focusables: Query<(Entity, &Focusable, &mut ElementData), With<ElementData>>,
+    mut event_writer: EventWriter<ElementEvent>,
 ) {
     for gamepad in gamepads.iter() {
         let mut is_locked_changed = None;
@@ -387,15 +350,15 @@ pub fn handle_ui_gamepad_lock(
             is_locked_changed = Some(false);
         }
         if let Some(is_locked_value) = is_locked_changed {
-            handle_ui_lock(is_locked_value, &mut ui_focusables, &mut event_writer);
+            handle_element_lock(is_locked_value, &mut ui_focusables, &mut event_writer);
         }
     }
 }
 
-pub fn handle_ui_keyboard_lock(
+pub fn handle_element_keyboard_lock(
     input: Res<Input<KeyCode>>,
-    mut ui_focusables: Query<(Entity, &Focusable, &mut AppUiData), With<AppUiData>>,
-    mut event_writer: EventWriter<AppUiEvent>,
+    mut ui_focusables: Query<(Entity, &Focusable, &mut ElementData), With<ElementData>>,
+    mut event_writer: EventWriter<ElementEvent>,
 ) {
     let mut is_locked_changed = None;
     if input.any_just_pressed([KeyCode::Space]) {
@@ -405,31 +368,29 @@ pub fn handle_ui_keyboard_lock(
         is_locked_changed = Some(false);
     }
     if let Some(is_locked_value) = is_locked_changed {
-        handle_ui_lock(is_locked_value, &mut ui_focusables, &mut event_writer);
+        handle_element_lock(is_locked_value, &mut ui_focusables, &mut event_writer);
     }
 }
 
-fn handle_ui_lock(
+fn handle_element_lock(
     is_locked_value: bool,
-    ui_focusables: &mut Query<(Entity, &Focusable, &mut AppUiData), With<AppUiData>>,
-    event_writer: &mut EventWriter<AppUiEvent>,
+    ui_focusables: &mut Query<(Entity, &Focusable, &mut ElementData), With<ElementData>>,
+    event_writer: &mut EventWriter<ElementEvent>,
 ) {
     for (entity, focus, mut data) in ui_focusables.iter_mut() {
         let is_ui_locked;
         let data = data.as_mut();
         match data {
-            AppUiData::Slider {
+            ElementData::Slider {
                 data: _,
-                canvas_em: _,
                 is_modifier_on: _,
                 ref mut is_locked,
             } => {
                 is_ui_locked = is_locked;
             }
-            AppUiData::CrossPanel {
+            ElementData::CrossPanel {
                 x: _,
                 y: _,
-                canvas_em: _,
                 is_modifier_on: _,
                 ref mut is_locked,
             } => {
@@ -440,23 +401,23 @@ fn handle_ui_lock(
             if *is_ui_locked {
                 if !is_locked_value {
                     *is_ui_locked = is_locked_value;
-                    event_writer.send(AppUiEvent::Unlock);
+                    event_writer.send(ElementEvent::Unlock);
                 }
             } else {
                 if is_locked_value {
                     *is_ui_locked = is_locked_value;
-                    event_writer.send(AppUiEvent::Lock { entity });
+                    event_writer.send(ElementEvent::Lock { entity });
                 }
             }
         }
     }
 }
 
-pub fn handle_ui_gamepad_dpad_changing(
+pub fn handle_element_gamepad_dpad_changing(
     gamepads: Res<Gamepads>,
     button_input: Res<Input<GamepadButton>>,
-    mut ui_query: Query<&mut AppUiData, With<AppUiData>>,
-    mut event_writer: EventWriter<AppUiEvent>,
+    mut ele_query: Query<&mut ElementData, With<ElementData>>,
+    mut event_writer: EventWriter<ElementEvent>,
 ) {
     for gamepad in gamepads.iter() {
         let mut change: Option<(String, i8)> = None;
@@ -477,20 +438,20 @@ pub fn handle_ui_gamepad_dpad_changing(
             change = Some((String::from("sub"), -1));
         }
         if let Some(change) = change {
-            handle_ui_changing(change, &mut ui_query, &mut event_writer);
+            handle_element_changing(change, &mut ele_query, &mut event_writer);
             return;
         }
     }
 }
 const GAMEPAD_MIN_THRESHOLD: f32 = 0.25;
 
-pub fn handle_ui_gamepad_axis_changing(
+pub fn handle_element_gamepad_axis_changing(
     gamepads: Res<Gamepads>,
     axis_input: Res<Axis<GamepadAxis>>,
-    mut ui_query: Query<&mut AppUiData, With<AppUiData>>,
-    mut event_writer: EventWriter<AppUiEvent>,
+    mut ele_query: Query<&mut ElementData, With<ElementData>>,
+    mut event_writer: EventWriter<ElementEvent>,
     mut last_delta: Local<Vec2>,
-    mut throttle_timer: ResMut<timer::AppUiThrottleTimer>,
+    mut throttle_timer: ResMut<timer::ElementThrottleTimer>,
     time: Res<Time>,
 ) {
     if throttle_timer.0.tick(time.delta()).just_finished() {
@@ -514,21 +475,21 @@ pub fn handle_ui_gamepad_axis_changing(
             if last_delta.x.abs() > 0.0 {
                 let delta = if last_delta.x > 0.0 { 1 } else { -1 };
                 let change = (String::from("main"), delta as i8);
-                handle_ui_changing(change, &mut ui_query, &mut event_writer);
+                handle_element_changing(change, &mut ele_query, &mut event_writer);
             }
             if last_delta.y.abs() > 0.0 {
                 let delta = if last_delta.y > 0.0 { 1 } else { -1 };
                 let change = (String::from("sub"), delta as i8);
-                handle_ui_changing(change, &mut ui_query, &mut event_writer);
+                handle_element_changing(change, &mut ele_query, &mut event_writer);
             }
         }
     }
 }
 
-pub fn handle_ui_keyboard_changing(
+pub fn handle_element_keyboard_changing(
     kb_input: Res<Input<KeyCode>>,
-    mut ui_query: Query<&mut AppUiData, With<AppUiData>>,
-    mut event_writer: EventWriter<AppUiEvent>,
+    mut ele_query: Query<&mut ElementData, With<ElementData>>,
+    mut event_writer: EventWriter<ElementEvent>,
 ) {
     let mut change: Option<(String, i8)> = None;
     if kb_input.any_just_pressed([KeyCode::Right, KeyCode::D]) {
@@ -544,20 +505,19 @@ pub fn handle_ui_keyboard_changing(
         change = Some((String::from("sub"), -1));
     }
     if let Some(change) = change {
-        handle_ui_changing(change, &mut ui_query, &mut event_writer);
+        handle_element_changing(change, &mut ele_query, &mut event_writer);
     }
 }
 
-fn handle_ui_changing(
+fn handle_element_changing(
     change: (String, i8),
-    ui_query: &mut Query<&mut AppUiData, With<AppUiData>>,
-    event_writer: &mut EventWriter<AppUiEvent>,
+    ele_query: &mut Query<&mut ElementData, With<ElementData>>,
+    event_writer: &mut EventWriter<ElementEvent>,
 ) {
-    for mut data in ui_query.iter_mut() {
+    for mut data in ele_query.iter_mut() {
         match &mut data.as_mut() {
-            AppUiData::Slider {
+            ElementData::Slider {
                 ref mut data,
-                canvas_em: _,
                 is_modifier_on,
                 is_locked,
             } => {
@@ -565,14 +525,13 @@ fn handle_ui_changing(
                     let ori_value = data.value;
                     data.value = calculate_changed_value(data.value, change.1, *is_modifier_on);
                     if ori_value != data.value {
-                        event_writer.send(AppUiEvent::DataChanged { data: data.clone() });
+                        event_writer.send(ElementEvent::DataChanged { data: data.clone() });
                     }
                 }
             }
-            AppUiData::CrossPanel {
+            ElementData::CrossPanel {
                 ref mut x,
                 ref mut y,
-                canvas_em: _,
                 is_modifier_on,
                 is_locked,
             } => {
@@ -581,14 +540,14 @@ fn handle_ui_changing(
                         let ori_x = x.value;
                         x.value = calculate_changed_value(x.value, change.1, *is_modifier_on);
                         if ori_x != x.value {
-                            event_writer.send(AppUiEvent::DataChanged { data: x.clone() });
+                            event_writer.send(ElementEvent::DataChanged { data: x.clone() });
                         }
                     }
                     if change.0 == "sub" {
                         let ori_y = y.value;
                         y.value = calculate_changed_value(y.value, change.1, *is_modifier_on);
                         if ori_y != y.value {
-                            event_writer.send(AppUiEvent::DataChanged { data: y.clone() });
+                            event_writer.send(ElementEvent::DataChanged { data: y.clone() });
                         }
                     }
                 }
@@ -605,10 +564,10 @@ fn calculate_changed_value(ori_value: u8, delta: i8, is_modifier_on: bool) -> u8
     }
 }
 
-pub fn handle_ui_gamepad_modifier(
+pub fn handle_element_gamepad_modifier(
     gamepads: Res<Gamepads>,
     button_input: Res<Input<GamepadButton>>,
-    mut ui_query: Query<&mut AppUiData, With<AppUiData>>,
+    mut ele_query: Query<&mut ElementData, With<ElementData>>,
 ) {
     for gamepad in gamepads.iter() {
         let mut modifier_changed_value: Option<bool> = None;
@@ -625,14 +584,14 @@ pub fn handle_ui_gamepad_modifier(
             modifier_changed_value = Some(true);
         }
         if let Some(modifier_value) = modifier_changed_value {
-            handle_ui_modifier(modifier_value, &mut ui_query);
+            handle_element_modifier(modifier_value, &mut ele_query);
         }
     }
 }
 
-pub fn handle_ui_keyboard_modifier(
+pub fn handle_element_keyboard_modifier(
     input: Res<Input<KeyCode>>,
-    mut ui_query: Query<&mut AppUiData, With<AppUiData>>,
+    mut ele_query: Query<&mut ElementData, With<ElementData>>,
 ) {
     let mut modifier_changed_value: Option<bool> = None;
     if input.any_just_released([KeyCode::ShiftLeft, KeyCode::ShiftRight]) {
@@ -642,25 +601,26 @@ pub fn handle_ui_keyboard_modifier(
         modifier_changed_value = Some(true);
     }
     if let Some(modifier_value) = modifier_changed_value {
-        handle_ui_modifier(modifier_value, &mut ui_query);
+        handle_element_modifier(modifier_value, &mut ele_query);
     }
 }
 
-fn handle_ui_modifier(modifier_value: bool, ui_query: &mut Query<&mut AppUiData, With<AppUiData>>) {
-    for mut data in ui_query.iter_mut() {
+fn handle_element_modifier(
+    modifier_value: bool,
+    ele_query: &mut Query<&mut ElementData, With<ElementData>>,
+) {
+    for mut data in ele_query.iter_mut() {
         match &mut data.as_mut() {
-            AppUiData::Slider {
+            ElementData::Slider {
                 data: _,
-                canvas_em: _,
                 ref mut is_modifier_on,
                 is_locked: _,
             } => {
                 *is_modifier_on = modifier_value;
             }
-            AppUiData::CrossPanel {
+            ElementData::CrossPanel {
                 x: _,
                 y: _,
-                canvas_em: _,
                 ref mut is_modifier_on,
                 is_locked: _,
             } => {
@@ -670,34 +630,32 @@ fn handle_ui_modifier(modifier_value: bool, ui_query: &mut Query<&mut AppUiData,
     }
 }
 
-pub fn apply_ui_lock(
-    ui_entity: Option<Entity>,
-    ui_query: &mut Query<(Entity, &mut AppUiData), With<AppUiData>>,
+pub fn apply_element_lock(
+    ele_entity: Option<Entity>,
+    ele_query: &mut Query<(Entity, &mut ElementData), With<ElementData>>,
 ) {
-    for (entity, mut data) in ui_query.iter_mut() {
+    for (entity, mut data) in ele_query.iter_mut() {
         let is_ui_locked;
         let data = data.as_mut();
         match data {
-            AppUiData::Slider {
+            ElementData::Slider {
                 data: _,
-                canvas_em: _,
                 is_modifier_on: _,
                 ref mut is_locked,
             } => {
                 is_ui_locked = is_locked;
             }
-            AppUiData::CrossPanel {
+            ElementData::CrossPanel {
                 x: _,
                 y: _,
-                canvas_em: _,
                 is_modifier_on: _,
                 ref mut is_locked,
             } => {
                 is_ui_locked = is_locked;
             }
         };
-        if let Some(ui_entity) = ui_entity {
-            if ui_entity == entity {
+        if let Some(ele_entity) = ele_entity {
+            if ele_entity == entity {
                 *is_ui_locked = true;
             } else {
                 *is_ui_locked = false;

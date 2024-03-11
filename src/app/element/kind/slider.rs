@@ -1,22 +1,21 @@
-use super::{round_to_five, AppUiData, AppUiTargetValuePair, AppUiText};
-use crate::app::ui::*;
+use super::*;
+use crate::app::*;
 use bevy::input;
 
-const SLIDER_BAR_H: f32 = FONT_SIZE * 0.5;
-const SLIDER_BAR_W: f32 = FONT_SIZE * 7.0;
-const SLIDER_BAR_B: f32 = FONT_SIZE * 0.1;
-const SLIDER_TEXT_W: f32 = FONT_SIZE * 2.0;
-const SLIDER_P: f32 = FONT_SIZE * 1.0;
+const SLIDER_BAR_H: f32 = ui::FONT_SIZE * 0.5;
+const SLIDER_BAR_W: f32 = ui::FONT_SIZE * 7.0;
+const SLIDER_BAR_B: f32 = ui::FONT_SIZE * 0.1;
+const SLIDER_TEXT_W: f32 = ui::FONT_SIZE * 2.5;
+const SLIDER_P: f32 = ui::FONT_SIZE * 1.0;
 const SLIDER_W: f32 = SLIDER_P * 2.0 + SLIDER_BAR_W + SLIDER_TEXT_W;
-const SLIDER_H: f32 = FONT_SIZE * 2.0;
+const SLIDER_H: f32 = ui::FONT_SIZE * 2.0;
 const MARK_COUNT: u8 = 10;
 
-pub fn build_slider_ui(
-    canvas_em: AppUiCanvasEntityMap,
+pub fn build_slider_element(
     parent: &mut ChildBuilder,
     asset_server: &Res<AssetServer>,
     bundle: impl Bundle,
-    data: AppUiTargetValuePair,
+    data: ElementTargetValuePair,
 ) -> Entity {
     let value = data.value;
     parent
@@ -30,14 +29,13 @@ pub fn build_slider_ui(
                     align_items: AlignItems::Center,
                     ..default()
                 },
-                background_color: BTN_BG.into(),
+                background_color: theme::BTN_BG.into(),
                 ..default()
             },
             bundle,
-            app::interaction::IaSlider,
-            AppUiData::Slider {
+            interaction::IaSlider,
+            ElementData::Slider {
                 data,
-                canvas_em,
                 is_modifier_on: false,
                 is_locked: false,
             },
@@ -48,25 +46,24 @@ pub fn build_slider_ui(
                 TextBundle::from_section(
                     format!("{}", value),
                     TextStyle {
-                        font: asset_server.load(FONT),
-                        font_size: FONT_SIZE,
-                        color: FG_COLOR,
+                        font: asset_server.load(theme::FONT),
+                        font_size: ui::FONT_SIZE,
+                        color: theme::FG_COLOR,
                     },
                 ),
-                AppUiText,
+                ElementText,
             ));
         })
         .id()
 }
 
-pub fn init_ui_display(
+pub fn init_display(
     commands: &mut Commands,
     window: &Query<&Window>,
     g_trans: &GlobalTransform,
-    canvas_em: &AppUiCanvasEntityMap,
+    fg_entity: Entity,
 ) {
-    if let Some(mut entity_commands) = commands.get_entity(canvas_em.bg) {
-        entity_commands.despawn_descendants();
+    if let Some(mut entity_commands) = commands.get_entity(fg_entity) {
         entity_commands.with_children(|parent| {
             let (bar_start_pos, bar_end_pos) = fetch_bar_pos(&window, &g_trans);
             let mut path_builder = PathBuilder::new();
@@ -77,7 +74,7 @@ pub fn init_ui_display(
                     path: path_builder.build(),
                     ..default()
                 },
-                Stroke::new(SECONDARY_COLOR, SLIDER_BAR_H),
+                Stroke::new(theme::SECONDARY_COLOR, SLIDER_BAR_H),
             ));
             let circle = shapes::Circle {
                 radius: SLIDER_BAR_H / 2.0,
@@ -89,7 +86,7 @@ pub fn init_ui_display(
                     path: geo_builder.build(),
                     ..default()
                 },
-                Fill::color(SECONDARY_COLOR),
+                Fill::color(theme::SECONDARY_COLOR),
             ));
             let circle = shapes::Circle {
                 radius: SLIDER_BAR_H / 2.0,
@@ -101,27 +98,26 @@ pub fn init_ui_display(
                     path: geo_builder.build(),
                     ..default()
                 },
-                Fill::color(SECONDARY_COLOR),
+                Fill::color(theme::SECONDARY_COLOR),
             ));
         });
     }
 }
 
-pub fn update_ui_text(ui_text: &mut Text, data: &AppUiTargetValuePair) {
+pub fn update_text(ui_text: &mut Text, data: &ElementTargetValuePair) {
     ui_text.sections[0].value = format!("{}", data.value);
 }
 
-pub fn update_ui_display(
+pub fn update_display(
     commands: &mut Commands,
     window: &Query<&Window>,
     g_trans: &GlobalTransform,
-    canvas_em: &AppUiCanvasEntityMap,
-    data: &AppUiTargetValuePair,
+    dyn_entity: Entity,
+    data: &ElementTargetValuePair,
     is_modifier_on: &bool,
     is_locked: &bool,
 ) {
-    if let Some(mut entity_commands) = commands.get_entity(canvas_em.fg) {
-        entity_commands.despawn_descendants();
+    if let Some(mut entity_commands) = commands.get_entity(dyn_entity) {
         entity_commands.with_children(|parent| {
             let (bar_start_pos, bar_end_pos) = fetch_bar_pos(&window, &g_trans);
             let bar_thumb_pos = fetch_thumb_pos(data.value, bar_start_pos, bar_end_pos);
@@ -133,7 +129,7 @@ pub fn update_ui_display(
                     path: path_builder.build(),
                     ..default()
                 },
-                Stroke::new(FG_COLOR, SLIDER_BAR_H - SLIDER_BAR_B * 2.0),
+                Stroke::new(theme::FG_COLOR, SLIDER_BAR_H - SLIDER_BAR_B * 2.0),
             ));
             let circle = shapes::Circle {
                 radius: SLIDER_BAR_H / 2.0 - SLIDER_BAR_B,
@@ -145,7 +141,7 @@ pub fn update_ui_display(
                     path: geo_builder.build(),
                     ..default()
                 },
-                Fill::color(FG_COLOR),
+                Fill::color(theme::FG_COLOR),
             ));
             let circle = shapes::Circle {
                 radius: SLIDER_BAR_H / 2.0 - SLIDER_BAR_B,
@@ -157,7 +153,7 @@ pub fn update_ui_display(
                     path: geo_builder.build(),
                     ..default()
                 },
-                Fill::color(FG_COLOR),
+                Fill::color(theme::FG_COLOR),
             ));
             if *is_locked {
                 let mut path_builder = PathBuilder::new();
@@ -168,7 +164,7 @@ pub fn update_ui_display(
                         path: path_builder.build(),
                         ..default()
                     },
-                    Stroke::new(FG_COLOR, (SLIDER_BAR_H / 2.0 - SLIDER_BAR_B) * 0.3),
+                    Stroke::new(theme::FG_COLOR, (SLIDER_BAR_H / 2.0 - SLIDER_BAR_B) * 0.3),
                 ));
             }
             if *is_modifier_on {
@@ -185,7 +181,7 @@ pub fn update_ui_display(
                             path: geo_builder.build(),
                             ..default()
                         },
-                        Fill::color(FG_COLOR),
+                        Fill::color(theme::FG_COLOR),
                     ));
                     let mark_pos = bar_start_pos + bar_v * (i as f32 - 0.5);
                     let circle = shapes::Circle {
@@ -198,7 +194,7 @@ pub fn update_ui_display(
                             path: geo_builder.build(),
                             ..default()
                         },
-                        Fill::color(FG_COLOR),
+                        Fill::color(theme::FG_COLOR),
                     ));
                 }
             }
@@ -209,8 +205,8 @@ pub fn update_ui_display(
 pub fn handle_mouse_clicking(
     window: &Query<&Window>,
     g_trans: &GlobalTransform,
-    cursor_data: &Res<app::cursor::AppCursorData>,
-    data: &mut AppUiTargetValuePair,
+    cursor_data: &Res<cursor::AppCursorData>,
+    data: &mut ElementTargetValuePair,
     is_modifier_on: &bool,
 ) {
     let (bar_start_pos, _) = fetch_bar_pos(&window, &g_trans);
@@ -221,7 +217,7 @@ pub fn handle_mouse_clicking(
 
 pub fn handle_mouse_dragging(
     motion_events: &mut EventReader<input::mouse::MouseMotion>,
-    data: &mut AppUiTargetValuePair,
+    data: &mut ElementTargetValuePair,
     is_modifier_on: &bool,
 ) {
     let dragging_moving_ratio: f32 = if *is_modifier_on { 2.0 } else { 0.8 };

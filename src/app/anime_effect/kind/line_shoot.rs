@@ -6,7 +6,7 @@ impl AnimeEffectKindBase for AnimeEffectKindLineShoot {
     fn create(&self, commands: &mut Commands, param: AnimeEffectParam) -> Entity {
         let root_entity = commands
             .spawn((SpatialBundle {
-                transform: Transform::from_xyz(0.0, 0.0, ANIME_EFFECT_CANVAS_Z_INDEX),
+                transform: Transform::from_xyz(0.0, 0.0, ANIME_EFFECT_Z_INDEX),
                 ..default()
             },))
             .id();
@@ -43,11 +43,7 @@ impl AnimeEffectKindBase for AnimeEffectKindLineShoot {
             entity_commands.with_children(|parent| {
                 parent
                     .spawn((SpatialBundle {
-                        transform: Transform::from_xyz(
-                            0.0,
-                            0.0,
-                            ANIME_EFFECT_CANVAS_Z_INDEX + 0.0001,
-                        ),
+                        transform: Transform::from_xyz(0.0, 0.0, 0.0001),
                         ..default()
                     },))
                     .with_children(|parent| {
