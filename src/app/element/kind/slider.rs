@@ -240,7 +240,7 @@ pub fn handle_mouse_dragging(
 
 fn fetch_bar_pos(window: &Query<&Window>, g_trans: &GlobalTransform) -> (Vec2, Vec2) {
     let world_pos = Vec2::new(g_trans.translation().x, g_trans.translation().y);
-    let g_pos = kind::to_canvas_pos(&window, world_pos);
+    let g_pos = to_canvas_pos(&window, world_pos);
     let bar_start_pos = Vec2::new(g_pos.x + SLIDER_P - SLIDER_W / 2.0, g_pos.y);
     let bar_end_pos = Vec2::new(bar_start_pos.x + SLIDER_BAR_W, bar_start_pos.y);
     (bar_start_pos, bar_end_pos)

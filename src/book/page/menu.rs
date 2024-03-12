@@ -1,4 +1,5 @@
-use crate::{app::anime_effect, app::theme::*, app::ui, book::page::*};
+use crate::app::{anime_effect, element, ui};
+use crate::book::page::*;
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::app::AppExit;
 use bevy_persistent::prelude::*;
@@ -35,6 +36,7 @@ impl PageBase for Page {
                 (
                     handle_menu_navigation,
                     app::interaction::handle_default_focus,
+                    element::element_systems(),
                 )
                     .after(NavRequestSystem),
             )
@@ -42,7 +44,11 @@ impl PageBase for Page {
         )
         .add_systems(
             OnExit(self.state()),
-            (anime_effect::clear_anime_effect, ui::despawn_ui::<OnPage>),
+            (
+                anime_effect::clear_anime_effect,
+                element::clear_elements,
+                ui::despawn_ui::<OnPage>,
+            ),
         );
     }
 }
@@ -120,7 +126,7 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         ui::px_p(3.0),
                                         ui::px_p(3.0),
                                     ),
-                                    margin: UiRect::bottom(ui::px_p(6.0)),
+                                    margin: UiRect::bottom(ui::px_p(12.0)),
                                     ..default()
                                 },
                                 background_color: BTN_BG.into(),
@@ -135,8 +141,6 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                             let icon = asset_server.load("images/icons/play-light.png");
                             parent.spawn(ImageBundle {
                                 style: Style {
-                                    // width: Val::Px(ICON_SIZE),
-                                    // height: Val::Px(ICON_SIZE),
                                     margin: UiRect::right(ui::px_p(6.0)),
                                     ..default()
                                 },
@@ -157,15 +161,15 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                             style: Style {
                                 display: Display::Grid,
                                 grid_template_columns: vec![GridTrack::fr(1.0), GridTrack::fr(1.0)],
-                                column_gap: Val::Px(ui::MENU_ENTRY_PADDING),
-                                row_gap: Val::Px(ui::MENU_ENTRY_PADDING),
+                                column_gap: ui::px_p(ui::MENU_ENTRY_PADDING),
+                                row_gap: ui::px_p(ui::MENU_ENTRY_PADDING),
                                 ..default()
                             },
                             ..default()
                         })
                         .with_children(|parent| {
                             for page_def in MENU_PAGES {
-                                ui::build_menu_entry(
+                                element::build_element(
                                     parent,
                                     &asset_server,
                                     (
@@ -173,12 +177,14 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         app::interaction::IaMenuEntry,
                                         Focusable::default(),
                                     ),
-                                    page_def.name(),
-                                    page_def.icon(),
+                                    element::ElementInitParams::MenuEntry {
+                                        icon: String::from(page_def.icon()),
+                                        text: String::from(page_def.name()),
+                                    },
                                 );
                             }
                             #[cfg(not(target_arch = "wasm32"))]
-                            ui::build_menu_entry(
+                            element::build_element(
                                 parent,
                                 &asset_server,
                                 (
@@ -186,8 +192,10 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                                     app::interaction::IaMenuEntry,
                                     Focusable::default(),
                                 ),
-                                "Quit",
-                                "sign-out-light",
+                                element::ElementInitParams::MenuEntry {
+                                    icon: String::from("sign-out-light"),
+                                    text: String::from("Quit"),
+                                },
                             );
                         });
                 });

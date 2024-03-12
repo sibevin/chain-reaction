@@ -95,7 +95,6 @@ pub fn handle_mouse_dragging(
 ) {
     let motion_events = motion_events.read().collect::<Vec<_>>();
     if let Some(motion_event) = motion_events.iter().rev().take(3).next() {
-        dbg!(motion_event.delta.x);
         if motion_event.delta.x.abs() > 3.0 {
             data.bool_value = Some(motion_event.delta.x < 0.0);
         }

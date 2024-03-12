@@ -35,17 +35,7 @@ impl PageBase for Page {
             ((
                 handle_ui_navigation,
                 interaction::handle_default_focus,
-                element::handle_element_mouse_unlock,
-                element::handle_element_mouse_clicking,
-                element::handle_element_mouse_dragging,
-                element::handle_element_keyboard_pressing,
-                element::handle_element_keyboard_changing,
-                element::handle_element_gamepad_pressing,
-                element::handle_element_gamepad_dpad_changing,
-                element::handle_element_gamepad_axis_changing,
-                element::handle_element_gamepad_modifier,
-                element::handle_element_keyboard_modifier,
-                element::refresh_elements,
+                element::element_systems(),
                 handle_element_events,
                 handle_sensitivity_modifier,
             )

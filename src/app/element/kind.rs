@@ -1,8 +1,9 @@
 use super::*;
 use crate::app::cursor;
-use bevy::input;
+use bevy::{ecs::schedule::SystemConfigs, input};
 
 pub mod cross_panel;
+pub mod menu_entry;
 pub mod slider;
 pub mod switcher;
 
@@ -20,6 +21,10 @@ pub struct ElementTargetValuePair {
 }
 
 pub enum ElementInitParams {
+    MenuEntry {
+        icon: String,
+        text: String,
+    },
     Switcher {
         data: ElementTargetValuePair,
     },
@@ -34,6 +39,7 @@ pub enum ElementInitParams {
 
 #[derive(Component, Debug)]
 pub enum ElementData {
+    MenuEntry,
     Switcher {
         data: ElementTargetValuePair,
     },
@@ -70,6 +76,24 @@ pub struct ElementText;
 #[derive(Component)]
 pub struct ElementImage;
 
+pub fn element_systems() -> SystemConfigs {
+    (
+        handle_element_mouse_unlock,
+        handle_element_mouse_clicking,
+        handle_element_mouse_dragging,
+        handle_element_keyboard_pressing,
+        handle_element_keyboard_changing,
+        handle_element_gamepad_pressing,
+        handle_element_gamepad_dpad_changing,
+        handle_element_gamepad_axis_changing,
+        handle_element_gamepad_modifier,
+        handle_element_keyboard_modifier,
+        refresh_elements,
+    )
+        .chain()
+        .into_configs()
+}
+
 pub fn build_element(
     parent: &mut ChildBuilder,
     asset_server: &Res<AssetServer>,
@@ -77,6 +101,9 @@ pub fn build_element(
     params: ElementInitParams,
 ) {
     match params {
+        ElementInitParams::MenuEntry { icon, text } => {
+            menu_entry::build_element(parent, asset_server, bundle, icon.as_str(), text.as_str());
+        }
         ElementInitParams::Switcher { data } => {
             switcher::build_element(parent, asset_server, bundle, data);
         }
@@ -124,13 +151,80 @@ pub fn update_element_value(
                     }
                 }
             }
+            _ => (),
         }
     }
 }
 
-pub fn refresh_elements(
+pub fn clear_elements(
     mut commands: Commands,
-    ele_query: Query<(&GlobalTransform, Entity, &mut ElementData), With<ElementData>>,
+    bg_query: Query<Entity, With<AppElementBg>>,
+    fg_query: Query<Entity, With<AppElementFg>>,
+    dyn_query: Query<Entity, With<AppElementDyn>>,
+    mut build_timer: ResMut<timer::ElementBuildTimer>,
+    mut refresh_timer: ResMut<timer::ElementRefreshTimer>,
+) {
+    let bg_entity = bg_query.get_single().unwrap();
+    let fg_entity = fg_query.get_single().unwrap();
+    let dyn_entity = dyn_query.get_single().unwrap();
+    if let Some(mut entity_commands) = commands.get_entity(bg_entity) {
+        entity_commands.despawn_descendants();
+    }
+    if let Some(mut entity_commands) = commands.get_entity(fg_entity) {
+        entity_commands.despawn_descendants();
+    }
+    if let Some(mut entity_commands) = commands.get_entity(dyn_entity) {
+        entity_commands.despawn_descendants();
+    }
+    build_timer.0.reset();
+    refresh_timer.0.reset();
+}
+
+pub fn reset_elements(mut build_timer: ResMut<timer::ElementBuildTimer>) {
+    build_timer.0.reset();
+}
+
+pub fn apply_element_lock(
+    ele_entity: Option<Entity>,
+    ele_query: &mut Query<(Entity, &mut ElementData), With<ElementData>>,
+) {
+    for (entity, mut data) in ele_query.iter_mut() {
+        let is_ui_locked;
+        let data = data.as_mut();
+        match data {
+            ElementData::Slider {
+                data: _,
+                is_modifier_on: _,
+                ref mut is_locked,
+            } => {
+                is_ui_locked = is_locked;
+            }
+            ElementData::CrossPanel {
+                x: _,
+                y: _,
+                is_modifier_on: _,
+                ref mut is_locked,
+            } => {
+                is_ui_locked = is_locked;
+            }
+            _ => continue,
+        };
+        if let Some(ele_entity) = ele_entity {
+            if ele_entity == entity {
+                *is_ui_locked = true;
+            } else {
+                *is_ui_locked = false;
+            }
+        } else {
+            *is_ui_locked = false;
+        }
+    }
+}
+
+fn refresh_elements(
+    mut commands: Commands,
+    ele_query: Query<(&GlobalTransform, &Node, Entity, &mut ElementData), With<ElementData>>,
+    bg_query: Query<Entity, With<AppElementBg>>,
     fg_query: Query<Entity, With<AppElementFg>>,
     dyn_query: Query<Entity, With<AppElementDyn>>,
     mut ui_text_query: Query<(&Parent, &mut Text), With<ElementText>>,
@@ -142,13 +236,20 @@ pub fn refresh_elements(
     asset_server: Res<AssetServer>,
 ) {
     let fg_entity = fg_query.get_single().unwrap();
+    let bg_entity = bg_query.get_single().unwrap();
     let dyn_entity = dyn_query.get_single().unwrap();
     if delay_timer.0.tick(time.delta()).just_finished() {
         if let Some(mut entity_commands) = commands.get_entity(fg_entity) {
             entity_commands.despawn_descendants();
         }
-        for (g_trans, _, ele_data) in ele_query.iter() {
+        if let Some(mut entity_commands) = commands.get_entity(bg_entity) {
+            entity_commands.despawn_descendants();
+        }
+        for (g_trans, node, _, ele_data) in ele_query.iter() {
             match ele_data {
+                ElementData::MenuEntry => {
+                    menu_entry::init_display(&mut commands, &window, &g_trans, &node, fg_entity)
+                }
                 ElementData::Slider {
                     data: _,
                     is_modifier_on: _,
@@ -168,7 +269,7 @@ pub fn refresh_elements(
         if let Some(mut entity_commands) = commands.get_entity(dyn_entity) {
             entity_commands.despawn_descendants();
         }
-        for (g_trans, entity, ele_data) in ele_query.iter() {
+        for (g_trans, _, entity, ele_data) in ele_query.iter() {
             for (parent, mut ui_text) in ui_text_query.iter_mut() {
                 if parent.get() == entity {
                     match ele_data {
@@ -226,35 +327,7 @@ pub fn refresh_elements(
     }
 }
 
-pub fn clear_elements(
-    mut commands: Commands,
-    bg_query: Query<Entity, With<AppElementBg>>,
-    fg_query: Query<Entity, With<AppElementFg>>,
-    dyn_query: Query<Entity, With<AppElementDyn>>,
-    mut build_timer: ResMut<timer::ElementBuildTimer>,
-    mut refresh_timer: ResMut<timer::ElementRefreshTimer>,
-) {
-    let bg_entity = bg_query.get_single().unwrap();
-    let fg_entity = fg_query.get_single().unwrap();
-    let dyn_entity = dyn_query.get_single().unwrap();
-    if let Some(mut entity_commands) = commands.get_entity(bg_entity) {
-        entity_commands.despawn_descendants();
-    }
-    if let Some(mut entity_commands) = commands.get_entity(fg_entity) {
-        entity_commands.despawn_descendants();
-    }
-    if let Some(mut entity_commands) = commands.get_entity(dyn_entity) {
-        entity_commands.despawn_descendants();
-    }
-    build_timer.0.reset();
-    refresh_timer.0.reset();
-}
-
-pub fn reset_elements(mut build_timer: ResMut<timer::ElementBuildTimer>) {
-    build_timer.0.reset();
-}
-
-pub fn handle_element_mouse_clicking(
+fn handle_element_mouse_clicking(
     mut ui_clicking_query: Query<
         (&Interaction, &GlobalTransform, &mut ElementData),
         Changed<Interaction>,
@@ -301,12 +374,13 @@ pub fn handle_element_mouse_clicking(
                     event_writer.send(ElementEvent::DataChanged { data: x.clone() });
                     event_writer.send(ElementEvent::DataChanged { data: y.clone() });
                 }
+                _ => (),
             }
         }
     }
 }
 
-pub fn handle_element_mouse_unlock(
+fn handle_element_mouse_unlock(
     mut ele_query: Query<&mut ElementData, With<ElementData>>,
     mut event_writer: EventWriter<ElementEvent>,
     mouse_input: Res<Input<MouseButton>>,
@@ -343,7 +417,7 @@ pub fn handle_element_mouse_unlock(
     }
 }
 
-pub fn handle_element_mouse_dragging(
+fn handle_element_mouse_dragging(
     mut ele_query: Query<(&Interaction, &mut ElementData), With<ElementData>>,
     mut motion_events: EventReader<input::mouse::MouseMotion>,
     mut event_writer: EventWriter<ElementEvent>,
@@ -387,12 +461,13 @@ pub fn handle_element_mouse_dragging(
                         event_writer.send(ElementEvent::DataChanged { data: y.clone() });
                     }
                 }
+                _ => (),
             }
         }
     }
 }
 
-pub fn handle_element_gamepad_pressing(
+fn handle_element_gamepad_pressing(
     gamepads: Res<Gamepads>,
     input: Res<Input<GamepadButton>>,
     mut ui_focusables: Query<(Entity, &Focusable, &mut ElementData), With<ElementData>>,
@@ -412,7 +487,7 @@ pub fn handle_element_gamepad_pressing(
     }
 }
 
-pub fn handle_element_keyboard_pressing(
+fn handle_element_keyboard_pressing(
     input: Res<Input<KeyCode>>,
     mut ui_focusables: Query<(Entity, &Focusable, &mut ElementData), With<ElementData>>,
     mut event_writer: EventWriter<ElementEvent>,
@@ -455,6 +530,7 @@ fn handle_element_pressing(
                     is_modifier_on: _,
                     ref mut is_locked,
                 } => handle_element_locking(entity, is_locked, event_writer),
+                _ => (),
             };
         }
     }
@@ -474,7 +550,7 @@ fn handle_element_locking(
     }
 }
 
-pub fn handle_element_gamepad_dpad_changing(
+fn handle_element_gamepad_dpad_changing(
     gamepads: Res<Gamepads>,
     button_input: Res<Input<GamepadButton>>,
     mut ele_query: Query<&mut ElementData, With<ElementData>>,
@@ -506,7 +582,7 @@ pub fn handle_element_gamepad_dpad_changing(
 }
 const GAMEPAD_MIN_THRESHOLD: f32 = 0.25;
 
-pub fn handle_element_gamepad_axis_changing(
+fn handle_element_gamepad_axis_changing(
     gamepads: Res<Gamepads>,
     axis_input: Res<Axis<GamepadAxis>>,
     mut ele_query: Query<&mut ElementData, With<ElementData>>,
@@ -547,7 +623,7 @@ pub fn handle_element_gamepad_axis_changing(
     }
 }
 
-pub fn handle_element_keyboard_changing(
+fn handle_element_keyboard_changing(
     kb_input: Res<Input<KeyCode>>,
     mut ele_query: Query<&mut ElementData, With<ElementData>>,
     mut event_writer: EventWriter<ElementEvent>,
@@ -632,7 +708,7 @@ fn calculate_changed_value(ori_value: u8, delta: i8, is_modifier_on: bool) -> u8
     }
 }
 
-pub fn handle_element_gamepad_modifier(
+fn handle_element_gamepad_modifier(
     gamepads: Res<Gamepads>,
     button_input: Res<Input<GamepadButton>>,
     mut ele_query: Query<&mut ElementData, With<ElementData>>,
@@ -657,7 +733,7 @@ pub fn handle_element_gamepad_modifier(
     }
 }
 
-pub fn handle_element_keyboard_modifier(
+fn handle_element_keyboard_modifier(
     input: Res<Input<KeyCode>>,
     mut ele_query: Query<&mut ElementData, With<ElementData>>,
 ) {
@@ -699,51 +775,14 @@ fn handle_element_modifier(
     }
 }
 
-pub fn apply_element_lock(
-    ele_entity: Option<Entity>,
-    ele_query: &mut Query<(Entity, &mut ElementData), With<ElementData>>,
-) {
-    for (entity, mut data) in ele_query.iter_mut() {
-        let is_ui_locked;
-        let data = data.as_mut();
-        match data {
-            ElementData::Slider {
-                data: _,
-                is_modifier_on: _,
-                ref mut is_locked,
-            } => {
-                is_ui_locked = is_locked;
-            }
-            ElementData::CrossPanel {
-                x: _,
-                y: _,
-                is_modifier_on: _,
-                ref mut is_locked,
-            } => {
-                is_ui_locked = is_locked;
-            }
-            _ => continue,
-        };
-        if let Some(ele_entity) = ele_entity {
-            if ele_entity == entity {
-                *is_ui_locked = true;
-            } else {
-                *is_ui_locked = false;
-            }
-        } else {
-            *is_ui_locked = false;
-        }
-    }
-}
-
-pub fn to_canvas_pos(window: &Query<&Window>, window_pos: Vec2) -> Vec2 {
+fn to_canvas_pos(window: &Query<&Window>, window_pos: Vec2) -> Vec2 {
     let window = window.single();
     let win_w = window.resolution.width();
     let win_h = window.resolution.height();
     Vec2::new(window_pos.x, -window_pos.y) - Vec2::new(win_w / 2.0, -win_h / 2.0)
 }
 
-pub fn round_to_five(value: u8, enable: bool) -> u8 {
+fn round_to_five(value: u8, enable: bool) -> u8 {
     if enable {
         (value as f32 / 5.0).round() as u8 * 5
     } else {
