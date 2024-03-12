@@ -34,15 +34,15 @@ impl PageBase for Page {
             Update,
             ((
                 handle_ui_navigation,
+                interaction::handle_default_focus,
                 element::handle_element_mouse_unlock,
                 element::handle_element_mouse_clicking,
                 element::handle_element_mouse_dragging,
-                element::handle_element_keyboard_lock,
+                element::handle_element_keyboard_pressing,
                 element::handle_element_keyboard_changing,
-                element::handle_element_gamepad_lock,
+                element::handle_element_gamepad_pressing,
                 element::handle_element_gamepad_dpad_changing,
                 element::handle_element_gamepad_axis_changing,
-                interaction::handle_default_focus,
                 element::handle_element_gamepad_modifier,
                 element::handle_element_keyboard_modifier,
                 element::refresh_elements,
@@ -161,7 +161,8 @@ fn page_enter(
                                         element::ElementInitParams::Slider {
                                             data: element::ElementTargetValuePair {
                                                 target: String::from("sensitivity"),
-                                                value: settings.get_value("sensitivity"),
+                                                u8_value: Some(settings.get_value("sensitivity")),
+                                                ..default()
                                             },
                                         },
                                     );
@@ -202,7 +203,10 @@ fn page_enter(
                                         element::ElementInitParams::Slider {
                                             data: element::ElementTargetValuePair {
                                                 target: String::from("sensitivity_modified"),
-                                                value: settings.get_value("sensitivity_modified"),
+                                                u8_value: Some(
+                                                    settings.get_value("sensitivity_modified"),
+                                                ),
+                                                ..default()
                                             },
                                         },
                                     );
@@ -568,12 +572,14 @@ fn handle_element_events(
     for event in events.read() {
         match event {
             element::ElementEvent::DataChanged { data } => {
-                settings
-                    .update(|settings| {
-                        settings.set_value(data.target.as_str(), data.value as i8);
-                    })
-                    .expect("failed to update slider");
-                element::update_element_value(&mut ele_query, data.clone());
+                if let Some(u8_value) = data.u8_value {
+                    settings
+                        .update(|settings| {
+                            settings.set_value(data.target.as_str(), u8_value as i8);
+                        })
+                        .expect("failed to update slider");
+                    element::update_element_value(&mut ele_query, data.clone());
+                }
             }
             element::ElementEvent::Lock { entity: _ } => {
                 nav_requests.send(NavRequest::Lock);
@@ -588,12 +594,9 @@ fn handle_element_events(
 
 fn handle_ui_navigation(
     action_query: Query<(Entity, &mut ButtonAction), With<ButtonAction>>,
-    mut switch_btn_query: Query<(&Parent, &mut UiImage, &mut ui::SwitchButton)>,
     mut nav_events: EventReader<NavEvent>,
     mut page_state: ResMut<NextState<PageState>>,
-    mut settings: ResMut<Persistent<app::settings::Settings>>,
     mut ele_query: Query<(Entity, &mut element::ElementData), With<element::ElementData>>,
-    asset_server: Res<AssetServer>,
 ) {
     for event in nav_events.read() {
         match event {
@@ -602,20 +605,6 @@ fn handle_ui_navigation(
                     for (entity, action) in action_query.iter() {
                         if *from.first() == entity {
                             match action {
-                                ButtonAction::Toggle(target) => {
-                                    settings
-                                        .update(|settings| {
-                                            settings.toggle(target.as_ref());
-                                        })
-                                        .expect("failed to update boolean switch");
-                                    let is_enabled = settings.is_enabled(target);
-                                    ui::update_switch_btn_value(
-                                        entity,
-                                        &mut switch_btn_query,
-                                        &asset_server,
-                                        is_enabled,
-                                    );
-                                }
                                 ButtonAction::MoveToPage(state) => page_state.set(*state),
                                 _ => (),
                             }

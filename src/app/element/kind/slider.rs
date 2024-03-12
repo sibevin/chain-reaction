@@ -11,13 +11,16 @@ const SLIDER_W: f32 = SLIDER_P * 2.0 + SLIDER_BAR_W + SLIDER_TEXT_W;
 const SLIDER_H: f32 = ui::FONT_SIZE * 2.0;
 const MARK_COUNT: u8 = 10;
 
-pub fn build_slider_element(
+pub fn build_element(
     parent: &mut ChildBuilder,
     asset_server: &Res<AssetServer>,
     bundle: impl Bundle,
     data: ElementTargetValuePair,
 ) -> Entity {
-    let value = data.value;
+    let value = data.u8_value.unwrap_or(200);
+    if value > 100 {
+        panic!("Invalid slider value");
+    }
     parent
         .spawn((
             ButtonBundle {
@@ -105,7 +108,11 @@ pub fn init_display(
 }
 
 pub fn update_text(ui_text: &mut Text, data: &ElementTargetValuePair) {
-    ui_text.sections[0].value = format!("{}", data.value);
+    let value = data.u8_value.unwrap_or(200);
+    if value > 100 {
+        panic!("Invalid slider value");
+    }
+    ui_text.sections[0].value = format!("{}", value);
 }
 
 pub fn update_display(
@@ -117,10 +124,11 @@ pub fn update_display(
     is_modifier_on: &bool,
     is_locked: &bool,
 ) {
+    let value = data.u8_value.unwrap();
     if let Some(mut entity_commands) = commands.get_entity(dyn_entity) {
         entity_commands.with_children(|parent| {
             let (bar_start_pos, bar_end_pos) = fetch_bar_pos(&window, &g_trans);
-            let bar_thumb_pos = fetch_thumb_pos(data.value, bar_start_pos, bar_end_pos);
+            let bar_thumb_pos = fetch_thumb_pos(value, bar_start_pos, bar_end_pos);
             let mut path_builder = PathBuilder::new();
             path_builder.move_to(bar_start_pos);
             path_builder.line_to(bar_thumb_pos);
@@ -212,7 +220,7 @@ pub fn handle_mouse_clicking(
     let (bar_start_pos, _) = fetch_bar_pos(&window, &g_trans);
     let value = ((cursor_data.canvas_pos.x - bar_start_pos.x) / SLIDER_BAR_W * 100.0)
         .clamp(0.0, 100.0) as u8;
-    data.value = round_to_five(value, *is_modifier_on)
+    data.u8_value = Some(round_to_five(value, *is_modifier_on));
 }
 
 pub fn handle_mouse_dragging(
@@ -220,12 +228,13 @@ pub fn handle_mouse_dragging(
     data: &mut ElementTargetValuePair,
     is_modifier_on: &bool,
 ) {
+    let value = data.u8_value.unwrap();
     let dragging_moving_ratio: f32 = if *is_modifier_on { 2.0 } else { 0.8 };
     let motion_events = motion_events.read().collect::<Vec<_>>();
     if let Some(motion_event) = motion_events.iter().rev().take(3).next() {
-        let value = (data.value as i8 + (motion_event.delta.x * dragging_moving_ratio) as i8)
+        let new_value = (value as i8 + (motion_event.delta.x * dragging_moving_ratio) as i8)
             .clamp(0, 100) as u8;
-        data.value = round_to_five(value, *is_modifier_on)
+        data.u8_value = Some(round_to_five(new_value, *is_modifier_on));
     }
 }
 

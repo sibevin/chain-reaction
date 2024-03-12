@@ -9,7 +9,7 @@ const X_PANEL_W: f32 = ui::FONT_SIZE * 0.5;
 const X_PANEL_B: f32 = ui::FONT_SIZE * 0.1;
 const MARK_COUNT: u8 = 10;
 
-pub fn build_cross_panel_element(
+pub fn build_element(
     parent: &mut ChildBuilder,
     bundle: impl Bundle,
     x: ElementTargetValuePair,
@@ -112,13 +112,18 @@ pub fn update_display(
     is_modifier_on: &bool,
     is_locked: &bool,
 ) {
+    let x_value = x.u8_value.unwrap_or(200);
+    let y_value = y.u8_value.unwrap_or(200);
+    if x_value > 100 || y_value > 100 {
+        panic!("Invalid cross-panel value");
+    }
     if let Some(mut entity_commands) = commands.get_entity(dyn_entity) {
         entity_commands.with_children(|parent| {
             let center_pos = fetch_center_pos(&window, &g_trans);
             let thumb_pos = center_pos
                 + Vec2::new(
-                    (x.value as f32 - 50.0) / 100.0 * X_PANEL_CONTROL_SIZE,
-                    (y.value as f32 - 50.0) / 100.0 * X_PANEL_CONTROL_SIZE,
+                    (x_value as f32 - 50.0) / 100.0 * X_PANEL_CONTROL_SIZE,
+                    (y_value as f32 - 50.0) / 100.0 * X_PANEL_CONTROL_SIZE,
                 );
             let circle = shapes::Circle {
                 radius: X_PANEL_W / 2.0 - X_PANEL_B,
@@ -247,8 +252,8 @@ pub fn handle_mouse_clicking(
     let value_pos = (Vec2::new(50.0, 50.0)
         + (cursor_data.canvas_pos - center_pos) / X_PANEL_CONTROL_SIZE * 100.0)
         .clamp(Vec2::new(0.0, 0.0), Vec2::new(100.0, 100.0));
-    x.value = round_to_five(value_pos.x as u8, *is_modifier_on);
-    y.value = round_to_five(value_pos.y as u8, *is_modifier_on);
+    x.u8_value = Some(round_to_five(value_pos.x as u8, *is_modifier_on));
+    y.u8_value = Some(round_to_five(value_pos.y as u8, *is_modifier_on));
 }
 
 pub fn handle_mouse_dragging(
@@ -257,19 +262,24 @@ pub fn handle_mouse_dragging(
     y: &mut ElementTargetValuePair,
     is_modifier_on: &bool,
 ) {
+    let x_value = x.u8_value.unwrap_or(200);
+    let y_value = y.u8_value.unwrap_or(200);
+    if x_value > 100 || y_value > 100 {
+        panic!("Invalid cross-panel value");
+    }
     let dragging_moving_ratio: f32 = if *is_modifier_on { 2.0 } else { 1.0 };
     let motion_events = motion_events.read().collect::<Vec<_>>();
     if let Some(motion_event) = motion_events.iter().rev().take(3).next() {
         let value_delta =
             Vec2::new(motion_event.delta.x, -motion_event.delta.y) * dragging_moving_ratio;
-        x.value = round_to_five(
-            (x.value as f32 + value_delta.x).clamp(0.0, 100.0) as u8,
+        x.u8_value = Some(round_to_five(
+            (x_value as f32 + value_delta.x).clamp(0.0, 100.0) as u8,
             *is_modifier_on,
-        );
-        y.value = round_to_five(
-            (y.value as f32 + value_delta.y).clamp(0.0, 100.0) as u8,
+        ));
+        y.u8_value = Some(round_to_five(
+            (y_value as f32 + value_delta.y).clamp(0.0, 100.0) as u8,
             *is_modifier_on,
-        );
+        ));
     }
 }
 

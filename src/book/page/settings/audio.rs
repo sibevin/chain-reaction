@@ -31,15 +31,15 @@ impl PageBase for Page {
             Update,
             ((
                 handle_ui_navigation,
+                interaction::handle_default_focus,
                 element::handle_element_mouse_unlock,
                 element::handle_element_mouse_clicking,
                 element::handle_element_mouse_dragging,
-                element::handle_element_keyboard_lock,
+                element::handle_element_keyboard_pressing,
                 element::handle_element_keyboard_changing,
-                element::handle_element_gamepad_lock,
+                element::handle_element_gamepad_pressing,
                 element::handle_element_gamepad_dpad_changing,
                 element::handle_element_gamepad_axis_changing,
-                interaction::handle_default_focus,
                 element::handle_element_gamepad_modifier,
                 element::handle_element_keyboard_modifier,
                 element::refresh_elements,
@@ -100,11 +100,17 @@ fn page_enter(
                         })
                         .with_children(|parent| {
                             build_sep_title(parent, &asset_server, "BGM", "music-notes-fill");
-                            ui::build_switch_btn(
+                            element::build_element(
                                 parent,
                                 &asset_server,
-                                ButtonAction::Toggle(String::from("bgm")),
-                                settings.is_enabled("bgm"),
+                                ButtonAction::AppUiNav,
+                                element::ElementInitParams::Switcher {
+                                    data: element::ElementTargetValuePair {
+                                        target: String::from("bgm"),
+                                        bool_value: Some(settings.is_enabled("bgm")),
+                                        ..default()
+                                    },
+                                },
                             );
                             element::build_element(
                                 parent,
@@ -113,16 +119,23 @@ fn page_enter(
                                 element::ElementInitParams::Slider {
                                     data: element::ElementTargetValuePair {
                                         target: String::from("bgm"),
-                                        value: settings.get_value("bgm"),
+                                        u8_value: Some(settings.get_value("bgm")),
+                                        ..default()
                                     },
                                 },
                             );
                             build_sep_title(parent, &asset_server, "SE", "waveform-fill");
-                            ui::build_switch_btn(
+                            element::build_element(
                                 parent,
                                 &asset_server,
-                                ButtonAction::Toggle(String::from("se")),
-                                settings.is_enabled("se"),
+                                ButtonAction::AppUiNav,
+                                element::ElementInitParams::Switcher {
+                                    data: element::ElementTargetValuePair {
+                                        target: String::from("se"),
+                                        bool_value: Some(settings.is_enabled("se")),
+                                        ..default()
+                                    },
+                                },
                             );
                             parent
                                 .spawn(NodeBundle {
@@ -141,7 +154,8 @@ fn page_enter(
                                         element::ElementInitParams::Slider {
                                             data: element::ElementTargetValuePair {
                                                 target: String::from("se"),
-                                                value: settings.get_value("se"),
+                                                u8_value: Some(settings.get_value("se")),
+                                                ..default()
                                             },
                                         },
                                     );
@@ -177,15 +191,35 @@ fn handle_element_events(
     for event in events.read() {
         match event {
             element::ElementEvent::DataChanged { data } => {
-                settings
-                    .update(|settings| {
-                        settings.set_value(data.target.as_str(), data.value as i8);
-                    })
-                    .expect("failed to update slider");
-                if data.target == "bgm" {
-                    app::audio::set_bgm_volume(settings.get_value("bgm"), &audio_bgm_query);
+                dbg!(data);
+                if let Some(u8_value) = data.u8_value {
+                    settings
+                        .update(|settings| {
+                            settings.set_value(data.target.as_str(), u8_value as i8);
+                        })
+                        .expect("failed to update slider");
+                    if data.target == "bgm" {
+                        app::audio::set_bgm_volume(settings.get_value("bgm"), &audio_bgm_query);
+                    }
+                    element::update_element_value(&mut ele_query, data.clone());
                 }
-                element::update_element_value(&mut ele_query, data.clone());
+                if let Some(_) = data.bool_value {
+                    settings
+                        .update(|settings| {
+                            settings.toggle(data.target.as_str());
+                        })
+                        .expect("failed to update switcher");
+                    let is_enabled = settings.is_enabled(data.target.as_str());
+                    if data.target == "bgm" {
+                        if let Ok(sink) = audio_bgm_query.get_single() {
+                            if is_enabled {
+                                sink.play();
+                            } else {
+                                sink.pause();
+                            }
+                        }
+                    }
+                }
             }
             element::ElementEvent::Lock { entity: _ } => {
                 nav_requests.send(NavRequest::Lock);
@@ -202,12 +236,10 @@ fn handle_element_events(
 fn handle_ui_navigation(
     mut commands: Commands,
     action_query: Query<(Entity, &mut ButtonAction), With<ButtonAction>>,
-    mut switch_btn_query: Query<(&Parent, &mut UiImage, &mut ui::SwitchButton)>,
     mut nav_events: EventReader<NavEvent>,
     mut page_state: ResMut<NextState<PageState>>,
-    mut settings: ResMut<Persistent<app::settings::Settings>>,
+    settings: Res<Persistent<app::settings::Settings>>,
     mut ele_query: Query<(Entity, &mut element::ElementData), With<element::ElementData>>,
-    audio_bgm_query: app::audio::QueryAudioBgm,
     asset_server: Res<AssetServer>,
 ) {
     for event in nav_events.read() {
@@ -217,29 +249,6 @@ fn handle_ui_navigation(
                     for (entity, action) in action_query.iter() {
                         if *from.first() == entity {
                             match action {
-                                ButtonAction::Toggle(target) => {
-                                    settings
-                                        .update(|settings| {
-                                            settings.toggle(target.as_ref());
-                                        })
-                                        .expect("failed to update boolean switch");
-                                    let is_enabled = settings.is_enabled(target);
-                                    ui::update_switch_btn_value(
-                                        entity,
-                                        &mut switch_btn_query,
-                                        &asset_server,
-                                        is_enabled,
-                                    );
-                                    if target == "bgm" {
-                                        if let Ok(sink) = audio_bgm_query.get_single() {
-                                            if is_enabled {
-                                                sink.play();
-                                            } else {
-                                                sink.pause();
-                                            }
-                                        }
-                                    }
-                                }
                                 ButtonAction::PlaySe => {
                                     app::audio::play_se(
                                         "game_over",

@@ -9,7 +9,6 @@ pub mod display;
 pub enum ButtonAction {
     MoveToPage(PageState),
     AppUiNav,
-    Toggle(String),
     PlaySe,
 }
 

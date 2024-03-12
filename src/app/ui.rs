@@ -3,14 +3,9 @@ use bevy::prelude::*;
 use bevy_ui_navigation::prelude::*;
 
 mod plugin;
-mod switch_btn;
 mod timer;
 
 pub use plugin::AppUiPlugin;
-pub use switch_btn::build_switch_btn;
-pub use switch_btn::update_switch_btn_display;
-pub use switch_btn::update_switch_btn_value;
-pub use switch_btn::SwitchButton;
 
 pub const FONT_SIZE: f32 = 36.0;
 pub const BTN_FS: f32 = FONT_SIZE;

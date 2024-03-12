@@ -1,5 +1,5 @@
 use super::*;
-use crate::{app::anime_effect, app::interaction, app::ui};
+use crate::app::{anime_effect, element, interaction, ui};
 use bevy::window::WindowMode;
 use bevy_persistent::prelude::*;
 use bevy_ui_navigation::NavRequestSystem;
@@ -30,12 +30,32 @@ impl PageBase for Page {
         )
         .add_systems(
             Update,
-            ((handle_ui_navigation, interaction::handle_default_focus).after(NavRequestSystem),)
+            ((
+                handle_ui_navigation,
+                interaction::handle_default_focus,
+                element::handle_element_mouse_unlock,
+                element::handle_element_mouse_clicking,
+                element::handle_element_mouse_dragging,
+                element::handle_element_keyboard_pressing,
+                element::handle_element_keyboard_changing,
+                element::handle_element_gamepad_pressing,
+                element::handle_element_gamepad_dpad_changing,
+                element::handle_element_gamepad_axis_changing,
+                element::handle_element_gamepad_modifier,
+                element::handle_element_keyboard_modifier,
+                element::refresh_elements,
+                handle_element_events,
+            )
+                .after(NavRequestSystem),)
                 .run_if(in_state(self.state())),
         )
         .add_systems(
             OnExit(self.state()),
-            (anime_effect::clear_anime_effect, ui::despawn_ui::<OnPage>),
+            (
+                anime_effect::clear_anime_effect,
+                element::clear_elements,
+                ui::despawn_ui::<OnPage>,
+            ),
         );
     }
 }
@@ -88,11 +108,17 @@ fn page_enter(
                                     "Fullscreen",
                                     "frame-corners-fill",
                                 );
-                                ui::build_switch_btn(
+                                element::build_element(
                                     parent,
                                     &asset_server,
-                                    ButtonAction::Toggle(String::from("fullscreen")),
-                                    settings.is_enabled("fullscreen"),
+                                    ButtonAction::AppUiNav,
+                                    element::ElementInitParams::Switcher {
+                                        data: element::ElementTargetValuePair {
+                                            target: String::from("fullscreen"),
+                                            bool_value: Some(settings.is_enabled("fullscreen")),
+                                            ..default()
+                                        },
+                                    },
                                 );
                             }
                         });
@@ -101,15 +127,10 @@ fn page_enter(
         });
 }
 
-#[allow(clippy::too_many_arguments)]
 fn handle_ui_navigation(
     action_query: Query<(Entity, &mut ButtonAction), With<ButtonAction>>,
-    mut switch_btn_query: Query<(&Parent, &mut UiImage, &mut ui::SwitchButton)>,
     mut nav_events: EventReader<NavEvent>,
     mut page_state: ResMut<NextState<PageState>>,
-    mut settings: ResMut<Persistent<app::settings::Settings>>,
-    mut window_query: Query<&mut Window>,
-    asset_server: Res<AssetServer>,
 ) {
     for event in nav_events.read() {
         match event {
@@ -118,28 +139,6 @@ fn handle_ui_navigation(
                     for (entity, action) in action_query.iter() {
                         if *from.first() == entity {
                             match action {
-                                ButtonAction::Toggle(target) => {
-                                    settings
-                                        .update(|settings| {
-                                            settings.toggle(target.as_ref());
-                                        })
-                                        .expect("failed to update boolean switch");
-                                    let is_enabled = settings.is_enabled(target);
-                                    ui::update_switch_btn_value(
-                                        entity,
-                                        &mut switch_btn_query,
-                                        &asset_server,
-                                        is_enabled,
-                                    );
-                                    if target == "fullscreen" {
-                                        let mut window = window_query.single_mut();
-                                        if is_enabled {
-                                            window.mode = WindowMode::Fullscreen
-                                        } else {
-                                            window.mode = WindowMode::Windowed
-                                        }
-                                    }
-                                }
                                 ButtonAction::MoveToPage(state) => page_state.set(*state),
                                 _ => (),
                             }
@@ -148,6 +147,43 @@ fn handle_ui_navigation(
                 }
                 _ => (),
             },
+            _ => (),
+        }
+    }
+}
+
+fn handle_element_events(
+    mut events: EventReader<element::ElementEvent>,
+    mut settings: ResMut<Persistent<app::settings::Settings>>,
+    mut nav_requests: EventWriter<NavRequest>,
+    mut window_query: Query<&mut Window>,
+) {
+    for event in events.read() {
+        match event {
+            element::ElementEvent::DataChanged { data } => {
+                if let Some(_) = data.bool_value {
+                    settings
+                        .update(|settings| {
+                            settings.toggle(data.target.as_str());
+                        })
+                        .expect("failed to update switcher");
+                    let is_enabled = settings.is_enabled(data.target.as_str());
+                    if data.target == "fullscreen" {
+                        let mut window = window_query.single_mut();
+                        if is_enabled {
+                            window.mode = WindowMode::Fullscreen
+                        } else {
+                            window.mode = WindowMode::Windowed
+                        }
+                    }
+                }
+            }
+            element::ElementEvent::Lock { entity: _ } => {
+                nav_requests.send(NavRequest::Lock);
+            }
+            element::ElementEvent::Unlock => {
+                nav_requests.send(NavRequest::Unlock);
+            }
             _ => (),
         }
     }

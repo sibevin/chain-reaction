@@ -4,14 +4,25 @@ use bevy::input;
 
 pub mod cross_panel;
 pub mod slider;
+pub mod switcher;
 
-#[derive(Clone, Debug)]
+#[derive(PartialEq, Eq)]
+enum ElementPressAction {
+    Confirm,
+    Cancel,
+}
+
+#[derive(Default, Clone, Debug)]
 pub struct ElementTargetValuePair {
     pub target: String,
-    pub value: u8,
+    pub u8_value: Option<u8>,
+    pub bool_value: Option<bool>,
 }
 
 pub enum ElementInitParams {
+    Switcher {
+        data: ElementTargetValuePair,
+    },
     Slider {
         data: ElementTargetValuePair,
     },
@@ -23,6 +34,9 @@ pub enum ElementInitParams {
 
 #[derive(Component, Debug)]
 pub enum ElementData {
+    Switcher {
+        data: ElementTargetValuePair,
+    },
     Slider {
         data: ElementTargetValuePair,
         is_modifier_on: bool,
@@ -53,6 +67,9 @@ pub enum ElementEvent {
 #[derive(Component)]
 pub struct ElementText;
 
+#[derive(Component)]
+pub struct ElementImage;
+
 pub fn build_element(
     parent: &mut ChildBuilder,
     asset_server: &Res<AssetServer>,
@@ -60,11 +77,14 @@ pub fn build_element(
     params: ElementInitParams,
 ) {
     match params {
+        ElementInitParams::Switcher { data } => {
+            switcher::build_element(parent, asset_server, bundle, data);
+        }
         ElementInitParams::Slider { data } => {
-            slider::build_slider_element(parent, asset_server, bundle, data);
+            slider::build_element(parent, asset_server, bundle, data);
         }
         ElementInitParams::CrossPanel { x, y } => {
-            cross_panel::build_cross_panel_element(parent, bundle, x, y);
+            cross_panel::build_element(parent, bundle, x, y);
         }
     }
 }
@@ -75,13 +95,18 @@ pub fn update_element_value(
 ) {
     for (_, mut data) in ele_query.iter_mut() {
         match *data {
+            ElementData::Switcher { ref mut data } => {
+                if data.target == target_value.target && target_value.bool_value.is_some() {
+                    data.bool_value = target_value.bool_value;
+                }
+            }
             ElementData::Slider {
                 ref mut data,
                 is_modifier_on: _,
                 is_locked: _,
             } => {
-                if data.target == target_value.target {
-                    data.value = target_value.value;
+                if data.target == target_value.target && target_value.u8_value.is_some() {
+                    data.u8_value = target_value.u8_value;
                 }
             }
             ElementData::CrossPanel {
@@ -90,11 +115,13 @@ pub fn update_element_value(
                 is_modifier_on: _,
                 is_locked: _,
             } => {
-                if x.target == target_value.target {
-                    x.value = target_value.value;
-                }
-                if y.target == target_value.target {
-                    y.value = target_value.value;
+                if target_value.u8_value.is_some() {
+                    if x.target == target_value.target {
+                        x.u8_value = target_value.u8_value;
+                    }
+                    if y.target == target_value.target {
+                        y.u8_value = target_value.u8_value;
+                    }
                 }
             }
         }
@@ -107,10 +134,12 @@ pub fn refresh_elements(
     fg_query: Query<Entity, With<AppElementFg>>,
     dyn_query: Query<Entity, With<AppElementDyn>>,
     mut ui_text_query: Query<(&Parent, &mut Text), With<ElementText>>,
+    mut ui_image_query: Query<(&Parent, &mut UiImage), With<ElementImage>>,
     window: Query<&Window>,
     mut delay_timer: ResMut<timer::ElementBuildTimer>,
     mut refresh_timer: ResMut<timer::ElementRefreshTimer>,
     time: Res<Time>,
+    asset_server: Res<AssetServer>,
 ) {
     let fg_entity = fg_query.get_single().unwrap();
     let dyn_entity = dyn_query.get_single().unwrap();
@@ -118,8 +147,8 @@ pub fn refresh_elements(
         if let Some(mut entity_commands) = commands.get_entity(fg_entity) {
             entity_commands.despawn_descendants();
         }
-        for (g_trans, _, data) in ele_query.iter() {
-            match data {
+        for (g_trans, _, ele_data) in ele_query.iter() {
+            match ele_data {
                 ElementData::Slider {
                     data: _,
                     is_modifier_on: _,
@@ -131,6 +160,7 @@ pub fn refresh_elements(
                     is_modifier_on: _,
                     is_locked: _,
                 } => cross_panel::init_display(&mut commands, &window, &g_trans, fg_entity),
+                _ => (),
             }
         }
     }
@@ -138,10 +168,10 @@ pub fn refresh_elements(
         if let Some(mut entity_commands) = commands.get_entity(dyn_entity) {
             entity_commands.despawn_descendants();
         }
-        for (g_trans, entity, data) in ele_query.iter() {
+        for (g_trans, entity, ele_data) in ele_query.iter() {
             for (parent, mut ui_text) in ui_text_query.iter_mut() {
                 if parent.get() == entity {
-                    match data {
+                    match ele_data {
                         ElementData::Slider {
                             data,
                             is_modifier_on: _,
@@ -151,7 +181,17 @@ pub fn refresh_elements(
                     }
                 }
             }
-            match data {
+            for (parent, mut ui_image) in ui_image_query.iter_mut() {
+                if parent.get() == entity {
+                    match ele_data {
+                        ElementData::Switcher { data } => {
+                            switcher::update_ui_image(&mut ui_image, &data, &asset_server)
+                        }
+                        _ => (),
+                    }
+                }
+            }
+            match ele_data {
                 ElementData::Slider {
                     data,
                     is_modifier_on,
@@ -180,6 +220,7 @@ pub fn refresh_elements(
                     &is_modifier_on,
                     &is_locked,
                 ),
+                _ => (),
             }
         }
     }
@@ -225,6 +266,10 @@ pub fn handle_element_mouse_clicking(
     for (interaction, &g_trans, mut data) in ui_clicking_query.iter_mut() {
         if *interaction == Interaction::Pressed {
             match &mut data.as_mut() {
+                ElementData::Switcher { ref mut data } => {
+                    switcher::toggle_switcher(data);
+                    event_writer.send(ElementEvent::DataChanged { data: data.clone() });
+                }
                 ElementData::Slider {
                     ref mut data,
                     is_modifier_on,
@@ -286,7 +331,10 @@ pub fn handle_element_mouse_unlock(
                 } => {
                     is_ui_locked = is_locked;
                 }
-            };
+                _ => {
+                    continue;
+                }
+            }
             if *is_ui_locked {
                 *is_ui_locked = false;
                 event_writer.send(ElementEvent::Unlock);
@@ -303,14 +351,23 @@ pub fn handle_element_mouse_dragging(
     for (interaction, mut data) in ele_query.iter_mut() {
         if *interaction == Interaction::Pressed {
             match &mut data.as_mut() {
+                ElementData::Switcher { ref mut data } => {
+                    let ori_value = data.bool_value.unwrap();
+                    switcher::handle_mouse_dragging(&mut motion_events, data);
+                    let new_value = data.bool_value.unwrap();
+                    if ori_value != new_value {
+                        event_writer.send(ElementEvent::DataChanged { data: data.clone() });
+                    }
+                }
                 ElementData::Slider {
                     ref mut data,
                     is_modifier_on,
                     is_locked: _,
                 } => {
-                    let ori_value = data.value;
+                    let ori_value = data.u8_value.unwrap();
                     slider::handle_mouse_dragging(&mut motion_events, data, is_modifier_on);
-                    if ori_value != data.value {
+                    let new_value = data.u8_value.unwrap();
+                    if ori_value != new_value {
                         event_writer.send(ElementEvent::DataChanged { data: data.clone() });
                     }
                 }
@@ -320,13 +377,13 @@ pub fn handle_element_mouse_dragging(
                     is_modifier_on,
                     is_locked: _,
                 } => {
-                    let ori_x = x.value;
-                    let ori_y = y.value;
+                    let ori_x = x.u8_value.unwrap();
+                    let ori_y = y.u8_value.unwrap();
                     cross_panel::handle_mouse_dragging(&mut motion_events, x, y, is_modifier_on);
-                    if ori_x != x.value {
+                    if ori_x != x.u8_value.unwrap() {
                         event_writer.send(ElementEvent::DataChanged { data: x.clone() });
                     }
-                    if ori_y != y.value {
+                    if ori_y != y.u8_value.unwrap() {
                         event_writer.send(ElementEvent::DataChanged { data: y.clone() });
                     }
                 }
@@ -335,81 +392,85 @@ pub fn handle_element_mouse_dragging(
     }
 }
 
-pub fn handle_element_gamepad_lock(
+pub fn handle_element_gamepad_pressing(
     gamepads: Res<Gamepads>,
     input: Res<Input<GamepadButton>>,
     mut ui_focusables: Query<(Entity, &Focusable, &mut ElementData), With<ElementData>>,
     mut event_writer: EventWriter<ElementEvent>,
 ) {
     for gamepad in gamepads.iter() {
-        let mut is_locked_changed = None;
+        let mut press_action = None;
         if input.any_just_pressed([GamepadButton::new(gamepad, GamepadButtonType::South)]) {
-            is_locked_changed = Some(true);
+            press_action = Some(ElementPressAction::Confirm);
         }
         if input.any_just_pressed([GamepadButton::new(gamepad, GamepadButtonType::East)]) {
-            is_locked_changed = Some(false);
+            press_action = Some(ElementPressAction::Cancel);
         }
-        if let Some(is_locked_value) = is_locked_changed {
-            handle_element_lock(is_locked_value, &mut ui_focusables, &mut event_writer);
+        if let Some(press_action) = press_action {
+            handle_element_pressing(press_action, &mut ui_focusables, &mut event_writer);
         }
     }
 }
 
-pub fn handle_element_keyboard_lock(
+pub fn handle_element_keyboard_pressing(
     input: Res<Input<KeyCode>>,
     mut ui_focusables: Query<(Entity, &Focusable, &mut ElementData), With<ElementData>>,
     mut event_writer: EventWriter<ElementEvent>,
 ) {
-    let mut is_locked_changed = None;
-    if input.any_just_pressed([KeyCode::Space]) {
-        is_locked_changed = Some(true);
+    let mut press_action = None;
+    if input.any_just_pressed([KeyCode::Space, KeyCode::Return]) {
+        press_action = Some(ElementPressAction::Confirm);
     }
     if input.any_just_pressed([KeyCode::Escape, KeyCode::Delete]) {
-        is_locked_changed = Some(false);
+        press_action = Some(ElementPressAction::Cancel);
     }
-    if let Some(is_locked_value) = is_locked_changed {
-        handle_element_lock(is_locked_value, &mut ui_focusables, &mut event_writer);
+    if let Some(press_action) = press_action {
+        handle_element_pressing(press_action, &mut ui_focusables, &mut event_writer);
     }
 }
 
-fn handle_element_lock(
-    is_locked_value: bool,
+fn handle_element_pressing(
+    press_action: ElementPressAction,
     ui_focusables: &mut Query<(Entity, &Focusable, &mut ElementData), With<ElementData>>,
     event_writer: &mut EventWriter<ElementEvent>,
 ) {
     for (entity, focus, mut data) in ui_focusables.iter_mut() {
-        let is_ui_locked;
-        let data = data.as_mut();
-        match data {
-            ElementData::Slider {
-                data: _,
-                is_modifier_on: _,
-                ref mut is_locked,
-            } => {
-                is_ui_locked = is_locked;
-            }
-            ElementData::CrossPanel {
-                x: _,
-                y: _,
-                is_modifier_on: _,
-                ref mut is_locked,
-            } => {
-                is_ui_locked = is_locked;
-            }
-        };
         if matches!(focus.state(), FocusState::Focused) {
-            if *is_ui_locked {
-                if !is_locked_value {
-                    *is_ui_locked = is_locked_value;
-                    event_writer.send(ElementEvent::Unlock);
+            let data = data.as_mut();
+            match data {
+                ElementData::Switcher { data } => {
+                    if press_action == ElementPressAction::Confirm {
+                        switcher::toggle_switcher(data);
+                        event_writer.send(ElementEvent::DataChanged { data: data.clone() });
+                    }
                 }
-            } else {
-                if is_locked_value {
-                    *is_ui_locked = is_locked_value;
-                    event_writer.send(ElementEvent::Lock { entity });
-                }
-            }
+                ElementData::Slider {
+                    data: _,
+                    is_modifier_on: _,
+                    ref mut is_locked,
+                } => handle_element_locking(entity, is_locked, event_writer),
+                ElementData::CrossPanel {
+                    x: _,
+                    y: _,
+                    is_modifier_on: _,
+                    ref mut is_locked,
+                } => handle_element_locking(entity, is_locked, event_writer),
+            };
         }
+    }
+}
+
+fn handle_element_locking(
+    entity: Entity,
+    current_is_locked: &mut bool,
+    event_writer: &mut EventWriter<ElementEvent>,
+) {
+    if *current_is_locked {
+        *current_is_locked = false;
+        event_writer.send(ElementEvent::Unlock);
+    } else {
+        *current_is_locked = true;
+        event_writer.send(ElementEvent::Lock { entity });
     }
 }
 
@@ -522,9 +583,13 @@ fn handle_element_changing(
                 is_locked,
             } => {
                 if *is_locked {
-                    let ori_value = data.value;
-                    data.value = calculate_changed_value(data.value, change.1, *is_modifier_on);
-                    if ori_value != data.value {
+                    let ori_value = data.u8_value.unwrap();
+                    data.u8_value = Some(calculate_changed_value(
+                        ori_value,
+                        change.1,
+                        *is_modifier_on,
+                    ));
+                    if ori_value != data.u8_value.unwrap() {
                         event_writer.send(ElementEvent::DataChanged { data: data.clone() });
                     }
                 }
@@ -537,21 +602,24 @@ fn handle_element_changing(
             } => {
                 if *is_locked {
                     if change.0 == "main" {
-                        let ori_x = x.value;
-                        x.value = calculate_changed_value(x.value, change.1, *is_modifier_on);
-                        if ori_x != x.value {
+                        let ori_x = x.u8_value.unwrap();
+                        x.u8_value =
+                            Some(calculate_changed_value(ori_x, change.1, *is_modifier_on));
+                        if ori_x != x.u8_value.unwrap() {
                             event_writer.send(ElementEvent::DataChanged { data: x.clone() });
                         }
                     }
                     if change.0 == "sub" {
-                        let ori_y = y.value;
-                        y.value = calculate_changed_value(y.value, change.1, *is_modifier_on);
-                        if ori_y != y.value {
+                        let ori_y = y.u8_value.unwrap();
+                        y.u8_value =
+                            Some(calculate_changed_value(ori_y, change.1, *is_modifier_on));
+                        if ori_y != y.u8_value.unwrap() {
                             event_writer.send(ElementEvent::DataChanged { data: y.clone() });
                         }
                     }
                 }
             }
+            _ => (),
         }
     }
 }
@@ -626,6 +694,7 @@ fn handle_element_modifier(
             } => {
                 *is_modifier_on = modifier_value;
             }
+            _ => (),
         }
     }
 }
@@ -653,6 +722,7 @@ pub fn apply_element_lock(
             } => {
                 is_ui_locked = is_locked;
             }
+            _ => continue,
         };
         if let Some(ele_entity) = ele_entity {
             if ele_entity == entity {
