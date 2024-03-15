@@ -175,7 +175,7 @@ fn state_setup(
                                     padding: UiRect::all(app::ui::px_p(app::ui::BTN_PADDING)),
                                     ..default()
                                 },
-                                Some("Markers"),
+                                Some("Marks"),
                                 Some("crosshair"),
                             );
                         });
