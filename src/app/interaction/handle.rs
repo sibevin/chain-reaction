@@ -1,8 +1,6 @@
-use crate::app::interaction::*;
-
-const WAVE_START_W: f32 = ui::FONT_SIZE * 0.3;
-const WAVE_END_W: f32 = WAVE_START_W * 0.4;
-const WAVE_H: f32 = WAVE_START_W * 0.4;
+use super::*;
+use crate::app::{audio, settings};
+use bevy_persistent::prelude::*;
 
 const SHOOT_W: f32 = ui::FONT_SIZE * 0.1;
 
@@ -41,6 +39,8 @@ pub fn handle_button_interaction(
     ae_query: Query<Entity, With<IaAnimeEffect>>,
     mut ae_status: ResMut<AnimeEffectStatus>,
     window: Query<&Window>,
+    settings: Res<Persistent<settings::Settings>>,
+    asset_server: Res<AssetServer>,
 ) {
     let mut target: Option<FocusTarget> = None;
     for (focus, g_trans, node) in focusables.iter_mut() {
@@ -58,6 +58,7 @@ pub fn handle_button_interaction(
         } else {
             draw_shoot_circle(&mut commands, target, Vec2::ZERO);
         }
+        audio::play_se("focus", &mut commands, &asset_server, settings.as_ref());
     }
 }
 
@@ -69,6 +70,8 @@ pub fn handle_menu_entry_interaction(
     ae_query: Query<Entity, With<IaAnimeEffect>>,
     mut ae_status: ResMut<AnimeEffectStatus>,
     window: Query<&Window>,
+    settings: Res<Persistent<settings::Settings>>,
+    asset_server: Res<AssetServer>,
 ) {
     let mut target: Option<FocusTarget> = None;
     for (focus, g_trans, node) in focusables.iter_mut() {
@@ -82,6 +85,7 @@ pub fn handle_menu_entry_interaction(
     }
     if let Some(target) = target {
         draw_shoot_rect(&mut commands, target, Vec2::ZERO);
+        audio::play_se("focus", &mut commands, &asset_server, settings.as_ref());
     }
 }
 
@@ -93,6 +97,8 @@ pub fn handle_switch_interaction(
     ae_query: Query<Entity, With<IaAnimeEffect>>,
     mut ae_status: ResMut<AnimeEffectStatus>,
     window: Query<&Window>,
+    settings: Res<Persistent<settings::Settings>>,
+    asset_server: Res<AssetServer>,
 ) {
     let mut target: Option<FocusTarget> = None;
     for (focus, g_trans, node) in focusables.iter_mut() {
@@ -106,6 +112,7 @@ pub fn handle_switch_interaction(
     }
     if let Some(target) = target {
         draw_shoot_rect(&mut commands, target, Vec2::ZERO);
+        audio::play_se("focus", &mut commands, &asset_server, settings.as_ref());
     }
 }
 
@@ -117,6 +124,8 @@ pub fn handle_slider_interaction(
     ae_query: Query<Entity, With<IaAnimeEffect>>,
     mut ae_status: ResMut<AnimeEffectStatus>,
     window: Query<&Window>,
+    settings: Res<Persistent<settings::Settings>>,
+    asset_server: Res<AssetServer>,
 ) {
     let mut target: Option<FocusTarget> = None;
     for (focus, g_trans, node) in focusables.iter_mut() {
@@ -130,6 +139,7 @@ pub fn handle_slider_interaction(
     }
     if let Some(target) = target {
         draw_shoot_rect(&mut commands, target, Vec2::ZERO);
+        audio::play_se("focus", &mut commands, &asset_server, settings.as_ref());
     }
 }
 
@@ -141,6 +151,8 @@ pub fn handle_link_interaction(
     ae_query: Query<Entity, With<IaAnimeEffect>>,
     mut ae_status: ResMut<AnimeEffectStatus>,
     window: Query<&Window>,
+    settings: Res<Persistent<settings::Settings>>,
+    asset_server: Res<AssetServer>,
 ) {
     let mut target: Option<FocusTarget> = None;
     for (focus, g_trans, node) in focusables.iter_mut() {
@@ -158,10 +170,13 @@ pub fn handle_link_interaction(
             target,
             Vec2::new(ui::fs_x(0.3), ui::fs_x(0.3)),
         );
+        audio::play_se("focus", &mut commands, &asset_server, settings.as_ref());
     }
 }
 
 type FocusableCrossPanel = (Changed<Focusable>, With<IaCrossPanel>);
+
+const CROSS_PANEL_P: f32 = ui::FONT_SIZE * -0.3;
 
 pub fn handle_cross_panel_interaction(
     mut commands: Commands,
@@ -169,6 +184,8 @@ pub fn handle_cross_panel_interaction(
     ae_query: Query<Entity, With<IaAnimeEffect>>,
     mut ae_status: ResMut<AnimeEffectStatus>,
     window: Query<&Window>,
+    settings: Res<Persistent<settings::Settings>>,
+    asset_server: Res<AssetServer>,
 ) {
     let mut target: Option<FocusTarget> = None;
     for (focus, g_trans, node) in focusables.iter_mut() {
@@ -181,9 +198,8 @@ pub fn handle_cross_panel_interaction(
         }
     }
     if let Some(target) = target {
-        if target.size.x > 0.0 && target.size.y > 0.0 {
-            draw_focus(&mut commands, target);
-        }
+        draw_shoot_rect(&mut commands, target, Vec2::ONE * CROSS_PANEL_P);
+        audio::play_se("focus", &mut commands, &asset_server, settings.as_ref());
     }
 }
 
@@ -254,47 +270,6 @@ fn draw_shoot_rect(commands: &mut Commands, target: FocusTarget, padding: Vec2) 
                 pos_2: Vec2::new(target.pos.x + size_x / 2.0, target.pos.y - size_y / 2.0),
                 width_start: SHOOT_W,
                 width_end: SHOOT_W,
-            },
-            IaAnimeEffect,
-        );
-    }
-}
-
-fn draw_focus(commands: &mut Commands, target: FocusTarget) {
-    if target.size.x > target.size.y * 1.5 {
-        let size_x = target.size.x * 0.9;
-        let size_y = target.size.y * 0.5;
-        insert_anime_effect(
-            commands,
-            AnimeEffectParam {
-                kind: AnimeEffectKind::LineQ,
-                color: BG_COLOR.with_l(0.8),
-                pos_1: Vec2::new(
-                    target.pos.x - size_x / 2.0,
-                    target.pos.y - size_y / 2.0 - WAVE_H,
-                ),
-                pos_2: Vec2::new(
-                    target.pos.x + size_x / 2.0,
-                    target.pos.y - size_y / 2.0 + WAVE_H,
-                ),
-                width_start: WAVE_START_W,
-                width_end: WAVE_END_W,
-            },
-            IaAnimeEffect,
-        );
-    } else {
-        insert_anime_effect(
-            commands,
-            AnimeEffectParam {
-                kind: AnimeEffectKind::CircleQ,
-                color: BG_COLOR.with_l(0.8),
-                pos_1: Vec2::new(target.pos.x, target.pos.y),
-                pos_2: Vec2::new(
-                    target.pos.x + target.size.x / 2.0,
-                    target.pos.y + target.size.y / 2.0,
-                ),
-                width_start: WAVE_START_W,
-                width_end: WAVE_END_W,
             },
             IaAnimeEffect,
         );

@@ -27,6 +27,10 @@ static SE_MAP: phf::Map<&'static str, AudioData> = phf_map! {
         path: "audio/se/tada.ogg",
         volume_bias: 0.0,
     },
+    "focus" => AudioData {
+        path: "audio/se/focus.ogg",
+        volume_bias: 0.0,
+    },
 };
 
 pub fn play_se(
