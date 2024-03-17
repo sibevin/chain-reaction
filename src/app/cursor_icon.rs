@@ -42,6 +42,11 @@ static CURSOR_DATA_MAP: phf::Map<&'static str, CursorData> = phf_map! {
         color: theme::U_COLOR,
         path: "images/cursor/pointer.png",
     },
+    "move" => CursorData {
+        origin: Vec2::new(-CURSOR_ICON_SIZE * 0.5, -CURSOR_ICON_SIZE * 0.5),
+        color: theme::U_COLOR,
+        path: "images/cursor/move.png",
+    },
 };
 
 const CURSOR_ICON_SIZE: f32 = 36.0;
@@ -75,9 +80,16 @@ pub fn set_cursor_icon(
     kind: &str,
 ) {
     if let Ok((mut image, mut cursor_icon)) = cursor_icon_query.get_single_mut() {
+        if cursor_icon.kind == kind {
+            return;
+        }
         cursor_icon.kind = String::from(kind);
-        cursor_icon.is_loaded = false;
+        if kind == "hidden" {
+            return;
+        }
         if let Some(cursor_data) = CURSOR_DATA_MAP.get(&cursor_icon.kind) {
+            cursor_icon.is_loaded = false;
+            asset_server.reload(cursor_data.path);
             image.texture = asset_server.load(cursor_data.path);
         }
     }
