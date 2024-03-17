@@ -1,19 +1,24 @@
 use super::*;
-use crate::app::cursor;
+use crate::app::{cursor, cursor_icon};
 use bevy::{ecs::schedule::SystemConfigs, input};
 
 pub mod cross_panel;
 pub mod menu_entry;
+pub mod sensitivity_demo;
 pub mod slider;
 pub mod switcher;
 
 #[derive(PartialEq, Eq)]
-enum ElementPressAction {
+pub enum ElementAction {
     Confirm,
     Cancel,
+    Up,
+    Down,
+    Left,
+    Right,
 }
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct ElementTargetValuePair {
     pub target: String,
     pub u8_value: Option<u8>,
@@ -35,9 +40,13 @@ pub enum ElementInitParams {
         x: ElementTargetValuePair,
         y: ElementTargetValuePair,
     },
+    SensitivityDemo {
+        default_sensitivity: ElementTargetValuePair,
+        modified_sensitivity: ElementTargetValuePair,
+    },
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, PartialEq)]
 pub enum ElementData {
     MenuEntry,
     Switcher {
@@ -54,12 +63,13 @@ pub enum ElementData {
         is_modifier_on: bool,
         is_locked: bool,
     },
-}
-
-#[derive(PartialEq)]
-pub enum ElementAction {
-    Confirm,
-    Cancel,
+    SensitivityDemo {
+        default_sensitivity: ElementTargetValuePair,
+        modified_sensitivity: ElementTargetValuePair,
+        ball_pos: Vec2,
+        is_modifier_on: bool,
+        is_locked: bool,
+    },
 }
 
 #[derive(Event, Debug)]
@@ -79,7 +89,7 @@ pub struct ElementImage;
 pub fn element_systems() -> SystemConfigs {
     (
         handle_element_mouse_unlock,
-        handle_element_mouse_clicking,
+        handle_element_mouse_pressing,
         handle_element_mouse_dragging,
         handle_element_keyboard_pressing,
         handle_element_keyboard_changing,
@@ -112,6 +122,17 @@ pub fn build_element(
         }
         ElementInitParams::CrossPanel { x, y } => {
             cross_panel::build_element(parent, bundle, x, y);
+        }
+        ElementInitParams::SensitivityDemo {
+            default_sensitivity,
+            modified_sensitivity,
+        } => {
+            sensitivity_demo::build_element(
+                parent,
+                bundle,
+                default_sensitivity,
+                modified_sensitivity,
+            );
         }
     }
 }
@@ -148,6 +169,22 @@ pub fn update_element_value(
                     }
                     if y.target == target_value.target {
                         y.u8_value = target_value.u8_value;
+                    }
+                }
+            }
+            ElementData::SensitivityDemo {
+                ref mut default_sensitivity,
+                ref mut modified_sensitivity,
+                ball_pos: _,
+                is_modifier_on: _,
+                is_locked: _,
+            } => {
+                if target_value.u8_value.is_some() {
+                    if default_sensitivity.target == target_value.target {
+                        default_sensitivity.u8_value = target_value.u8_value;
+                    }
+                    if modified_sensitivity.target == target_value.target {
+                        modified_sensitivity.u8_value = target_value.u8_value;
                     }
                 }
             }
@@ -207,6 +244,15 @@ pub fn apply_element_lock(
             } => {
                 is_ui_locked = is_locked;
             }
+            ElementData::SensitivityDemo {
+                default_sensitivity: _,
+                modified_sensitivity: _,
+                ball_pos: _,
+                is_modifier_on: _,
+                ref mut is_locked,
+            } => {
+                is_ui_locked = is_locked;
+            }
             _ => continue,
         };
         if let Some(ele_entity) = ele_entity {
@@ -261,6 +307,13 @@ fn refresh_elements(
                     is_modifier_on: _,
                     is_locked: _,
                 } => cross_panel::init_display(&mut commands, &window, &g_trans, fg_entity),
+                ElementData::SensitivityDemo {
+                    default_sensitivity: _,
+                    modified_sensitivity: _,
+                    ball_pos: _,
+                    is_modifier_on: _,
+                    is_locked: _,
+                } => sensitivity_demo::init_display(&mut commands, &window, &g_trans, fg_entity),
                 _ => (),
             }
         }
@@ -321,13 +374,28 @@ fn refresh_elements(
                     &is_modifier_on,
                     &is_locked,
                 ),
+                ElementData::SensitivityDemo {
+                    default_sensitivity: _,
+                    modified_sensitivity: _,
+                    ball_pos,
+                    is_modifier_on,
+                    is_locked,
+                } => sensitivity_demo::update_display(
+                    &mut commands,
+                    &window,
+                    &g_trans,
+                    dyn_entity,
+                    &ball_pos,
+                    &is_modifier_on,
+                    &is_locked,
+                ),
                 _ => (),
             }
         }
     }
 }
 
-fn handle_element_mouse_clicking(
+fn handle_element_mouse_pressing(
     mut ui_clicking_query: Query<
         (&Interaction, &GlobalTransform, &mut ElementData),
         Changed<Interaction>,
@@ -335,10 +403,12 @@ fn handle_element_mouse_clicking(
     window: Query<&Window>,
     cursor_data: Res<cursor::AppCursorData>,
     mut event_writer: EventWriter<ElementEvent>,
+    mut cursor_icon_query: Query<(&mut UiImage, &mut cursor_icon::AppCursorIcon)>,
+    asset_server: Res<AssetServer>,
 ) {
     for (interaction, &g_trans, mut data) in ui_clicking_query.iter_mut() {
-        if *interaction == Interaction::Pressed {
-            match &mut data.as_mut() {
+        match *interaction {
+            Interaction::Pressed => match &mut data.as_mut() {
                 ElementData::Switcher { ref mut data } => {
                     switcher::toggle_switcher(data);
                     event_writer.send(ElementEvent::DataChanged { data: data.clone() });
@@ -348,7 +418,7 @@ fn handle_element_mouse_clicking(
                     is_modifier_on,
                     is_locked: _,
                 } => {
-                    slider::handle_mouse_clicking(
+                    slider::handle_mouse_pressing(
                         &window,
                         &g_trans,
                         &cursor_data,
@@ -363,7 +433,7 @@ fn handle_element_mouse_clicking(
                     is_modifier_on,
                     is_locked: _,
                 } => {
-                    cross_panel::handle_mouse_clicking(
+                    cross_panel::handle_mouse_pressing(
                         &window,
                         &g_trans,
                         &cursor_data,
@@ -375,7 +445,31 @@ fn handle_element_mouse_clicking(
                     event_writer.send(ElementEvent::DataChanged { data: y.clone() });
                 }
                 _ => (),
-            }
+            },
+            Interaction::Hovered => match &mut data.as_mut() {
+                ElementData::SensitivityDemo {
+                    default_sensitivity: _,
+                    modified_sensitivity: _,
+                    ball_pos: _,
+                    is_modifier_on: _,
+                    is_locked: _,
+                } => {
+                    cursor_icon::set_cursor_icon(&mut cursor_icon_query, &asset_server, "pointer");
+                }
+                _ => (),
+            },
+            Interaction::None => match &mut data.as_mut() {
+                ElementData::SensitivityDemo {
+                    default_sensitivity: _,
+                    modified_sensitivity: _,
+                    ball_pos: _,
+                    is_modifier_on: _,
+                    is_locked: _,
+                } => {
+                    cursor_icon::set_cursor_icon(&mut cursor_icon_query, &asset_server, "default");
+                }
+                _ => (),
+            },
         }
     }
 }
@@ -405,6 +499,15 @@ fn handle_element_mouse_unlock(
                 } => {
                     is_ui_locked = is_locked;
                 }
+                ElementData::SensitivityDemo {
+                    default_sensitivity: _,
+                    modified_sensitivity: _,
+                    ball_pos: _,
+                    is_modifier_on: _,
+                    ref mut is_locked,
+                } => {
+                    is_ui_locked = is_locked;
+                }
                 _ => {
                     continue;
                 }
@@ -421,6 +524,8 @@ fn handle_element_mouse_dragging(
     mut ele_query: Query<(&Interaction, &mut ElementData), With<ElementData>>,
     mut motion_events: EventReader<input::mouse::MouseMotion>,
     mut event_writer: EventWriter<ElementEvent>,
+    mut cursor_icon_query: Query<(&mut UiImage, &mut cursor_icon::AppCursorIcon)>,
+    asset_server: Res<AssetServer>,
 ) {
     for (interaction, mut data) in ele_query.iter_mut() {
         if *interaction == Interaction::Pressed {
@@ -461,6 +566,22 @@ fn handle_element_mouse_dragging(
                         event_writer.send(ElementEvent::DataChanged { data: y.clone() });
                     }
                 }
+                ElementData::SensitivityDemo {
+                    ref default_sensitivity,
+                    ref modified_sensitivity,
+                    ref mut ball_pos,
+                    ref is_modifier_on,
+                    is_locked: _,
+                } => {
+                    sensitivity_demo::handle_mouse_dragging(
+                        &mut motion_events,
+                        default_sensitivity,
+                        modified_sensitivity,
+                        &is_modifier_on,
+                        ball_pos,
+                    );
+                    cursor_icon::set_cursor_icon(&mut cursor_icon_query, &asset_server, "move");
+                }
                 _ => (),
             }
         }
@@ -476,10 +597,10 @@ fn handle_element_gamepad_pressing(
     for gamepad in gamepads.iter() {
         let mut press_action = None;
         if input.any_just_pressed([GamepadButton::new(gamepad, GamepadButtonType::South)]) {
-            press_action = Some(ElementPressAction::Confirm);
+            press_action = Some(ElementAction::Confirm);
         }
         if input.any_just_pressed([GamepadButton::new(gamepad, GamepadButtonType::East)]) {
-            press_action = Some(ElementPressAction::Cancel);
+            press_action = Some(ElementAction::Cancel);
         }
         if let Some(press_action) = press_action {
             handle_element_pressing(press_action, &mut ui_focusables, &mut event_writer);
@@ -494,10 +615,10 @@ fn handle_element_keyboard_pressing(
 ) {
     let mut press_action = None;
     if input.any_just_pressed([KeyCode::Space, KeyCode::Return]) {
-        press_action = Some(ElementPressAction::Confirm);
+        press_action = Some(ElementAction::Confirm);
     }
     if input.any_just_pressed([KeyCode::Escape, KeyCode::Delete]) {
-        press_action = Some(ElementPressAction::Cancel);
+        press_action = Some(ElementAction::Cancel);
     }
     if let Some(press_action) = press_action {
         handle_element_pressing(press_action, &mut ui_focusables, &mut event_writer);
@@ -505,7 +626,7 @@ fn handle_element_keyboard_pressing(
 }
 
 fn handle_element_pressing(
-    press_action: ElementPressAction,
+    press_action: ElementAction,
     ui_focusables: &mut Query<(Entity, &Focusable, &mut ElementData), With<ElementData>>,
     event_writer: &mut EventWriter<ElementEvent>,
 ) {
@@ -514,7 +635,7 @@ fn handle_element_pressing(
             let data = data.as_mut();
             match data {
                 ElementData::Switcher { data } => {
-                    if press_action == ElementPressAction::Confirm {
+                    if press_action == ElementAction::Confirm {
                         switcher::toggle_switcher(data);
                         event_writer.send(ElementEvent::DataChanged { data: data.clone() });
                     }
@@ -527,6 +648,13 @@ fn handle_element_pressing(
                 ElementData::CrossPanel {
                     x: _,
                     y: _,
+                    is_modifier_on: _,
+                    ref mut is_locked,
+                } => handle_element_locking(entity, is_locked, event_writer),
+                ElementData::SensitivityDemo {
+                    default_sensitivity: _,
+                    modified_sensitivity: _,
+                    ball_pos: _,
                     is_modifier_on: _,
                     ref mut is_locked,
                 } => handle_element_locking(entity, is_locked, event_writer),
@@ -550,6 +678,8 @@ fn handle_element_locking(
     }
 }
 
+const GAMEPAD_DPAD_CHANGING_DELTA: f32 = 0.1;
+
 fn handle_element_gamepad_dpad_changing(
     gamepads: Res<Gamepads>,
     button_input: Res<Input<GamepadButton>>,
@@ -557,30 +687,41 @@ fn handle_element_gamepad_dpad_changing(
     mut event_writer: EventWriter<ElementEvent>,
 ) {
     for gamepad in gamepads.iter() {
-        let mut change: Option<(String, i8)> = None;
+        let mut key_action: Option<ElementAction> = None;
         if button_input
             .any_just_pressed([GamepadButton::new(gamepad, GamepadButtonType::DPadRight)])
         {
-            change = Some((String::from("main"), 1));
+            key_action = Some(ElementAction::Right);
         }
+
         if button_input.any_just_pressed([GamepadButton::new(gamepad, GamepadButtonType::DPadLeft)])
         {
-            change = Some((String::from("main"), -1));
+            key_action = Some(ElementAction::Left);
         }
+
         if button_input.any_just_pressed([GamepadButton::new(gamepad, GamepadButtonType::DPadUp)]) {
-            change = Some((String::from("sub"), 1));
+            key_action = Some(ElementAction::Up);
         }
+
         if button_input.any_just_pressed([GamepadButton::new(gamepad, GamepadButtonType::DPadDown)])
         {
-            change = Some((String::from("sub"), -1));
+            key_action = Some(ElementAction::Down);
         }
-        if let Some(change) = change {
-            handle_element_changing(change, &mut ele_query, &mut event_writer);
-            return;
+        if let Some(key_action) = key_action {
+            for mut data in ele_query.iter_mut() {
+                handle_element_changing(
+                    &key_action,
+                    GAMEPAD_DPAD_CHANGING_DELTA,
+                    &mut data,
+                    &mut event_writer,
+                    true,
+                );
+            }
         }
     }
 }
-const GAMEPAD_MIN_THRESHOLD: f32 = 0.25;
+const GAMEPAD_AXIS_MIN_THRESHOLD: f32 = 0.25;
+const GAMEPAD_AXIS_CHANGING_DELTA: f32 = 2.0;
 
 fn handle_element_gamepad_axis_changing(
     gamepads: Res<Gamepads>,
@@ -591,112 +732,170 @@ fn handle_element_gamepad_axis_changing(
     mut throttle_timer: ResMut<timer::ElementThrottleTimer>,
     time: Res<Time>,
 ) {
+    let mut is_triggered: bool = false;
     if throttle_timer.0.tick(time.delta()).just_finished() {
-        for gamepad in gamepads.iter() {
-            let left_stick_x = axis_input
-                .get(GamepadAxis::new(gamepad, GamepadAxisType::LeftStickX))
-                .unwrap();
-            if left_stick_x.abs() > GAMEPAD_MIN_THRESHOLD {
-                last_delta.x = left_stick_x;
-            } else {
-                last_delta.x = 0.0;
-            }
-            let left_stick_y = axis_input
-                .get(GamepadAxis::new(gamepad, GamepadAxisType::LeftStickY))
-                .unwrap();
-            if left_stick_y.abs() > GAMEPAD_MIN_THRESHOLD {
-                last_delta.y = left_stick_y;
-            } else {
-                last_delta.y = 0.0;
-            }
+        is_triggered = true;
+    }
+    for gamepad in gamepads.iter() {
+        let left_stick_x = axis_input
+            .get(GamepadAxis::new(gamepad, GamepadAxisType::LeftStickX))
+            .unwrap();
+        if left_stick_x.abs() > GAMEPAD_AXIS_MIN_THRESHOLD {
+            last_delta.x = left_stick_x;
+        } else {
+            last_delta.x = 0.0;
+        }
+        let left_stick_y = axis_input
+            .get(GamepadAxis::new(gamepad, GamepadAxisType::LeftStickY))
+            .unwrap();
+        if left_stick_y.abs() > GAMEPAD_AXIS_MIN_THRESHOLD {
+            last_delta.y = left_stick_y;
+        } else {
+            last_delta.y = 0.0;
+        }
+        if last_delta.x.abs() == 0.0 && last_delta.y.abs() == 0.0 {
+            return;
+        }
+        for mut data in ele_query.iter_mut() {
             if last_delta.x.abs() > 0.0 {
-                let delta = if last_delta.x > 0.0 { 1 } else { -1 };
-                let change = (String::from("main"), delta as i8);
-                handle_element_changing(change, &mut ele_query, &mut event_writer);
+                let action = if last_delta.x > 0.0 {
+                    ElementAction::Right
+                } else {
+                    ElementAction::Left
+                };
+                handle_element_changing(
+                    &action,
+                    last_delta.x.abs() * GAMEPAD_AXIS_CHANGING_DELTA,
+                    &mut data,
+                    &mut event_writer,
+                    is_triggered,
+                );
             }
             if last_delta.y.abs() > 0.0 {
-                let delta = if last_delta.y > 0.0 { 1 } else { -1 };
-                let change = (String::from("sub"), delta as i8);
-                handle_element_changing(change, &mut ele_query, &mut event_writer);
+                let action = if last_delta.y > 0.0 {
+                    ElementAction::Up
+                } else {
+                    ElementAction::Down
+                };
+                handle_element_changing(
+                    &action,
+                    last_delta.y.abs() * GAMEPAD_AXIS_CHANGING_DELTA,
+                    &mut data,
+                    &mut event_writer,
+                    is_triggered,
+                );
             }
         }
     }
 }
+
+const KEYBOARD_CHANGING_DELTA: f32 = 1.0;
 
 fn handle_element_keyboard_changing(
     kb_input: Res<Input<KeyCode>>,
     mut ele_query: Query<&mut ElementData, With<ElementData>>,
     mut event_writer: EventWriter<ElementEvent>,
 ) {
-    let mut change: Option<(String, i8)> = None;
+    let mut key_actions: Vec<ElementAction> = vec![];
+    let mut is_triggered: bool = false;
+    if kb_input.any_pressed([KeyCode::Right, KeyCode::D]) {
+        key_actions.push(ElementAction::Right);
+    }
+    if kb_input.any_pressed([KeyCode::Left, KeyCode::A]) {
+        key_actions.push(ElementAction::Left);
+    }
+    if kb_input.any_pressed([KeyCode::Up, KeyCode::W]) {
+        key_actions.push(ElementAction::Up);
+    }
+    if kb_input.any_pressed([KeyCode::Down, KeyCode::S]) {
+        key_actions.push(ElementAction::Down);
+    }
     if kb_input.any_just_pressed([KeyCode::Right, KeyCode::D]) {
-        change = Some((String::from("main"), 1));
+        is_triggered = true;
     }
     if kb_input.any_just_pressed([KeyCode::Left, KeyCode::A]) {
-        change = Some((String::from("main"), -1));
+        is_triggered = true;
     }
     if kb_input.any_just_pressed([KeyCode::Up, KeyCode::W]) {
-        change = Some((String::from("sub"), 1));
+        is_triggered = true;
     }
     if kb_input.any_just_pressed([KeyCode::Down, KeyCode::S]) {
-        change = Some((String::from("sub"), -1));
+        is_triggered = true;
     }
-    if let Some(change) = change {
-        handle_element_changing(change, &mut ele_query, &mut event_writer);
+    if key_actions.len() == 0 {
+        return;
+    }
+    for mut data in ele_query.iter_mut() {
+        for key_action in key_actions.iter() {
+            handle_element_changing(
+                key_action,
+                KEYBOARD_CHANGING_DELTA,
+                &mut data,
+                &mut event_writer,
+                is_triggered,
+            );
+        }
     }
 }
 
 fn handle_element_changing(
-    change: (String, i8),
-    ele_query: &mut Query<&mut ElementData, With<ElementData>>,
+    key_action: &ElementAction,
+    delta: f32,
+    ele_data: &mut ElementData,
     event_writer: &mut EventWriter<ElementEvent>,
+    is_triggered: bool,
 ) {
-    for mut data in ele_query.iter_mut() {
-        match &mut data.as_mut() {
-            ElementData::Slider {
-                ref mut data,
-                is_modifier_on,
-                is_locked,
-            } => {
-                if *is_locked {
-                    let ori_value = data.u8_value.unwrap();
-                    data.u8_value = Some(calculate_changed_value(
-                        ori_value,
-                        change.1,
-                        *is_modifier_on,
-                    ));
-                    if ori_value != data.u8_value.unwrap() {
-                        event_writer.send(ElementEvent::DataChanged { data: data.clone() });
-                    }
-                }
+    match ele_data {
+        ElementData::Slider {
+            ref mut data,
+            ref is_modifier_on,
+            ref is_locked,
+        } => {
+            if is_triggered {
+                slider::handle_element_changing(
+                    &key_action,
+                    data,
+                    is_modifier_on,
+                    is_locked,
+                    event_writer,
+                );
             }
-            ElementData::CrossPanel {
-                ref mut x,
-                ref mut y,
-                is_modifier_on,
-                is_locked,
-            } => {
-                if *is_locked {
-                    if change.0 == "main" {
-                        let ori_x = x.u8_value.unwrap();
-                        x.u8_value =
-                            Some(calculate_changed_value(ori_x, change.1, *is_modifier_on));
-                        if ori_x != x.u8_value.unwrap() {
-                            event_writer.send(ElementEvent::DataChanged { data: x.clone() });
-                        }
-                    }
-                    if change.0 == "sub" {
-                        let ori_y = y.u8_value.unwrap();
-                        y.u8_value =
-                            Some(calculate_changed_value(ori_y, change.1, *is_modifier_on));
-                        if ori_y != y.u8_value.unwrap() {
-                            event_writer.send(ElementEvent::DataChanged { data: y.clone() });
-                        }
-                    }
-                }
-            }
-            _ => (),
         }
+        ElementData::CrossPanel {
+            ref mut x,
+            ref mut y,
+            ref is_modifier_on,
+            ref is_locked,
+        } => {
+            if is_triggered {
+                cross_panel::handle_element_changing(
+                    &key_action,
+                    x,
+                    y,
+                    is_modifier_on,
+                    is_locked,
+                    event_writer,
+                );
+            }
+        }
+        ElementData::SensitivityDemo {
+            ref default_sensitivity,
+            ref modified_sensitivity,
+            ref mut ball_pos,
+            ref is_modifier_on,
+            ref is_locked,
+        } => {
+            sensitivity_demo::handle_element_changing(
+                &key_action,
+                delta,
+                default_sensitivity,
+                modified_sensitivity,
+                ball_pos,
+                is_modifier_on,
+                is_locked,
+            );
+        }
+        _ => (),
     }
 }
 
@@ -765,6 +964,15 @@ fn handle_element_modifier(
             ElementData::CrossPanel {
                 x: _,
                 y: _,
+                ref mut is_modifier_on,
+                is_locked: _,
+            } => {
+                *is_modifier_on = modifier_value;
+            }
+            ElementData::SensitivityDemo {
+                default_sensitivity: _,
+                modified_sensitivity: _,
+                ball_pos: _,
                 ref mut is_modifier_on,
                 is_locked: _,
             } => {

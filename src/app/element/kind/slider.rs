@@ -210,7 +210,7 @@ pub fn update_display(
     }
 }
 
-pub fn handle_mouse_clicking(
+pub fn handle_mouse_pressing(
     window: &Query<&Window>,
     g_trans: &GlobalTransform,
     cursor_data: &Res<cursor::AppCursorData>,
@@ -235,6 +235,27 @@ pub fn handle_mouse_dragging(
         let new_value = (value as i8 + (motion_event.delta.x * dragging_moving_ratio) as i8)
             .clamp(0, 100) as u8;
         data.u8_value = Some(round_to_five(new_value, *is_modifier_on));
+    }
+}
+
+pub fn handle_element_changing(
+    key_action: &ElementAction,
+    data: &mut ElementTargetValuePair,
+    is_modifier_on: &bool,
+    is_locked: &bool,
+    event_writer: &mut EventWriter<ElementEvent>,
+) {
+    if *is_locked {
+        let ori_value = data.u8_value.unwrap();
+        let delta = if *key_action == ElementAction::Right || *key_action == ElementAction::Up {
+            1
+        } else {
+            -1
+        };
+        data.u8_value = Some(calculate_changed_value(ori_value, delta, *is_modifier_on));
+        if ori_value != data.u8_value.unwrap() {
+            event_writer.send(ElementEvent::DataChanged { data: data.clone() });
+        }
     }
 }
 

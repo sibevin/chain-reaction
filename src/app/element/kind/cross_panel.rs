@@ -112,11 +112,8 @@ pub fn update_display(
     is_modifier_on: &bool,
     is_locked: &bool,
 ) {
-    let x_value = x.u8_value.unwrap_or(200);
-    let y_value = y.u8_value.unwrap_or(200);
-    if x_value > 100 || y_value > 100 {
-        panic!("Invalid cross-panel value");
-    }
+    let x_value = x.u8_value.unwrap();
+    let y_value = y.u8_value.unwrap();
     if let Some(mut entity_commands) = commands.get_entity(dyn_entity) {
         entity_commands.with_children(|parent| {
             let center_pos = fetch_center_pos(&window, &g_trans);
@@ -240,7 +237,7 @@ pub fn update_display(
     }
 }
 
-pub fn handle_mouse_clicking(
+pub fn handle_mouse_pressing(
     window: &Query<&Window>,
     g_trans: &GlobalTransform,
     cursor_data: &Res<cursor::AppCursorData>,
@@ -262,11 +259,8 @@ pub fn handle_mouse_dragging(
     y: &mut ElementTargetValuePair,
     is_modifier_on: &bool,
 ) {
-    let x_value = x.u8_value.unwrap_or(200);
-    let y_value = y.u8_value.unwrap_or(200);
-    if x_value > 100 || y_value > 100 {
-        panic!("Invalid cross-panel value");
-    }
+    let x_value = x.u8_value.unwrap();
+    let y_value = y.u8_value.unwrap();
     let dragging_moving_ratio: f32 = if *is_modifier_on { 2.0 } else { 1.0 };
     let motion_events = motion_events.read().collect::<Vec<_>>();
     if let Some(motion_event) = motion_events.iter().rev().take(3).next() {
@@ -283,7 +277,49 @@ pub fn handle_mouse_dragging(
     }
 }
 
+pub fn handle_element_changing(
+    key_action: &ElementAction,
+    x: &mut ElementTargetValuePair,
+    y: &mut ElementTargetValuePair,
+    is_modifier_on: &bool,
+    is_locked: &bool,
+    event_writer: &mut EventWriter<ElementEvent>,
+) {
+    if *is_locked {
+        let mut change: (String, i8) = (String::from("main"), 1);
+        match key_action {
+            ElementAction::Right => {
+                change = (String::from("main"), 1);
+            }
+            ElementAction::Left => {
+                change = (String::from("main"), -1);
+            }
+            ElementAction::Up => {
+                change = (String::from("sub"), 1);
+            }
+            ElementAction::Down => {
+                change = (String::from("sub"), -1);
+            }
+            _ => (),
+        }
+        if change.0 == "main" {
+            let ori_x = x.u8_value.unwrap();
+            x.u8_value = Some(calculate_changed_value(ori_x, change.1, *is_modifier_on));
+            if ori_x != x.u8_value.unwrap() {
+                event_writer.send(ElementEvent::DataChanged { data: x.clone() });
+            }
+        }
+        if change.0 == "sub" {
+            let ori_y = y.u8_value.unwrap();
+            y.u8_value = Some(calculate_changed_value(ori_y, change.1, *is_modifier_on));
+            if ori_y != y.u8_value.unwrap() {
+                event_writer.send(ElementEvent::DataChanged { data: y.clone() });
+            }
+        }
+    }
+}
+
 fn fetch_center_pos(window: &Query<&Window>, g_trans: &GlobalTransform) -> Vec2 {
     let world_pos = Vec2::new(g_trans.translation().x, g_trans.translation().y);
-    kind::to_canvas_pos(&window, world_pos)
+    to_canvas_pos(&window, world_pos)
 }
