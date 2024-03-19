@@ -1,6 +1,6 @@
 use super::*;
 use crate::app::{cursor, cursor_icon};
-use bevy::{ecs::schedule::SystemConfigs, input};
+use bevy::{ecs::schedule::SystemConfigs, input, window::WindowResized};
 
 pub mod cross_panel;
 pub mod menu_entry;
@@ -98,6 +98,7 @@ pub fn element_systems() -> SystemConfigs {
         handle_element_gamepad_axis_changing,
         handle_element_gamepad_modifier,
         handle_element_keyboard_modifier,
+        reset_elements_on_window_resize,
         refresh_elements,
     )
         .chain()
@@ -217,10 +218,6 @@ pub fn clear_elements(
     refresh_timer.0.reset();
 }
 
-pub fn reset_elements(mut build_timer: ResMut<timer::ElementBuildTimer>) {
-    build_timer.0.reset();
-}
-
 pub fn apply_element_lock(
     ele_entity: Option<Entity>,
     ele_query: &mut Query<(Entity, &mut ElementData), With<ElementData>>,
@@ -276,7 +273,7 @@ fn refresh_elements(
     mut ui_text_query: Query<(&Parent, &mut Text), With<ElementText>>,
     mut ui_image_query: Query<(&Parent, &mut UiImage), With<ElementImage>>,
     window: Query<&Window>,
-    mut delay_timer: ResMut<timer::ElementBuildTimer>,
+    mut build_timer: ResMut<timer::ElementBuildTimer>,
     mut refresh_timer: ResMut<timer::ElementRefreshTimer>,
     time: Res<Time>,
     asset_server: Res<AssetServer>,
@@ -284,7 +281,7 @@ fn refresh_elements(
     let fg_entity = fg_query.get_single().unwrap();
     let bg_entity = bg_query.get_single().unwrap();
     let dyn_entity = dyn_query.get_single().unwrap();
-    if delay_timer.0.tick(time.delta()).just_finished() {
+    if build_timer.0.tick(time.delta()).just_finished() {
         if let Some(mut entity_commands) = commands.get_entity(fg_entity) {
             entity_commands.despawn_descendants();
         }
@@ -392,6 +389,15 @@ fn refresh_elements(
                 _ => (),
             }
         }
+    }
+}
+
+fn reset_elements_on_window_resize(
+    mut resize_events: EventReader<WindowResized>,
+    mut build_timer: ResMut<timer::ElementBuildTimer>,
+) {
+    for _event in resize_events.read() {
+        build_timer.0.reset();
     }
 }
 

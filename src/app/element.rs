@@ -5,7 +5,6 @@ use bevy_ui_navigation::prelude::*;
 mod kind;
 mod plugin;
 mod startup;
-mod status;
 mod timer;
 
 pub use kind::*;

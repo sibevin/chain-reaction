@@ -1,7 +1,14 @@
 use super::*;
 
-#[derive(Resource, Default)]
+#[derive(Resource)]
 pub struct ElementStatus {
-    pub fg_entity: Option<Entity>,
-    pub bg_entity: Option<Entity>,
+    pub is_refresh_required: bool,
+}
+
+impl Default for ElementStatus {
+    fn default() -> Self {
+        ElementStatus {
+            is_refresh_required: true,
+        }
+    }
 }
