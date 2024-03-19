@@ -3,6 +3,7 @@ use crate::app::{audio, settings};
 use bevy_persistent::prelude::*;
 
 const SHOOT_W: f32 = ui::FONT_SIZE * 0.1;
+const SHOOT_P: f32 = SHOOT_W * 1.6;
 
 #[derive(Component)]
 pub struct IaButton;
@@ -54,7 +55,7 @@ pub fn handle_button_interaction(
     }
     if let Some(target) = target {
         if target.size.x > target.size.y * 1.5 {
-            draw_shoot_line(&mut commands, target, Vec2::ZERO);
+            draw_shoot_line(&mut commands, target, Vec2::new(1.0, 1.0) * SHOOT_P);
         } else {
             draw_shoot_circle(&mut commands, target, Vec2::ZERO);
         }
@@ -84,7 +85,7 @@ pub fn handle_menu_entry_interaction(
         }
     }
     if let Some(target) = target {
-        draw_shoot_rect(&mut commands, target, Vec2::ZERO);
+        draw_shoot_rect(&mut commands, target, Vec2::new(1.0, 1.0) * SHOOT_P);
         audio::play_se("focus", &mut commands, &asset_server, settings.as_ref());
     }
 }
