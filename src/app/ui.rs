@@ -16,8 +16,12 @@ pub const BTN_PADDING: f32 = 5.0;
 pub const MENU_ENTRY_PADDING: f32 = 3.0;
 pub const PAGE_PADDING: f32 = 3.0;
 
-pub fn px_p(size: f32) -> Val {
-    Val::Px(SPACE_SIZE * size)
+pub fn px_p(scale: f32) -> Val {
+    Val::Px(sp_x(scale))
+}
+
+pub fn sp_x(scale: f32) -> f32 {
+    SPACE_SIZE * scale
 }
 
 pub fn fs_x(scale: f32) -> f32 {
