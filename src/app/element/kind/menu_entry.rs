@@ -84,6 +84,7 @@ pub fn init_display(
                     ..default()
                 },
                 Stroke::new(theme::HIGHLIGHT_COLOR, MENU_ENTRY_B),
+                Fill::color(theme::BG_COLOR),
             ));
         });
     }
