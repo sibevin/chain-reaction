@@ -85,34 +85,40 @@ impl AnimeEffectKindBase for AnimeEffectKindRectShoot {
                             Fill::color(ae.color),
                         ));
                     });
-                parent
-                    .spawn((SpatialBundle {
-                        transform: Transform::from_xyz(0.0, 0.0, 0.0003),
-                        ..default()
-                    },))
-                    .with_children(|parent| {
-                        let mut path_builder = PathBuilder::new();
-                        let cover_line_w = ae.width * COVER_LINE_W_RATIO;
-                        let anchor_pos = Vec2::new(
-                            ae.pos_1.x + ae.delta * (w + h + cover_line_w * 2.0),
-                            ae.pos_1.y,
-                        );
-                        path_builder.move_to(anchor_pos);
-                        path_builder.line_to(Vec2::new(anchor_pos.x - h, ae.pos_2.y));
-                        path_builder
-                            .line_to(Vec2::new(ae.pos_2.x + h + cover_line_w * 2.0, ae.pos_2.y));
-                        path_builder
-                            .line_to(Vec2::new(ae.pos_2.x + h + cover_line_w * 2.0, ae.pos_1.y));
-                        path_builder.close();
-                        parent.spawn((
-                            ShapeBundle {
-                                path: path_builder.build(),
-                                ..default()
-                            },
-                            Stroke::new(BG_COLOR, cover_line_w),
-                            Fill::color(BG_COLOR),
-                        ));
-                    });
+                if ae.delta < 1.0 {
+                    parent
+                        .spawn((SpatialBundle {
+                            transform: Transform::from_xyz(0.0, 0.0, 0.0003),
+                            ..default()
+                        },))
+                        .with_children(|parent| {
+                            let mut path_builder = PathBuilder::new();
+                            let cover_line_w = ae.width * COVER_LINE_W_RATIO;
+                            let anchor_pos = Vec2::new(
+                                ae.pos_1.x + ae.delta * (w + h + cover_line_w * 2.0),
+                                ae.pos_1.y,
+                            );
+                            path_builder.move_to(anchor_pos);
+                            path_builder.line_to(Vec2::new(anchor_pos.x - h, ae.pos_2.y));
+                            path_builder.line_to(Vec2::new(
+                                ae.pos_2.x + h + cover_line_w * 2.0,
+                                ae.pos_2.y,
+                            ));
+                            path_builder.line_to(Vec2::new(
+                                ae.pos_2.x + h + cover_line_w * 2.0,
+                                ae.pos_1.y,
+                            ));
+                            path_builder.close();
+                            parent.spawn((
+                                ShapeBundle {
+                                    path: path_builder.build(),
+                                    ..default()
+                                },
+                                Stroke::new(BG_COLOR, cover_line_w),
+                                Fill::color(BG_COLOR),
+                            ));
+                        });
+                }
             });
             if ae.delta == 1.0 {
                 ae.is_done = true;
