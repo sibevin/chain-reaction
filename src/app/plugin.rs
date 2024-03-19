@@ -12,7 +12,6 @@ impl Plugin for AppPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ClearColor(theme::BG_COLOR))
             .insert_resource(AssetMetaCheck::Never)
-            .insert_resource(status::AppStatus::default())
             .add_plugins((
                 DefaultPlugins.set(WindowPlugin {
                     primary_window: Some(Window {
@@ -49,7 +48,6 @@ impl PluginGroup for AppSubPlugins {
             .add(element::ElementPlugin)
             .add(settings::SettingsPlugin)
             .add(leaderboard::LeaderboardPlugin)
-            .add(achievement::AchievementPlugin)
             .add(key_binding::KeyBindingPlugin)
             .add(interaction::InteractionPlugin)
             .add(anime_effect::AnimeEffectPlugin)

@@ -1,4 +1,3 @@
-pub mod achievement;
 pub mod anime_effect;
 pub mod audio;
 pub mod cursor;
@@ -12,7 +11,6 @@ pub mod plugin;
 pub mod screenshot;
 pub mod settings;
 pub mod startup;
-pub mod status;
 pub mod theme;
 pub mod timer;
 pub mod ui;
