@@ -13,7 +13,7 @@ fn main() {
             DefaultNavigationPlugins,
             TweeningPlugin,
             book::BookPlugin,
-            studio::StudioPlugin,
+            game::GamePlugin,
         ))
         .add_systems(Startup, app::startup)
         .run();

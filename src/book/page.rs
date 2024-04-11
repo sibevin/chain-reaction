@@ -1,4 +1,7 @@
-use crate::{app, app::theme::*, app::ui, book::*};
+use crate::{
+    app::{self, anime_effect, interaction, layer, theme, ui},
+    book::*,
+};
 
 pub mod about;
 pub mod achievement;
@@ -8,6 +11,7 @@ pub mod help;
 pub mod history;
 pub mod leaderboard;
 pub mod menu;
+pub mod monitor;
 pub mod settings;
 
 pub trait PageBase {
@@ -29,7 +33,7 @@ fn build_page_layout() -> NodeBundle {
             padding: UiRect::all(ui::px_p(ui::PAGE_PADDING)),
             ..default()
         },
-        background_color: COVER_COLOR.into(),
+        z_index: ZIndex::Global(layer::PAGE_UI_Z_INDEX),
         ..default()
     }
 }
@@ -75,7 +79,7 @@ fn build_page_title(
                 padding: UiRect::all(ui::px_p(2.0)),
                 ..default()
             },
-            background_color: BG_COLOR.into(),
+            background_color: theme::BG_COLOR.into(),
             ..default()
         },))
         .with_children(|parent| {
@@ -83,9 +87,9 @@ fn build_page_title(
                 TextBundle::from_section(
                     text,
                     TextStyle {
-                        font: asset_server.load(FONT_TITLE),
+                        font: asset_server.load(theme::FONT_TITLE),
                         font_size: ui::FONT_SIZE * PAGE_TITLE_RATIO,
-                        color: FG_COLOR,
+                        color: theme::FG_COLOR,
                     },
                 )
                 .with_style(Style {
@@ -134,7 +138,7 @@ fn build_sep_title(
                     margin: UiRect::top(ui::px_p(3.0)),
                     ..default()
                 },
-                background_color: SECONDARY_COLOR.into(),
+                background_color: theme::SECONDARY_COLOR.into(),
                 ..default()
             },));
             parent
@@ -145,7 +149,7 @@ fn build_sep_title(
                         padding: UiRect::horizontal(ui::px_p(3.0)),
                         ..default()
                     },
-                    background_color: BG_COLOR.into(),
+                    background_color: theme::BG_COLOR.into(),
                     ..default()
                 },))
                 .with_children(|parent| {
@@ -165,9 +169,9 @@ fn build_sep_title(
                         TextBundle::from_section(
                             text,
                             TextStyle {
-                                font: asset_server.load(FONT),
+                                font: asset_server.load(theme::FONT),
                                 font_size: ui::FONT_SIZE * PAGE_TITLE_RATIO,
-                                color: SECONDARY_COLOR,
+                                color: theme::SECONDARY_COLOR,
                             },
                         )
                         .with_style(Style {

@@ -1,4 +1,4 @@
-use crate::{app::anime_effect, book::page::*, studio::*};
+use crate::{app::anime_effect, book::page::*, game::*};
 
 const PAGE_CODE: &str = "game";
 const PAGE_NAME: &str = "Start";
@@ -28,10 +28,10 @@ impl PageBase for Page {
     }
 }
 
-fn page_enter(mut studio_state: ResMut<NextState<StudioState>>) {
-    studio_state.set(StudioState::Preparing);
+fn page_enter(mut game_state: ResMut<NextState<PhaseState>>) {
+    game_state.set(PhaseState::Ready);
 }
 
-fn page_exit(mut studio_state: ResMut<NextState<StudioState>>) {
-    studio_state.set(StudioState::None);
+fn page_exit(mut game_state: ResMut<NextState<PhaseState>>) {
+    game_state.set(PhaseState::Demo);
 }

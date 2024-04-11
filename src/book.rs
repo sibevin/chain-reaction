@@ -22,9 +22,10 @@ pub enum PageState {
     History,
     Achievement,
     Leaderboard,
+    Monitor,
 }
 
-pub const PAGES: [&dyn page::PageBase; 13] = [
+pub const PAGES: [&dyn page::PageBase; 14] = [
     &page::menu::Page,
     &page::game::Page,
     &page::help::Page,
@@ -38,4 +39,5 @@ pub const PAGES: [&dyn page::PageBase; 13] = [
     &page::history::Page,
     &page::achievement::Page,
     &page::leaderboard::Page,
+    &page::monitor::Page,
 ];

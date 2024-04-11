@@ -1,7 +1,5 @@
-use crate::{
-    app::{anime_effect, theme::*, ui},
-    book::page::*,
-};
+use super::*;
+use crate::game;
 use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 
 const PAGE_CODE: &str = "dev";
@@ -33,10 +31,7 @@ impl PageBase for Page {
             )
             .add_systems(
                 OnExit(self.state()),
-                (
-                    anime_effect::clear_anime_effect,
-                    app::ui::despawn_ui::<OnPage>,
-                ),
+                (anime_effect::clear_anime_effect, ui::despawn_ui::<OnPage>),
             );
     }
 }
@@ -58,7 +53,18 @@ struct ScreenshotPanel;
 #[derive(Component)]
 struct ScreenshotImage;
 
-const COLORS: [Color; 4] = [FG_COLOR, BG_COLOR, SECONDARY_COLOR, MUTE_COLOR];
+const COLORS: [Color; 10] = [
+    theme::FG_COLOR,
+    theme::BG_COLOR,
+    theme::SECONDARY_COLOR,
+    theme::HIGHLIGHT_COLOR,
+    theme::MUTE_COLOR,
+    theme::U_COLOR,
+    theme::C_COLOR,
+    theme::H_COLOR,
+    theme::T_COLOR,
+    theme::A_COLOR,
+];
 
 fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
@@ -96,13 +102,13 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 TextBundle::from_section(
                                     "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.-",
                                     TextStyle {
-                                        font: asset_server.load(FONT),
+                                        font: asset_server.load(theme::FONT),
                                         font_size: ui::FONT_SIZE,
-                                        color: FG_COLOR,
+                                        color: theme::FG_COLOR,
                                     },
                                 )
                                 .with_style(Style {
-                                    margin: UiRect::vertical(app::ui::px_p(2.0)),
+                                    margin: UiRect::vertical(ui::px_p(2.0)),
                                     ..default()
                                 }),
                             );
@@ -110,13 +116,13 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 TextBundle::from_section(
                                     "abcdefghijklmnopqrstuvwxyzα!@#$%^&*()+=",
                                     TextStyle {
-                                        font: asset_server.load(FONT),
+                                        font: asset_server.load(theme::FONT),
                                         font_size: ui::FONT_SIZE,
-                                        color: FG_COLOR,
+                                        color: theme::FG_COLOR,
                                     },
                                 )
                                 .with_style(Style {
-                                    margin: UiRect::vertical(app::ui::px_p(2.0)),
+                                    margin: UiRect::vertical(ui::px_p(2.0)),
                                     ..default()
                                 }),
                             );
@@ -124,13 +130,13 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 TextBundle::from_section(
                                     "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.-",
                                     TextStyle {
-                                        font: asset_server.load(FONT),
+                                        font: asset_server.load(theme::FONT_DIGIT),
                                         font_size: ui::FONT_SIZE,
-                                        color: FG_COLOR,
+                                        color: theme::FG_COLOR,
                                     },
                                 )
                                 .with_style(Style {
-                                    margin: UiRect::vertical(app::ui::px_p(2.0)),
+                                    margin: UiRect::vertical(ui::px_p(2.0)),
                                     ..default()
                                 }),
                             );
@@ -138,13 +144,13 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 TextBundle::from_section(
                                     "abcdefghijklmnopqrstuvwxyzα!@#$%^&*()+=",
                                     TextStyle {
-                                        font: asset_server.load(FONT),
+                                        font: asset_server.load(theme::FONT_DIGIT),
                                         font_size: ui::FONT_SIZE,
-                                        color: FG_COLOR,
+                                        color: theme::FG_COLOR,
                                     },
                                 )
                                 .with_style(Style {
-                                    margin: UiRect::vertical(app::ui::px_p(2.0)),
+                                    margin: UiRect::vertical(ui::px_p(2.0)),
                                     ..default()
                                 }),
                             );
@@ -152,13 +158,13 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 TextBundle::from_section(
                                     "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,.-",
                                     TextStyle {
-                                        font: asset_server.load(FONT_TITLE),
+                                        font: asset_server.load(theme::FONT_HW),
                                         font_size: ui::FONT_SIZE,
-                                        color: FG_COLOR,
+                                        color: theme::FG_COLOR,
                                     },
                                 )
                                 .with_style(Style {
-                                    margin: UiRect::vertical(app::ui::px_p(2.0)),
+                                    margin: UiRect::vertical(ui::px_p(2.0)),
                                     ..default()
                                 }),
                             );
@@ -166,13 +172,13 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 TextBundle::from_section(
                                     "abcdefghijklmnopqrstuvwxyzα!@#$%^&*()+=",
                                     TextStyle {
-                                        font: asset_server.load(FONT_TITLE),
+                                        font: asset_server.load(theme::FONT_HW),
                                         font_size: ui::FONT_SIZE,
-                                        color: FG_COLOR,
+                                        color: theme::FG_COLOR,
                                     },
                                 )
                                 .with_style(Style {
-                                    margin: UiRect::vertical(app::ui::px_p(2.0)),
+                                    margin: UiRect::vertical(ui::px_p(2.0)),
                                     ..default()
                                 }),
                             );
@@ -183,7 +189,7 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         justify_content: JustifyContent::Center,
                                         ..default()
                                     },
-                                    background_color: BG_COLOR.into(),
+                                    background_color: theme::BG_COLOR.into(),
                                     ..default()
                                 })
                                 .with_children(|parent| {
@@ -191,20 +197,20 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         parent
                                             .spawn(NodeBundle {
                                                 style: Style {
-                                                    margin: UiRect::all(app::ui::px_p(2.0)),
-                                                    padding: UiRect::all(app::ui::px_p(2.0)),
-                                                    border: UiRect::all(app::ui::px_p(0.5)),
+                                                    margin: UiRect::all(ui::px_p(2.0)),
+                                                    padding: UiRect::all(ui::px_p(2.0)),
+                                                    border: UiRect::all(ui::px_p(0.5)),
                                                     ..default()
                                                 },
-                                                background_color: BG_COLOR.into(),
-                                                border_color: FG_COLOR.into(),
+                                                background_color: theme::BG_COLOR.into(),
+                                                border_color: theme::FG_COLOR.into(),
                                                 ..default()
                                             })
                                             .with_children(|parent| {
                                                 parent.spawn(NodeBundle {
                                                     style: Style {
-                                                        width: Val::Px(app::ui::ICON_SIZE * 1.5),
-                                                        height: Val::Px(app::ui::ICON_SIZE * 1.5),
+                                                        width: Val::Px(ui::ICON_SIZE * 1.5),
+                                                        height: Val::Px(ui::ICON_SIZE * 1.5),
                                                         ..default()
                                                     },
                                                     background_color: color.into(),
@@ -219,28 +225,28 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                                         justify_content: JustifyContent::Center,
                                         ..default()
                                     },
-                                    background_color: BG_COLOR.into(),
+                                    background_color: theme::BG_COLOR.into(),
                                     ..default()
                                 })
                                 .with_children(|parent| {
-                                    for ach_def in app::achievement::ACHIEVEMENTS {
+                                    for ach_def in game::ACHIEVEMENTS {
                                         parent
                                             .spawn(NodeBundle {
                                                 style: Style {
-                                                    margin: UiRect::all(app::ui::px_p(2.0)),
-                                                    padding: UiRect::all(app::ui::px_p(2.0)),
-                                                    border: UiRect::all(app::ui::px_p(0.5)),
+                                                    margin: UiRect::all(ui::px_p(2.0)),
+                                                    padding: UiRect::all(ui::px_p(2.0)),
+                                                    border: UiRect::all(ui::px_p(0.5)),
                                                     ..default()
                                                 },
-                                                background_color: BG_COLOR.into(),
-                                                border_color: FG_COLOR.into(),
+                                                background_color: theme::BG_COLOR.into(),
+                                                border_color: theme::FG_COLOR.into(),
                                                 ..default()
                                             })
                                             .with_children(|parent| {
                                                 parent.spawn(NodeBundle {
                                                     style: Style {
-                                                        width: Val::Px(app::ui::ICON_SIZE * 1.5),
-                                                        height: Val::Px(app::ui::ICON_SIZE * 1.5),
+                                                        width: Val::Px(ui::ICON_SIZE * 1.5),
+                                                        height: Val::Px(ui::ICON_SIZE * 1.5),
                                                         ..default()
                                                     },
                                                     background_color: ach_def.color().into(),
@@ -251,7 +257,7 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 });
                         });
                 });
-            app::ui::build_icon_btn(
+            ui::build_icon_btn(
                 parent,
                 &asset_server,
                 (
@@ -261,8 +267,8 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                 ),
                 Style {
                     position_type: PositionType::Absolute,
-                    bottom: app::ui::px_p(app::ui::PAGE_PADDING),
-                    left: app::ui::px_p(app::ui::PAGE_PADDING),
+                    bottom: ui::px_p(ui::PAGE_PADDING),
+                    left: ui::px_p(ui::PAGE_PADDING),
                     ..default()
                 },
                 "arrow-left-light_1.5x",

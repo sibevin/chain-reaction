@@ -1,4 +1,4 @@
-use crate::{app::*, book::page::*};
+use crate::{app::*, book::page::*, game::*};
 use bevy_persistent::prelude::*;
 use bevy_ui_navigation::{prelude::*, NavRequestSystem};
 
@@ -54,7 +54,7 @@ struct AchPanelIcon(String);
 fn page_enter(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    achievement: Res<Persistent<app::achievement::AchievementStore>>,
+    achievement: Res<Persistent<achievement::AchievementStore>>,
 ) {
     commands
         .spawn((build_page_layout(), OnPage))
@@ -102,7 +102,7 @@ fn page_enter(
                                     ..default()
                                 })
                                 .with_children(|parent| {
-                                    for ach_def in app::achievement::ACHIEVEMENTS {
+                                    for ach_def in achievement::ACHIEVEMENTS {
                                         let record = achievement.fetch_record(ach_def.code());
                                         build_panel_ui(
                                             parent,
@@ -138,7 +138,7 @@ fn handle_ui_navigation(
     mut actions: Query<&mut ButtonAction>,
     mut events: EventReader<NavEvent>,
     mut page_state: ResMut<NextState<PageState>>,
-    mut achievement: ResMut<Persistent<app::achievement::AchievementStore>>,
+    mut achievement: ResMut<Persistent<achievement::AchievementStore>>,
     mut ach_icon_query: Query<(&AchPanelIcon, &mut UiImage), With<AchPanelIcon>>,
     asset_server: Res<AssetServer>,
 ) {
@@ -173,9 +173,9 @@ const ACH_NAME_FS: f32 = ui::FONT_SIZE * 1.2;
 fn build_panel_ui(
     parent: &mut ChildBuilder,
     asset_server: &Res<AssetServer>,
-    ach_def: &dyn app::achievement::AchievementDefBase,
-    record: &app::achievement::AchievementRecord,
-    store: &Res<Persistent<app::achievement::AchievementStore>>,
+    ach_def: &dyn achievement::AchievementDefBase,
+    record: &achievement::AchievementRecord,
+    store: &Res<Persistent<achievement::AchievementStore>>,
 ) {
     let color = if record.is_done {
         ach_def.color()

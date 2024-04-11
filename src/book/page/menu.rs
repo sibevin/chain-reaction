@@ -129,7 +129,7 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                                     margin: UiRect::bottom(ui::px_p(12.0)),
                                     ..default()
                                 },
-                                background_color: BTN_BG.into(),
+                                background_color: theme::BG_COLOR.into(),
                                 ..default()
                             },
                             ButtonAction::MoveToPage(game_page.state()),
@@ -150,9 +150,9 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                             parent.spawn(TextBundle::from_section(
                                 "Start",
                                 TextStyle {
-                                    font: asset_server.load(FONT),
+                                    font: asset_server.load(theme::FONT),
                                     font_size: ui::FONT_SIZE * 1.8,
-                                    color: FG_COLOR,
+                                    color: theme::FG_COLOR,
                                 },
                             ));
                         });
@@ -199,6 +199,22 @@ fn page_enter(mut commands: Commands, asset_server: Res<AssetServer>) {
                             );
                         });
                 });
+            ui::build_icon_btn(
+                parent,
+                &asset_server,
+                (
+                    ButtonAction::MoveToPage(PageState::Monitor),
+                    app::interaction::IaButton,
+                    Focusable::default(),
+                ),
+                Style {
+                    position_type: PositionType::Absolute,
+                    bottom: ui::px_p(ui::PAGE_PADDING),
+                    left: ui::px_p(ui::PAGE_PADDING),
+                    ..default()
+                },
+                "monitor",
+            );
         });
 }
 

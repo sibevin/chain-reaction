@@ -1,5 +1,6 @@
 use super::*;
 use crate::app::{anime_effect, element, interaction, ui};
+use crate::game;
 use bevy_mod_picking::prelude::*;
 use bevy_persistent::prelude::*;
 use bevy_ui_navigation::NavRequestSystem;
@@ -130,9 +131,9 @@ fn page_enter(
                                     parent.spawn(TextBundle::from_section(
                                         "Default",
                                         TextStyle {
-                                            font: asset_server.load(FONT),
+                                            font: asset_server.load(theme::FONT),
                                             font_size: ui::FONT_SIZE,
-                                            color: FG_COLOR,
+                                            color: theme::FG_COLOR,
                                         },
                                     ));
                                     element::build_element(
@@ -172,9 +173,9 @@ fn page_enter(
                                     parent.spawn(TextBundle::from_section(
                                         "Shift",
                                         TextStyle {
-                                            font: asset_server.load(FONT),
+                                            font: asset_server.load(theme::FONT),
                                             font_size: ui::FONT_SIZE,
-                                            color: FG_COLOR,
+                                            color: theme::FG_COLOR,
                                         },
                                     ));
                                     element::build_element(
@@ -215,10 +216,7 @@ fn page_enter(
         });
 }
 
-fn handle_sensitivity_modifier(
-    input: Res<Input<KeyCode>>,
-    mut status: ResMut<app::status::AppStatus>,
-) {
+fn handle_sensitivity_modifier(input: Res<Input<KeyCode>>, mut status: ResMut<game::GameStatus>) {
     if input.any_just_released([KeyCode::ShiftLeft, KeyCode::ShiftRight]) {
         status.in_modified_sensitivity = false;
     }
