@@ -4,7 +4,7 @@ pub struct AchievementDef;
 
 const TARGET_ALPHA_COUNT: u32 = 360;
 
-impl AchievementDefBase for AchievementDef {
+impl AchievementKindBase for AchievementDef {
     fn code(&self) -> &str {
         "alpha_xxx"
     }

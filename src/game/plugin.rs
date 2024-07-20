@@ -22,8 +22,14 @@ impl Plugin for GamePlugin {
                 TimerMode::Repeating,
             )))
             .add_state::<PhaseState>()
-            .add_systems(Update, field_systems())
-            .add_plugins(achievement::AchievementPlugin);
+            .add_systems(
+                Update,
+                (anime_end::handle_anime_end_events, field::field_systems()),
+            )
+            .add_plugins((
+                achievement::AchievementPlugin,
+                leaderboard::LeaderboardPlugin,
+            ));
         for phase in phase::PHASES {
             phase.build(app);
         }

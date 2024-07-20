@@ -1,4 +1,4 @@
-use crate::app::leaderboard::LeaderboardRecord;
+use crate::game::leaderboard::LeaderboardRecord;
 use bevy::prelude::*;
 use chrono::Local;
 
@@ -10,9 +10,18 @@ pub enum StatusChain {
     Control,
 }
 
+#[derive(PartialEq, Default, Debug)]
+pub enum StatusMode {
+    #[default]
+    None,
+    Demo,
+    Playing,
+}
+
 #[derive(Resource, Default, Debug)]
 pub struct GameStatus {
     pub is_refresh_required: bool,
+    pub mode: StatusMode,
     pub player_name: String,
     pub highlight_uid: String,
     pub done_achievements: Vec<String>,

@@ -3,7 +3,7 @@ use crate::reactor::particle;
 
 pub struct AchievementDef;
 
-impl AchievementDefBase for AchievementDef {
+impl AchievementKindBase for AchievementDef {
     fn code(&self) -> &str {
         "max_h"
     }

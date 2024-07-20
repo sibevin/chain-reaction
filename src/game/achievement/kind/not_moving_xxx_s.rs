@@ -4,7 +4,7 @@ pub struct AchievementDef;
 
 const TARGET_NOT_MOVING_SECS: u32 = 60;
 
-impl AchievementDefBase for AchievementDef {
+impl AchievementKindBase for AchievementDef {
     fn code(&self) -> &str {
         "not_moving_xxx_s"
     }

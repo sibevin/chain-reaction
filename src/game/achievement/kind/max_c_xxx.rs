@@ -4,7 +4,7 @@ pub struct AchievementDef;
 
 const TARGET_C_COUNT: u32 = 10;
 
-impl AchievementDefBase for AchievementDef {
+impl AchievementKindBase for AchievementDef {
     fn code(&self) -> &str {
         "max_c_xxx"
     }

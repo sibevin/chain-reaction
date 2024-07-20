@@ -95,7 +95,6 @@ impl Plugin for SettingsPlugin {
         let config_dir = dirs::config_dir()
             .map(|native_config_dir| native_config_dir.join(app::APP_CODE))
             .unwrap_or(Path::new("local").join("configuration"));
-
         app.insert_resource(
             Persistent::<Settings>::builder()
                 .name("settings")

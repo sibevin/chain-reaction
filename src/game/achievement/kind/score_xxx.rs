@@ -4,7 +4,7 @@ pub struct AchievementDef;
 
 const TARGET_SCORE: u32 = 36000;
 
-impl AchievementDefBase for AchievementDef {
+impl AchievementKindBase for AchievementDef {
     fn code(&self) -> &str {
         "score_xxx"
     }

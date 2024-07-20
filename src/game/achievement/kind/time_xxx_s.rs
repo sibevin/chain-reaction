@@ -4,7 +4,7 @@ pub struct AchievementDef;
 
 const TARGET_TIME_SECS: u32 = 120;
 
-impl AchievementDefBase for AchievementDef {
+impl AchievementKindBase for AchievementDef {
     fn code(&self) -> &str {
         "time_xxx_s"
     }

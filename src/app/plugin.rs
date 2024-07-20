@@ -47,7 +47,6 @@ impl PluginGroup for AppSubPlugins {
             .add(ui::AppUiPlugin)
             .add(element::ElementPlugin)
             .add(settings::SettingsPlugin)
-            .add(leaderboard::LeaderboardPlugin)
             .add(key_binding::KeyBindingPlugin)
             .add(interaction::InteractionPlugin)
             .add(anime_effect::AnimeEffectPlugin)

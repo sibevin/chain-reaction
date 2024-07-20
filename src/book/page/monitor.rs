@@ -49,6 +49,7 @@ struct OnPage;
 #[derive(Component)]
 enum ButtonAction {
     MoveToPage(PageState),
+    TriggerTest(String),
 }
 
 fn page_enter(
@@ -60,6 +61,22 @@ fn page_enter(
     commands
         .spawn((build_page_layout(), OnPage))
         .with_children(|parent| {
+            ui::build_icon_btn(
+                parent,
+                &asset_server,
+                (
+                    ButtonAction::TriggerTest(String::from("add")),
+                    app::interaction::IaButton,
+                    Focusable::new(),
+                ),
+                Style {
+                    position_type: PositionType::Absolute,
+                    bottom: ui::px_p(100.0),
+                    left: ui::px_p(100.0),
+                    ..default()
+                },
+                "arrow-left-light_1.5x",
+            );
             ui::build_icon_btn(
                 parent,
                 &asset_server,
@@ -93,6 +110,11 @@ fn handle_ui_navigation(
         &mut actions,
         |mut action| match &mut *action {
             ButtonAction::MoveToPage(state) => page_state.set(*state),
+            ButtonAction::TriggerTest(action) => {
+                if action == "add" {
+                    dbg!("add");
+                }
+            }
         },
     );
 }

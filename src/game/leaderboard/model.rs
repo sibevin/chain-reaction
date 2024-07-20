@@ -1,7 +1,6 @@
+use super::record::LeaderboardRecord;
 use bevy::prelude::*;
-use bevy_persistent::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::path::Path;
 
 #[cfg(not(target_arch = "wasm32"))]
 use crate::app;
@@ -16,56 +15,12 @@ pub const LEADERBOARD_LISTS: [&str; 5] = [
     "max_hyper_chain",
 ];
 
-#[derive(Resource, Serialize, Deserialize, Clone, Debug, Default)]
-pub struct LeaderboardRecord {
-    pub player_name: String,
-    pub time: u32,
-    pub score: u32,
-    pub max_alpha_count: u32,
-    pub max_control_chain: u32,
-    pub max_hyper_chain: u32,
-    pub total_control_count: u32,
-    pub total_hyper_count: u32,
-    pub max_control_count: u32,
-    pub max_full_level_control_count: u32,
-    pub max_control_level: u32,
-    pub max_hyper_level: u32,
-    pub total_stopping_time: u32,
-    pub max_stopping_time: u32,
-    pub started_at: String,
-    pub ended_at: String,
-}
-
-impl LeaderboardRecord {
-    pub fn uid(&self) -> &str {
-        &self.started_at
-    }
-
-    pub fn fetch(&self, field: &str) -> u32 {
-        match field {
-            "time" => self.time,
-            "score" => self.score,
-            "max_alpha_count" => self.max_alpha_count,
-            "max_control_chain" => self.max_control_chain,
-            "max_hyper_chain" => self.max_hyper_chain,
-            "total_control_count" => self.total_control_count,
-            "total_hyper_count" => self.total_hyper_count,
-            "max_control_count" => self.max_control_count,
-            "max_full_level_control_count" => self.max_full_level_control_count,
-            "max_control_level" => self.max_control_level,
-            "max_hyper_level" => self.max_hyper_level,
-            "max_stopping_time" => self.max_stopping_time,
-            _ => panic!("Invalid field"),
-        }
-    }
-}
-
 #[derive(Resource, Serialize, Deserialize)]
-pub struct Leaderboard {
-    records: Vec<LeaderboardRecord>,
+pub struct LeaderboardModel {
+    pub records: Vec<LeaderboardRecord>,
 }
 
-impl Leaderboard {
+impl LeaderboardModel {
     pub fn store(&mut self, record: LeaderboardRecord) {
         use std::cmp::Reverse;
         #[cfg(not(target_arch = "wasm32"))]
@@ -168,26 +123,5 @@ impl Leaderboard {
             }
         }
         false
-    }
-}
-
-pub struct LeaderboardPlugin;
-
-impl Plugin for LeaderboardPlugin {
-    fn build(&self, app: &mut App) {
-        let config_dir = dirs::config_dir()
-            .map(|native_config_dir| native_config_dir.join("chain-reaction"))
-            .unwrap_or(Path::new("local").join("configuration"));
-
-        app.insert_resource(
-            Persistent::<Leaderboard>::builder()
-                .name("leaderboard")
-                .format(StorageFormat::Bincode)
-                .path(config_dir.join("leaderboard.bin"))
-                .default(Leaderboard { records: vec![] })
-                .build()
-                .expect("failed to initialize variables"),
-        );
-        app.insert_resource(LeaderboardRecord::default());
     }
 }

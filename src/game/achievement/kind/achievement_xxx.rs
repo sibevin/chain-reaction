@@ -4,7 +4,7 @@ pub struct AchievementDef;
 
 const TARGET_ACH_COUNT: u32 = 5;
 
-impl AchievementDefBase for AchievementDef {
+impl AchievementKindBase for AchievementDef {
     fn code(&self) -> &str {
         "achievement_xxx"
     }

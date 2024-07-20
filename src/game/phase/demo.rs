@@ -23,6 +23,10 @@ impl PhaseBase for Phase {
 #[derive(Component)]
 struct OnPhase;
 
-fn state_enter() {}
+fn state_enter(mut game_status: ResMut<GameStatus>) {
+    game_status.mode = StatusMode::Playing;
+    game_status.increase("score", 10000);
+    game_status.update("current_max_hyper_level", 3);
+}
 
 fn state_exit() {}

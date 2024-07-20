@@ -173,7 +173,7 @@ const ACH_NAME_FS: f32 = ui::FONT_SIZE * 1.2;
 fn build_panel_ui(
     parent: &mut ChildBuilder,
     asset_server: &Res<AssetServer>,
-    ach_def: &dyn achievement::AchievementDefBase,
+    ach_def: &dyn achievement::AchievementKindBase,
     record: &achievement::AchievementRecord,
     store: &Res<Persistent<achievement::AchievementStore>>,
 ) {

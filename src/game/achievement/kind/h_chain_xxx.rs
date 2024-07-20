@@ -4,7 +4,7 @@ pub struct AchievementDef;
 
 const TARGET_CHAIN_LENGTH: u32 = 36;
 
-impl AchievementDefBase for AchievementDef {
+impl AchievementKindBase for AchievementDef {
     fn code(&self) -> &str {
         "h_chain_xxx"
     }

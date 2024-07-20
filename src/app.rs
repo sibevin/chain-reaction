@@ -6,7 +6,6 @@ pub mod element;
 pub mod interaction;
 pub mod key_binding;
 pub mod layer;
-pub mod leaderboard;
 pub mod plugin;
 pub mod screenshot;
 pub mod settings;
